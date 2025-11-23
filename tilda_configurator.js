@@ -83,12 +83,26 @@
   }
 
   function fetchOzonPrice(link) {
-    // Эндпоинт /api/ozon-price не существует, показываем плейсхолдер
     if (!link) {
       setText($el(".cfg-price-left"), "—");
-    } else {
-      setText($el(".cfg-price-left"), "Доступно на OZON");
+      return;
     }
+
+    setText($el(".cfg-price-left"), "Загрузка...");
+
+    $.getJSON(`${API_BASE}/ozon-price`, { url: link })
+      .done((data) => {
+        if (data.found && data.price !== null && data.price !== undefined) {
+          const priceFormatted = Number(data.price).toLocaleString("ru-RU");
+          const currency = data.currency === "RUB" ? "₽" : data.currency;
+          setText($el(".cfg-price-left"), `${priceFormatted} ${currency}`);
+        } else {
+          setText($el(".cfg-price-left"), "Цена не найдена");
+        }
+      })
+      .fail(() => {
+        setText($el(".cfg-price-left"), "—");
+      });
   }
 
   function renderVariant(v) {

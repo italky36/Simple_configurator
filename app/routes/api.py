@@ -7,10 +7,12 @@ from .. import crud
 from ..config import Settings
 from ..database import get_db
 from ..seafile_client import SeafileClient
+from ..ozon_client import OzonClient
 
 router = APIRouter(prefix="/api")
 settings = Settings()
 seafile_client = SeafileClient(settings.seafile_server, settings.seafile_repo_id, settings.seafile_token)
+ozon_client = OzonClient(settings.ozon_client_id or "", settings.ozon_api_key or "") if settings.ozon_client_id and settings.ozon_api_key else None
 
 
 def machine_to_dict(machine, include_gallery: bool = False) -> Dict[str, Any]:
@@ -132,3 +134,28 @@ def lead(payload: Dict[str, Any]):
     except Exception as exc:
         raise HTTPException(status_code=502, detail=f"Failed to send to Telegram: {exc}")
     return {"detail": "ok"}
+
+
+@router.get("/ozon-price")
+def get_ozon_price(url: str):
+    if not ozon_client:
+        raise HTTPException(status_code=500, detail="Ozon API not configured")
+
+    if not url:
+        raise HTTPException(status_code=400, detail="URL parameter is required")
+
+    try:
+        result = ozon_client.get_price_by_url(url)
+        if not result:
+            return {"found": False, "price": None, "currency": None, "name": None}
+
+        return {
+            "found": True,
+            "price": result.get("price"),
+            "currency": result.get("currency", "RUB"),
+            "name": result.get("name"),
+            "product_id": result.get("product_id"),
+            "offer_id": result.get("offer_id"),
+        }
+    except Exception as exc:
+        raise HTTPException(status_code=500, detail=f"Failed to fetch Ozon price: {exc}")

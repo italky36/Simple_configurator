@@ -558,23 +558,15 @@
     const ozonBtn = $el(".cfg-btn-ozon");
     const $priceLeft = $el(".cfg-price-left");
 
-    if (ozonBtn.length) {
+        if (ozonBtn.length) {
       if (v.ozon_link) {
-        // Есть ссылка на OZON - кнопка активна
         ozonBtn.prop("disabled", false).attr("href", v.ozon_link).removeAttr("disabled").removeClass("disabled").text("В наличии на OZON");
-
-        // TODO: Когда будет готов эндпоинт /api/ozon-price, раскомментировать:
-        // $.getJSON(API_BASE + "/ozon-price?ozon_link=" + encodeURIComponent(v.ozon_link))
-        //   .done((d) => setText($priceLeft, fmtPrice(d?.price)))
-        //   .fail(() => setText($priceLeft, "—"));
-
-        // Пока показываем прочерк
-        setText($priceLeft, "—");
+        $.getJSON(API_BASE + "/ozon-price?ozon_link=" + encodeURIComponent(v.ozon_link))
+          .done((d) => setText($priceLeft, fmtPrice(d?.price)))
+          .fail(() => setText($priceLeft, "-"));
       } else {
-        // Нет ссылки на OZON - делаем кнопку неактивной
         ozonBtn.prop("disabled", true).attr("href", "#").attr("disabled", "disabled").addClass("disabled").text("Нет на OZON");
-        // Показываем текст "По запросу" маленьким шрифтом
-        $priceLeft.html('<span class="price-small">По запросу</span>');
+        $priceLeft.html('<span class="price-small">нет данных</span>');
       }
     }
 

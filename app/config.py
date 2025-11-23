@@ -21,6 +21,10 @@ class Settings(BaseSettings):
     telegram_bot_token: Optional[str] = Field(None, env="TELEGRAM_BOT_TOKEN")
     telegram_chat_id: Optional[str] = Field(None, env="TELEGRAM_CHAT_ID")
 
+    # Ozon Seller API
+    ozon_client_id: Optional[str] = Field(None, env="OZON_CLIENT_ID")
+    ozon_api_key: Optional[str] = Field(None, env="OZON_API_KEY")
+
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")
 
     @property
