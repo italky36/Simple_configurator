@@ -67,15 +67,46 @@ class OzonClient:
             "currency": currency,
         }
 
-    def get_price_by_url(self, ozon_url: str) -> Optional[Dict[str, Any]]:
-        sku = self.extract_sku_from_url(ozon_url)
-        if not sku:
+    def _extract_sku_with_redirects(self, ozon_url: str) -> Optional[str]:
+        """
+        Resolve short links like https://ozon.ru/t/xxxxx to a full product URL and pull out the SKU.
+        Some short links return 403/anti-bot without a browser-like User-Agent, so we try both HEAD and GET.
+        """
+        headers = {
+            "User-Agent": (
+                "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
+                "(KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+            ),
+            "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+        }
+
+        for method in ("head", "get"):
             try:
-                resp = requests.get(ozon_url, allow_redirects=True, timeout=10)
-                final_url = resp.url
-                sku = self.extract_sku_from_url(final_url)
+                resp = requests.request(
+                    method,
+                    ozon_url,
+                    allow_redirects=True,
+                    timeout=10,
+                    headers=headers,
+                )
             except Exception:
-                sku = None
+                continue
+
+            # Check every redirect hop plus the final URL
+            urls_to_check = [h.headers.get("location") or "" for h in resp.history] + [resp.url or ""]
+            for candidate in urls_to_check:
+                sku = self.extract_sku_from_url(candidate)
+                if sku:
+                    return sku
+
+        return None
+
+    def get_price_by_url(self, ozon_url: str) -> Optional[Dict[str, Any]]:
+        # 1) Try to extract directly from the provided URL
+        sku = self.extract_sku_from_url(ozon_url)
+        # 2) If it's a short link (e.g., https://ozon.ru/t/xxxxx), follow redirects to grab the SKU
+        if not sku and ozon_url:
+            sku = self._extract_sku_with_redirects(ozon_url)
         if not sku:
             return None
         return self.get_product_by_sku(sku)

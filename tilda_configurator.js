@@ -82,29 +82,6 @@
     return cands[0] || state.machines[0] || null;
   }
 
-  function fetchOzonPrice(link) {
-    if (!link) {
-      setText($el(".cfg-price-left"), "—");
-      return;
-    }
-
-    setText($el(".cfg-price-left"), "Загрузка...");
-
-    $.getJSON(`${API_BASE}/ozon-price`, { url: link })
-      .done((data) => {
-        if (data.found && data.price !== null && data.price !== undefined) {
-          const priceFormatted = Number(data.price).toLocaleString("ru-RU");
-          const currency = data.currency === "RUB" ? "₽" : data.currency;
-          setText($el(".cfg-price-left"), `${priceFormatted} ${currency}`);
-        } else {
-          setText($el(".cfg-price-left"), "Цена не найдена");
-        }
-      })
-      .fail(() => {
-        setText($el(".cfg-price-left"), "—");
-      });
-  }
-
   function renderVariant(v) {
     if (!v) return;
     state.current = v;
@@ -132,14 +109,17 @@
 
     setText($el(".cfg-price-right"), fmtPrice(v.price));
     const ozonBtn = $el(".cfg-btn-ozon");
-    if (ozonBtn.length) {
-      if (v.ozon_link) {
-        ozonBtn.prop("disabled", false).attr("href", v.ozon_link);
-      } else {
-        ozonBtn.prop("disabled", true).attr("href", "#");
-      }
+    const $priceLeft = $el(".cfg-price-left");
+    if (v.ozon_link && v.ozon_price !== null && v.ozon_price !== undefined) {
+      setText($priceLeft, fmtPrice(v.ozon_price));
+      if (ozonBtn.length) ozonBtn.prop("disabled", false).attr("href", v.ozon_link).text("Купить на OZON");
+    } else if (v.ozon_link) {
+      setText($priceLeft, "Цена по ссылке");
+      if (ozonBtn.length) ozonBtn.prop("disabled", false).attr("href", v.ozon_link).text("Купить на OZON");
+    } else {
+      setText($priceLeft, "Нет на OZON");
+      if (ozonBtn.length) ozonBtn.prop("disabled", true).attr("href", "#").text("Нет на OZON");
     }
-    fetchOzonPrice(v.ozon_link);
 
     const specM = state.specs["coffee_machine"]?.[v.model || v.name] || null;
     const specF = state.specs["frame"]?.[v.frame] || null;
@@ -256,3 +236,4 @@
       .fail(() => console.error("Не удалось загрузить конфигуратор"));
   });
 })(jQuery);
+

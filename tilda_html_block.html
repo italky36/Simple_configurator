@@ -385,33 +385,43 @@
       <div class="configurator">
         <div class="config-item">
           <label class="config-label">Кофемашина</label>
-          <select class="config-select cfg-select-machine"></select>
+          <select class="config-select cfg-select-machine">
+            <option value="">Загрузка...</option>
+          </select>
         </div>
 
         <div class="config-item">
           <label class="config-label">Холодильник</label>
-          <select class="config-select cfg-select-fridge"></select>
+          <select class="config-select cfg-select-fridge">
+            <option value="">Загрузка...</option>
+          </select>
         </div>
 
         <div class="config-item">
           <label class="config-label">Терминал</label>
-          <select class="config-select cfg-select-terminal"></select>
+          <select class="config-select cfg-select-terminal">
+            <option value="">Загрузка...</option>
+          </select>
         </div>
 
         <div class="config-item">
           <label class="config-label">Каркас</label>
-          <select class="config-select cfg-select-frame"></select>
+          <select class="config-select cfg-select-frame">
+            <option value="">Загрузка...</option>
+          </select>
         </div>
 
         <div class="config-item">
           <label class="config-label">Цвет каркаса</label>
-          <select class="config-select cfg-select-frame-color"></select>
+          <select class="config-select cfg-select-frame-color">
+            <option value="">—</option>
+          </select>
         </div>
 
         <div class="config-item">
           <label class="config-label">Дополнительно</label>
           <select class="config-select" disabled>
-            <option>—</option>
+            <option value="">—</option>
           </select>
         </div>
       </div>
@@ -419,7 +429,7 @@
       <div class="price-section">
         <div class="price-block">
           <div class="price cfg-price-left">—</div>
-          <a href="#" class="btn btn-primary cfg-btn-ozon">В наличии на OZON</a>
+          <a href="#" class="btn btn-primary cfg-btn-ozon">Купить на OZON</a>
         </div>
 
         <div class="price-block">
@@ -439,7 +449,7 @@
   const LEAD_ENDPOINT = API_BASE + "/lead";
 
   const state = { machines: [], specs: {}, current: null };
-  const skipValues = new Set(["да", "нет", "-", "none", "", null, undefined]);
+  const skipValues = new Set(["нет", "не", "-", "none", "", null, undefined]);
 
   const $el = (cls) => $(cls).first();
   const setText = (jq, txt) => jq.length && jq.text(txt || "—");
@@ -555,23 +565,21 @@
 
     setText($el(".cfg-price-right"), fmtPrice(v.price));
 
-    const ozonBtn = $el(".cfg-btn-ozon");
     const $priceLeft = $el(".cfg-price-left");
+    const ozonBtn = $el(".cfg-btn-ozon");
 
-    if (ozonBtn.length) {
-      if (v.ozon_link) {
-        ozonBtn.prop("disabled", false).attr("href", v.ozon_link).removeAttr("disabled").removeClass("disabled").text("В наличии на OZON");
-        // цена с бэкенда должна приходить в данных варианта (например, v.ozon_price)
-        const ozonPrice = v.ozon_price !== undefined ? v.ozon_price : null;
-        if (ozonPrice !== null && ozonPrice !== undefined) {
-          setText($priceLeft, fmtPrice(ozonPrice));
-        } else {
-          setText($priceLeft, "-");
-        }
-      } else {
-        ozonBtn.prop("disabled", true).attr("href", "#").attr("disabled", "disabled").addClass("disabled").text("Нет на OZON");
-        $priceLeft.html('<span class="price-small">нет данных</span>');
-      }
+    if (v.ozon_link && v.ozon_price !== null && v.ozon_price !== undefined) {
+      // Если есть и ссылка, и цена Ozon
+      setText($priceLeft, fmtPrice(v.ozon_price));
+      ozonBtn.removeClass("disabled").attr("href", v.ozon_link).text("Купить на OZON");
+    } else if (v.ozon_link) {
+      // Есть ссылка, но цена пока не пришла
+      $priceLeft.html('<span class="price-small">Цена по ссылке</span>');
+      ozonBtn.removeClass("disabled").attr("href", v.ozon_link).text("Купить на OZON");
+    } else {
+      // Нет ссылки на OZON
+      $priceLeft.html('<span class="price-small">Нет на OZON</span>');
+      ozonBtn.addClass("disabled").attr("href", "#").text("Нет на OZON");
     }
 
     const specM = state.specs["coffee_machine"]?.[v.model || v.name] || null;
