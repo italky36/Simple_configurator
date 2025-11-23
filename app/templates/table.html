@@ -1,0 +1,172 @@
+{% extends "base.html" %}
+{% block title %}Таблица кофемашин{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h2>Таблица кофемашин</h2>
+    <div class="d-flex gap-2">
+        <button class="btn btn-danger" id="bulk-delete-btn" disabled>Удалить выбранные</button>
+        <button class="btn btn-primary" id="add-machine-btn">Добавить</button>
+    </div>
+</div>
+<div class="table-responsive">
+    <table class="table table-striped align-middle table-sm small table-resizable" id="machines-table">
+        <thead>
+            <tr>
+                <th style="width:32px;"><input type="checkbox" id="select-all"><span class="table-resize-handle"></span></th>
+                <th>ID<span class="table-resize-handle"></span></th>
+                <th>Кофемашина<span class="table-resize-handle"></span></th>
+                <th>Каркас<span class="table-resize-handle"></span></th>
+                <th>Цвет каркаса<span class="table-resize-handle"></span></th>
+                <th>Холодильник<span class="table-resize-handle"></span></th>
+                <th>Терминал<span class="table-resize-handle"></span></th>
+                <th>Цена<span class="table-resize-handle"></span></th>
+                <th class="text-nowrap">Ссылка на Озон<span class="table-resize-handle"></span></th>
+                <th class="text-nowrap">Main image<span class="table-resize-handle"></span></th>
+                <th class="text-nowrap">Gallery folder<span class="table-resize-handle"></span></th>
+                <th class="text-nowrap" style="width:140px;">Действия<span class="table-resize-handle"></span></th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for machine in machines %}
+            <tr data-machine='{{ {
+                "id": machine.id,
+                "name": machine.name,
+                "model": machine.model or "",
+                "frame": machine.frame or "",
+                "frame_color": machine.frame_color or "",
+                "refrigerator": machine.refrigerator or "",
+                "terminal": machine.terminal or "",
+                "price": machine.price or "",
+                "ozon_link": machine.ozon_link or "",
+                "graphic_link": machine.graphic_link or "",
+                "main_image": machine.main_image or "",
+                "gallery_folder": machine.gallery_folder or "",
+                "description": machine.description or ""
+            } | tojson | safe }}'>
+                <td><input type="checkbox" class="row-select" data-id="{{ machine.id }}"></td>
+                <td>{{ machine.id }}</td>
+                <td class="text-break">{{ machine.model or machine.name or "-" }}</td>
+                <td>{{ machine.frame or "-" }}</td>
+                <td>{{ machine.frame_color or "-" }}</td>
+                <td>{{ machine.refrigerator or "-" }}</td>
+                <td>{{ machine.terminal or "-" }}</td>
+                <td>{{ machine.price or "-" }}</td>
+                <td class="text-break cell-ellipsis" title="{{ machine.ozon_link or '-' }}">{{ machine.ozon_link or "-" }}</td>
+                <td class="text-break" title="{{ machine.main_image or '-' }}">
+                    {% if machine.main_image %}
+                        <img src="{{ machine.main_image }}" alt="main" class="thumb-img">
+                    {% else %}-{% endif %}
+                </td>
+                <td class="text-break cell-ellipsis-wide" title="{{ machine.gallery_folder or '-' }}">{{ machine.gallery_folder or "-" }}</td>
+                <td>
+                    <div class="btn-group btn-group-sm" role="group">
+                        <button class="btn btn-outline-secondary btn-edit">Редактировать</button>
+                        <button class="btn btn-outline-danger btn-delete">Удалить</button>
+                    </div>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+<!-- Modal -->
+<div class="modal fade" id="machineModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+      <form id="machine-form">
+        <div class="modal-header">
+          <h5 class="modal-title" id="machineModalLabel">Кофемашина</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <input type="hidden" name="id" id="machine-id">
+          <div class="row g-3">
+            <div class="col-md-6">
+              <label class="form-label">Название *</label>
+              <input type="text" class="form-control" name="name" required>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label">Модель оборудования</label>
+              <input type="text" class="form-control" name="model">
+            </div>
+            <div class="col-md-6">
+              <label class="form-label">Каркас</label>
+              <input type="text" class="form-control" name="frame">
+            </div>
+            <div class="col-md-6">
+              <label class="form-label">Цвет каркаса</label>
+              <input type="text" class="form-control" name="frame_color">
+            </div>
+            <div class="col-md-6">
+              <label class="form-label">Холодильник</label>
+              <input type="text" class="form-control" name="refrigerator">
+            </div>
+            <div class="col-md-6">
+              <label class="form-label">Терминал</label>
+              <input type="text" class="form-control" name="terminal">
+            </div>
+            <div class="col-md-6">
+              <label class="form-label">Цена</label>
+              <input type="number" step="0.01" class="form-control" name="price">
+            </div>
+            <div class="col-md-6">
+              <label class="form-label">Ссылка на Озон</label>
+              <input type="url" class="form-control" name="ozon_link">
+            </div>
+            <div class="col-md-6">
+              <label class="form-label">Main image</label>
+              <div class="input-group">
+                <input type="url" class="form-control" name="main_image">
+                <button type="button" class="btn btn-outline-secondary btn-seafile" data-mode="file" data-target="main_image">Выбрать в Seafile</button>
+              </div>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label d-flex align-items-center justify-content-between">
+                <span>Gallery folder</span>
+                <button type="button" class="btn btn-sm btn-outline-secondary btn-seafile" data-mode="folder" data-target="gallery_folder">Выбрать папку</button>
+              </label>
+              <input type="text" class="form-control" name="gallery_folder">
+            </div>
+            <div class="col-12">
+              <label class="form-label">Описание</label>
+              <textarea class="form-control" rows="2" name="description"></textarea>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
+          <button type="submit" class="btn btn-primary" id="save-machine-btn">Сохранить</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- Seafile picker modal -->
+<div class="modal fade" id="seafileModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">Выбор в Seafile</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <div class="d-flex justify-content-between align-items-center mb-2">
+          <div id="seafile-breadcrumb" class="small text-muted"></div>
+          <div class="d-flex gap-2 align-items-center">
+            <input type="text" class="form-control form-control-sm" id="seafile-search" placeholder="Поиск" style="width:200px;">
+            <button type="button" class="btn btn-sm btn-outline-secondary" id="seafile-up-btn">Наверх</button>
+            <button type="button" class="btn btn-sm btn-primary" id="seafile-select-folder-btn">Выбрать эту папку</button>
+          </div>
+        </div>
+        <div id="seafile-status" class="text-muted mb-2 small">Загрузка...</div>
+        <div class="list-group" id="seafile-list" style="max-height:400px; overflow:auto;"></div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Закрыть</button>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

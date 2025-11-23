@@ -1,0 +1,233 @@
+(function ($) {
+  // Настройте базовый URL бэкенда (домен + порт)
+  const BACKEND_BASE = "http://192.168.5.70:8070"; // замените на свой
+  const API_BASE = `${BACKEND_BASE}/api`;
+  const LEAD_ENDPOINT = `${API_BASE}/lead`;
+  const LEFT_PRICE_ENDPOINT = `${API_BASE}/ozon-price`;
+
+  // Если нужно инжектить модалку в конкретный ZeroBlock, укажите его recID (например, '123456'); иначе оставьте null
+  const MODAL_REC_ID = null;
+
+  // State
+  const state = { machines: [], specs: {}, current: null };
+  const skipValues = new Set(["да", "нет", "-", "none", "", null, undefined]);
+
+  // Helpers
+  const $el = (cls) => $(cls).first();
+  const setText = (jq, txt) => jq.length && jq.text(txt ?? "—");
+  const fmtPrice = (v) => (v || v === 0 ? Number(v).toLocaleString("ru-RU") + " ₽" : "—");
+
+  function renderSpecs($block, spec) {
+    if (!$block.length) return;
+    const lines = spec?.specs || [];
+    if (!lines.length) {
+      $block.html('<div class="text-muted small">—</div>');
+      return;
+    }
+    $block.html(
+      `<div class="fw-semibold">${spec.name}</div><div class="text-muted small" style="white-space:pre-line;">${lines.join(
+        "\n"
+      )}</div>`
+    );
+  }
+
+  function populateSelect($sel, values, placeholder) {
+    if (!$sel.length) return;
+    const uniq = Array.from(new Set(values.filter((v) => v && !skipValues.has(String(v).toLowerCase()))));
+    const opts = placeholder ? [`<option value="">${placeholder}</option>`] : [];
+    uniq.forEach((v) => opts.push(`<option value="${v}">${v}</option>`));
+    $sel.html(opts.join(""));
+  }
+
+  function loadData() {
+    const mReq = $.getJSON(`${API_BASE}/coffee-machines?include_gallery=true`);
+    const sReq = $.getJSON(`${API_BASE}/specs`);
+    return $.when(mReq, sReq).then(([m], [s]) => {
+      state.machines = m || [];
+      state.specs = {};
+      (s || []).forEach((sp) => {
+        if (!state.specs[sp.category]) state.specs[sp.category] = {};
+        state.specs[sp.category][sp.name] = sp;
+      });
+    });
+  }
+
+  function fillSelects() {
+    const m = state.machines;
+    populateSelect($el(".cfg-select-machine"), m.map((x) => x.model || x.name), "Кофемашина");
+    populateSelect($el(".cfg-select-frame"), m.map((x) => x.frame), "Каркас");
+    populateSelect($el(".cfg-select-frame-color"), m.map((x) => x.frame_color), "Цвет каркаса");
+    populateSelect($el(".cfg-select-fridge"), m.map((x) => x.refrigerator), "Холодильник");
+    populateSelect($el(".cfg-select-terminal"), m.map((x) => x.terminal), "Терминал");
+  }
+
+  function findVariant() {
+    const mv = $el(".cfg-select-machine").val();
+    const fv = $el(".cfg-select-frame").val();
+    const fcv = $el(".cfg-select-frame-color").val();
+    const rv = $el(".cfg-select-fridge").val();
+    const tv = $el(".cfg-select-terminal").val();
+    const cands = state.machines.filter((v) => {
+      if (mv && (v.model || v.name) !== mv) return false;
+      if (fv && v.frame !== fv) return false;
+      if (fcv && v.frame_color !== fcv) return false;
+      if (rv && v.refrigerator !== rv) return false;
+      if (tv && v.terminal !== tv) return false;
+      return true;
+    });
+    return cands[0] || state.machines[0] || null;
+  }
+
+  function fetchOzonPrice(link) {
+    if (!link) {
+      setText($el(".cfg-price-left"), "—");
+      return;
+    }
+    $.getJSON(`${LEFT_PRICE_ENDPOINT}?ozon_link=${encodeURIComponent(link)}`)
+      .done((d) => setText($el(".cfg-price-left"), fmtPrice(d?.price)))
+      .fail(() => setText($el(".cfg-price-left"), "—"));
+  }
+
+  function renderVariant(v) {
+    if (!v) return;
+    state.current = v;
+
+    const mainSrc = v.main_image || (v.gallery_files && v.gallery_files[0]) || "";
+    if (mainSrc) $el(".cfg-main-image").attr("src", mainSrc);
+
+    const $g = $el(".cfg-gallery");
+    if ($g.length) {
+      $g.empty();
+      const imgs = v.gallery_files ? [...v.gallery_files] : [];
+      if (mainSrc) imgs.unshift(mainSrc);
+      imgs.forEach((src) => {
+        const img = $(
+          `<img src="${src}" class="cfg-thumb" style="max-height:80px; margin-right:8px; cursor:pointer;">`
+        );
+        img.on("click", () => $el(".cfg-main-image").attr("src", src));
+        $g.append(img);
+      });
+    }
+
+    setText($el(".cfg-price-right"), fmtPrice(v.price));
+    const ozonBtn = $el(".cfg-btn-ozon");
+    if (ozonBtn.length) {
+      if (v.ozon_link) {
+        ozonBtn.prop("disabled", false).attr("href", v.ozon_link);
+      } else {
+        ozonBtn.prop("disabled", true).attr("href", "#");
+      }
+    }
+    fetchOzonPrice(v.ozon_link);
+
+    const specM = state.specs["coffee_machine"]?.[v.model || v.name] || null;
+    const specF = state.specs["frame"]?.[v.frame] || null;
+    const specR = state.specs["refrigerator"]?.[v.refrigerator] || null;
+    const specT = state.specs["terminal"]?.[v.terminal] || null;
+    renderSpecs($el(".cfg-spec-machine"), specM);
+    renderSpecs($el(".cfg-spec-frame"), specF);
+    renderSpecs($el(".cfg-spec-fridge"), specR);
+    renderSpecs($el(".cfg-spec-terminal"), specT);
+  }
+
+  function openModal() {
+    const m = $(".cfg-modal");
+    if (m.length) m.addClass("is-open");
+  }
+  function closeModal() {
+    $(".cfg-modal").removeClass("is-open");
+  }
+
+  function sendLead() {
+    const v = state.current;
+    const payload = {
+      phone: $el(".cfg-lead-phone").val(),
+      telegram: $el(".cfg-lead-tg").val(),
+      selection: v
+        ? {
+            id: v.id,
+            machine: v.model || v.name,
+            frame: v.frame,
+            frame_color: v.frame_color,
+            refrigerator: v.refrigerator,
+            terminal: v.terminal,
+            price: v.price,
+            ozon_link: v.ozon_link,
+            gallery_folder: v.gallery_folder,
+          }
+        : null,
+    };
+    return $.ajax({
+      url: LEAD_ENDPOINT,
+      method: "POST",
+      contentType: "application/json",
+      data: JSON.stringify(payload),
+    });
+  }
+
+  function bindEvents() {
+    $(".cfg-select-machine, .cfg-select-frame, .cfg-select-frame-color, .cfg-select-fridge, .cfg-select-terminal").on(
+      "change",
+      () => renderVariant(findVariant())
+    );
+
+    $el(".cfg-btn-quote").on("click", (e) => {
+      e.preventDefault();
+      openModal();
+    });
+    $el(".cfg-modal-close").on("click", (e) => {
+      e.preventDefault();
+      closeModal();
+    });
+    $el(".cfg-lead-submit").on("click", (e) => {
+      e.preventDefault();
+      sendLead()
+        .done(() => {
+          alert("Заявка отправлена");
+          closeModal();
+        })
+        .fail(() => alert("Не удалось отправить заявку"));
+    });
+  }
+
+  $(document).ready(function () {
+    if (MODAL_REC_ID) {
+      const target = document.querySelector(`#rec${MODAL_REC_ID} .t396__artboard`);
+      if (target) {
+        target.insertAdjacentHTML(
+          "beforeend",
+          `<div class="cfg-modal">
+              <div class="cfg-modal-box">
+                <a href="#popup-close" class="cfg-modal-close" style="float:right; text-decoration:none;">×</a>
+                <h3>Запросить счёт</h3>
+                <div class="mb-2">
+                  <label>Телефон</label>
+                  <input type="tel" class="cfg-lead-phone" />
+                </div>
+                <div class="mb-2">
+                  <label>Telegram (опц.)</label>
+                  <input type="text" class="cfg-lead-tg" />
+                </div>
+                <button class="cfg-lead-submit">Отправить</button>
+              </div>
+            </div>`
+        );
+        const style = document.createElement("style");
+        style.textContent = `
+          .cfg-modal {display:none; position:fixed; inset:0; z-index:9999; background:rgba(0,0,0,.5); align-items:center; justify-content:center;}
+          .cfg-modal.is-open {display:flex;}
+          .cfg-modal-box {background:#fff; padding:20px; border-radius:8px; max-width:400px; width:100%;}
+        `;
+        document.head.appendChild(style);
+      }
+    }
+
+    loadData()
+      .then(() => {
+        fillSelects();
+        renderVariant(findVariant());
+        bindEvents();
+      })
+      .fail(() => console.error("Не удалось загрузить конфигуратор"));
+  });
+})(jQuery);

@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+{% block title %}Dashboard{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h2>Dashboard</h2>
+    <a class="btn btn-success" href="/admin/table">Открыть таблицу</a>
+</div>
+<p class="text-muted">Краткий обзор данных кофемашин.</p>
+<div class="row">
+    {% for machine in machines %}
+    <div class="col-md-4 mb-3">
+        <div class="card h-100">
+            <div class="card-body">
+                <h5 class="card-title">{{ machine.name }}</h5>
+                <h6 class="card-subtitle mb-2 text-muted">{{ machine.model }}</h6>
+                <p class="card-text">{{ machine.description or "Описание отсутствует" }}</p>
+                {% if machine.main_image %}
+                    <img src="{{ machine.main_image }}" class="img-fluid" alt="Main image">
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+{% endblock %}

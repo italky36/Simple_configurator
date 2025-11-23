@@ -1,0 +1,82 @@
+body {
+    padding-bottom: 40px;
+}
+
+.navbar-brand {
+    font-weight: 600;
+}
+
+.navbar-dark .nav-link {
+    color: rgba(255, 255, 255, 0.9);
+}
+.navbar-dark .nav-link:hover {
+    color: #ffe6f3;
+}
+.navbar-dark {
+    box-shadow: 0 2px 8px rgba(0,0,0,0.18);
+}
+
+.table-sm td, .table-sm th {
+    vertical-align: middle;
+}
+
+.table td, .table th {
+    white-space: nowrap;
+}
+
+.table td.text-break, .table th.text-break {
+    white-space: normal;
+}
+
+.table-responsive {
+    overflow-x: auto;
+    min-width: 100%;
+}
+
+@media (min-width: 1200px) {
+    .table-responsive {
+        min-width: 1600px;
+    }
+}
+
+.cell-ellipsis {
+    max-width: 140px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+.cell-ellipsis-wide {
+    max-width: 200px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.table-resizable th {
+    position: relative;
+}
+
+.table-resize-handle {
+    position: absolute;
+    right: 0;
+    top: 0;
+    width: 6px;
+    height: 100%;
+    cursor: col-resize;
+    user-select: none;
+}
+
+.table-resize-handle::after {
+    content: "";
+    display: block;
+    border-right: 1px dashed #ccc;
+    height: 100%;
+    opacity: 0.6;
+}
+
+.thumb-img {
+    max-height: 40px;
+    max-width: 60px;
+    object-fit: cover;
+    border-radius: 4px;
+}
