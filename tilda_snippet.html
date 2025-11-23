@@ -1,8 +1,11 @@
+<!-- Вставьте этот код в: Настройки сайта → HTML-код для вставки перед </body> -->
+
+<script>
 (function ($) {
   // Настройте базовый URL бэкенда (домен + порт)
   const BACKEND_BASE = "https://93-170-123-229.nip.io"; // замените на свой
-  const API_BASE = `${BACKEND_BASE}/api`;
-  const LEAD_ENDPOINT = `${API_BASE}/lead`;
+  const API_BASE = BACKEND_BASE + "/api";
+  const LEAD_ENDPOINT = API_BASE + "/lead";
 
   // ВАЖНО: Укажите recID вашего блока с конфигуратором (например, '712345678')
   const CONFIGURATOR_REC_ID = null; // замените на ID вашего блока
@@ -15,9 +18,9 @@
   const skipValues = new Set(["да", "нет", "-", "none", "", null, undefined]);
 
   // Helpers - поиск элементов внутри блока конфигуратора
-  const getScope = () => CONFIGURATOR_REC_ID ? `#rec${CONFIGURATOR_REC_ID} ` : '';
-  const $el = (cls) => $(`${getScope()}${cls}`).first();
-  const $all = (cls) => $(`${getScope()}${cls}`);
+  const getScope = () => CONFIGURATOR_REC_ID ? '#rec' + CONFIGURATOR_REC_ID + ' ' : '';
+  const $el = (cls) => $(getScope() + cls).first();
+  const $all = (cls) => $(getScope() + cls);
   const setText = (jq, txt) => jq.length && jq.text(txt ?? "—");
   const fmtPrice = (v) => (v || v === 0 ? Number(v).toLocaleString("ru-RU") + " ₽" : "—");
 
@@ -29,23 +32,21 @@
       return;
     }
     $block.html(
-      `<div class="fw-semibold">${spec.name}</div><div class="text-muted small" style="white-space:pre-line;">${lines.join(
-        "\n"
-      )}</div>`
+      '<div class="fw-semibold">' + spec.name + '</div><div class="text-muted small" style="white-space:pre-line;">' + lines.join("\n") + '</div>'
     );
   }
 
   function populateSelect($sel, values, placeholder) {
     if (!$sel.length) return;
     const uniq = Array.from(new Set(values.filter((v) => v && !skipValues.has(String(v).toLowerCase()))));
-    const opts = placeholder ? [`<option value="">${placeholder}</option>`] : [];
-    uniq.forEach((v) => opts.push(`<option value="${v}">${v}</option>`));
+    const opts = placeholder ? ['<option value="">' + placeholder + '</option>'] : [];
+    uniq.forEach((v) => opts.push('<option value="' + v + '">' + v + '</option>'));
     $sel.html(opts.join(""));
   }
 
   function loadData() {
-    const mReq = $.getJSON(`${API_BASE}/coffee-machines?include_gallery=true`);
-    const sReq = $.getJSON(`${API_BASE}/specs`);
+    const mReq = $.getJSON(API_BASE + "/coffee-machines?include_gallery=true");
+    const sReq = $.getJSON(API_BASE + "/specs");
     return $.when(mReq, sReq).then(([m], [s]) => {
       state.machines = m || [];
       state.specs = {};
@@ -108,9 +109,7 @@
       const imgs = v.gallery_files ? [...v.gallery_files] : [];
       if (mainSrc) imgs.unshift(mainSrc);
       imgs.forEach((src) => {
-        const img = $(
-          `<img src="${src}" class="cfg-thumb" style="max-height:80px; margin-right:8px; cursor:pointer;">`
-        );
+        const img = $('<img src="' + src + '" class="cfg-thumb" style="max-height:80px; margin-right:8px; cursor:pointer;">');
         img.on("click", () => $el(".cfg-main-image").attr("src", src));
         $g.append(img);
       });
@@ -200,35 +199,17 @@
   $(document).ready(function () {
     // Очищаем битые src у всех изображений конфигуратора
     const scope = getScope();
-    $(`${scope}img[src*="{src}"], ${scope}img[src*="\${src}"]`).attr("src", "");
+    $(scope + 'img[src*="{src}"], ' + scope + 'img[src*="${src}"]').attr("src", "");
 
     if (MODAL_REC_ID) {
-      const target = document.querySelector(`#rec${MODAL_REC_ID} .t396__artboard`);
+      const target = document.querySelector('#rec' + MODAL_REC_ID + ' .t396__artboard');
       if (target) {
         target.insertAdjacentHTML(
           "beforeend",
-          `<div class="cfg-modal">
-              <div class="cfg-modal-box">
-                <a href="#popup-close" class="cfg-modal-close" style="float:right; text-decoration:none;">×</a>
-                <h3>Запросить счёт</h3>
-                <div class="mb-2">
-                  <label>Телефон</label>
-                  <input type="tel" class="cfg-lead-phone" />
-                </div>
-                <div class="mb-2">
-                  <label>Telegram (опц.)</label>
-                  <input type="text" class="cfg-lead-tg" />
-                </div>
-                <button class="cfg-lead-submit">Отправить</button>
-              </div>
-            </div>`
+          '<div class="cfg-modal"><div class="cfg-modal-box"><a href="#popup-close" class="cfg-modal-close" style="float:right; text-decoration:none;">×</a><h3>Запросить счёт</h3><div class="mb-2"><label>Телефон</label><input type="tel" class="cfg-lead-phone" /></div><div class="mb-2"><label>Telegram (опц.)</label><input type="text" class="cfg-lead-tg" /></div><button class="cfg-lead-submit">Отправить</button></div></div>'
         );
         const style = document.createElement("style");
-        style.textContent = `
-          .cfg-modal {display:none; position:fixed; inset:0; z-index:9999; background:rgba(0,0,0,.5); align-items:center; justify-content:center;}
-          .cfg-modal.is-open {display:flex;}
-          .cfg-modal-box {background:#fff; padding:20px; border-radius:8px; max-width:400px; width:100%;}
-        `;
+        style.textContent = '.cfg-modal {display:none; position:fixed; inset:0; z-index:9999; background:rgba(0,0,0,.5); align-items:center; justify-content:center;} .cfg-modal.is-open {display:flex;} .cfg-modal-box {background:#fff; padding:20px; border-radius:8px; max-width:400px; width:100%;}';
         document.head.appendChild(style);
       }
     }
@@ -242,3 +223,4 @@
       .fail(() => console.error("Не удалось загрузить конфигуратор"));
   });
 })(jQuery);
+</script>
