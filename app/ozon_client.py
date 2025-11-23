@@ -29,7 +29,7 @@ class OzonClient:
 
         return data
 
-    def extract_offer_id_from_url(self, url: str) -> Optional[str]:
+    def extract_sku_from_url(self, url: str) -> Optional[str]:
         if not url:
             return None
 
@@ -42,11 +42,11 @@ class OzonClient:
         digits = m.group(1)
         return digits.strip() or None
 
-    def get_product_by_offer_id(self, offer_id: str) -> Optional[Dict[str, Any]]:
+    def get_product_by_sku(self, sku: str) -> Optional[Dict[str, Any]]:
         body = {
-            "offer_id": [str(offer_id)],
+            "offer_id": [],
             "product_id": [],
-            "sku": [],
+            "sku": [str(sku)],
         }
 
         data = self._post("/v3/product/info/list", body)
@@ -68,8 +68,14 @@ class OzonClient:
         }
 
     def get_price_by_url(self, ozon_url: str) -> Optional[Dict[str, Any]]:
-        offer_id = self.extract_offer_id_from_url(ozon_url)
-        if not offer_id:
+        sku = self.extract_sku_from_url(ozon_url)
+        if not sku:
+            try:
+                resp = requests.get(ozon_url, allow_redirects=True, timeout=10)
+                final_url = resp.url
+                sku = self.extract_sku_from_url(final_url)
+            except Exception:
+                sku = None
+        if not sku:
             return None
-
-        return self.get_product_by_offer_id(offer_id)
+        return self.get_product_by_sku(sku)

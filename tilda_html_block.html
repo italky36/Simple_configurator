@@ -558,12 +558,16 @@
     const ozonBtn = $el(".cfg-btn-ozon");
     const $priceLeft = $el(".cfg-price-left");
 
-        if (ozonBtn.length) {
+    if (ozonBtn.length) {
       if (v.ozon_link) {
         ozonBtn.prop("disabled", false).attr("href", v.ozon_link).removeAttr("disabled").removeClass("disabled").text("В наличии на OZON");
-        $.getJSON(API_BASE + "/ozon-price?ozon_link=" + encodeURIComponent(v.ozon_link))
-          .done((d) => setText($priceLeft, fmtPrice(d?.price)))
-          .fail(() => setText($priceLeft, "-"));
+        // цена с бэкенда должна приходить в данных варианта (например, v.ozon_price)
+        const ozonPrice = v.ozon_price !== undefined ? v.ozon_price : null;
+        if (ozonPrice !== null && ozonPrice !== undefined) {
+          setText($priceLeft, fmtPrice(ozonPrice));
+        } else {
+          setText($priceLeft, "-");
+        }
       } else {
         ozonBtn.prop("disabled", true).attr("href", "#").attr("disabled", "disabled").addClass("disabled").text("Нет на OZON");
         $priceLeft.html('<span class="price-small">нет данных</span>');

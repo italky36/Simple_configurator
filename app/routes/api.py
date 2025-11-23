@@ -26,6 +26,7 @@ def machine_to_dict(machine, include_gallery: bool = False) -> Dict[str, Any]:
         "terminal": machine.terminal,
         "price": machine.price,
         "ozon_link": machine.ozon_link,
+        "ozon_price": None,
         "graphic_link": machine.graphic_link,
         "main_image": machine.main_image,
         "gallery_folder": machine.gallery_folder,
@@ -36,6 +37,13 @@ def machine_to_dict(machine, include_gallery: bool = False) -> Dict[str, Any]:
             dto["gallery_files"] = seafile_client.list_file_links(machine.gallery_folder)
         except Exception:
             dto["gallery_files"] = []
+    if machine.ozon_link and ozon_client:
+        try:
+            price_data = ozon_client.get_price_by_url(machine.ozon_link)
+            if price_data:
+                dto["ozon_price"] = price_data.get("price")
+        except Exception:
+            dto["ozon_price"] = None
     return dto
 
 
