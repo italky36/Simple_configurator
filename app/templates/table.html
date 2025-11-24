@@ -118,8 +118,9 @@
               <label class="form-label">Main image</label>
               <div class="input-group">
                 <input type="url" class="form-control" name="main_image">
+                <input type="hidden" name="clear_main_image" value="">
                 <button type="button" class="btn btn-outline-secondary btn-seafile" data-mode="file" data-target="main_image">Выбрать в Seafile</button>
-                <button type="button" class="btn btn-outline-danger btn-clear-field" data-target="main_image">Очистить</button>
+                <button type="button" class="btn btn-outline-danger btn-clear-field" data-target="main_image" data-clear-flag="clear_main_image">Очистить</button>
               </div>
             </div>
             <div class="col-md-6">
@@ -127,10 +128,11 @@
                 <span>Gallery folder</span>
                 <div class="d-flex gap-2">
                   <button type="button" class="btn btn-sm btn-outline-secondary btn-seafile" data-mode="folder" data-target="gallery_folder">Выбрать папку</button>
-                  <button type="button" class="btn btn-sm btn-outline-danger btn-clear-field" data-target="gallery_folder">Очистить</button>
+                  <button type="button" class="btn btn-sm btn-outline-danger btn-clear-field" data-target="gallery_folder" data-clear-flag="clear_gallery_folder">Очистить</button>
                 </div>
               </label>
               <input type="text" class="form-control" name="gallery_folder">
+              <input type="hidden" name="clear_gallery_folder" value="">
             </div>
             <div class="col-12">
               <label class="form-label">Описание</label>

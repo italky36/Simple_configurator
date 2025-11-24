@@ -175,8 +175,14 @@ document.addEventListener("DOMContentLoaded", () => {
             const target = btn.dataset.target;
             if (!target) return;
             const input = form?.querySelector(`[name="${target}"]`);
+            const clearFlag = btn.dataset.clearFlag ? form?.querySelector(`[name="${btn.dataset.clearFlag}"]`) : null;
             if (input) {
                 input.value = "";
+                const evt = new Event("input", { bubbles: true });
+                input.dispatchEvent(evt);
+            }
+            if (clearFlag) {
+                clearFlag.value = "1";
             }
         });
     });

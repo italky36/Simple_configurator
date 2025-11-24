@@ -92,6 +92,8 @@ def _build_machine_payload(
     main_image: Optional[str],
     gallery_folder: Optional[str],
     description: Optional[str],
+    clear_main_image: Optional[str] = None,
+    clear_gallery_folder: Optional[str] = None,
 ) -> dict:
     data = {
         "name": name,
@@ -102,17 +104,25 @@ def _build_machine_payload(
         "terminal": terminal,
         "ozon_link": ozon_link,
         "graphic_link": graphic_link,
-        "main_image": main_image,
-        "gallery_folder": gallery_folder,
+        "main_image": None if clear_main_image else main_image,
+        "gallery_folder": None if clear_gallery_folder else gallery_folder,
         "description": description,
     }
+
+    # Пустая строка должна очищать поле: заменяем "" на None
+    for key, value in list(data.items()):
+        if isinstance(value, str) and value == "":
+            data[key] = None
+
     if price not in (None, ""):
         try:
             data["price"] = float(price)
         except ValueError:
             raise HTTPException(status_code=400, detail="Некорректное значение цены")
-    # Пустые строки сохраняем как запрос на очистку поля; фильтруем только None
-    return {k: v for k, v in data.items() if v is not None}
+    else:
+        data["price"] = None
+
+    return data
 
 
 @router.post("/machine")
@@ -129,6 +139,8 @@ def create_machine(
     main_image: Optional[str] = Form(None),
     gallery_folder: Optional[str] = Form(None),
     description: Optional[str] = Form(None),
+    clear_main_image: Optional[str] = Form(None),
+    clear_gallery_folder: Optional[str] = Form(None),
     db=Depends(get_db),
 ):
     payload = _build_machine_payload(
@@ -144,6 +156,8 @@ def create_machine(
         main_image,
         gallery_folder,
         description,
+        clear_main_image,
+        clear_gallery_folder,
     )
     machine = crud.create_coffee_machine(db, payload)
     return {"detail": "Создано", "id": machine.id}
@@ -164,6 +178,8 @@ def update_machine(
     main_image: Optional[str] = Form(None),
     gallery_folder: Optional[str] = Form(None),
     description: Optional[str] = Form(None),
+    clear_main_image: Optional[str] = Form(None),
+    clear_gallery_folder: Optional[str] = Form(None),
     db=Depends(get_db),
 ):
     payload = _build_machine_payload(
@@ -179,6 +195,8 @@ def update_machine(
         main_image,
         gallery_folder,
         description,
+        clear_main_image,
+        clear_gallery_folder,
     )
     updated = crud.update_coffee_machine(db, machine_id, payload)
     if not updated:
