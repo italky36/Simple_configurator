@@ -111,7 +111,8 @@ def _build_machine_payload(
             data["price"] = float(price)
         except ValueError:
             raise HTTPException(status_code=400, detail="Некорректное значение цены")
-    return {k: v for k, v in data.items() if v not in (None, "")}
+    # Пустые строки сохраняем как запрос на очистку поля; фильтруем только None
+    return {k: v for k, v in data.items() if v is not None}
 
 
 @router.post("/machine")
