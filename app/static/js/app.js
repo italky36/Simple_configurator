@@ -170,6 +170,17 @@ document.addEventListener("DOMContentLoaded", () => {
         });
     }
 
+    document.querySelectorAll(".btn-clear-field").forEach((btn) => {
+        btn.addEventListener("click", () => {
+            const target = btn.dataset.target;
+            if (!target) return;
+            const input = form?.querySelector(`[name="${target}"]`);
+            if (input) {
+                input.value = "";
+            }
+        });
+    });
+
     function fillForm(data) {
         if (!form) return;
         form.reset();

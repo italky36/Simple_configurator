@@ -119,12 +119,16 @@
               <div class="input-group">
                 <input type="url" class="form-control" name="main_image">
                 <button type="button" class="btn btn-outline-secondary btn-seafile" data-mode="file" data-target="main_image">Выбрать в Seafile</button>
+                <button type="button" class="btn btn-outline-danger btn-clear-field" data-target="main_image">Очистить</button>
               </div>
             </div>
             <div class="col-md-6">
               <label class="form-label d-flex align-items-center justify-content-between">
                 <span>Gallery folder</span>
-                <button type="button" class="btn btn-sm btn-outline-secondary btn-seafile" data-mode="folder" data-target="gallery_folder">Выбрать папку</button>
+                <div class="d-flex gap-2">
+                  <button type="button" class="btn btn-sm btn-outline-secondary btn-seafile" data-mode="folder" data-target="gallery_folder">Выбрать папку</button>
+                  <button type="button" class="btn btn-sm btn-outline-danger btn-clear-field" data-target="gallery_folder">Очистить</button>
+                </div>
               </label>
               <input type="text" class="form-control" name="gallery_folder">
             </div>
