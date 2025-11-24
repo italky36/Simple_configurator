@@ -11,6 +11,7 @@ from ..config import Settings
 from ..database import get_db
 from ..seafile_client import SeafileClient
 from ..services import import_export as import_service
+from ..services import media_cache
 
 router = APIRouter(prefix="/admin", dependencies=[Depends(get_current_user)])
 
@@ -160,6 +161,7 @@ def create_machine(
         clear_gallery_folder,
     )
     machine = crud.create_coffee_machine(db, payload)
+    media_cache.cache_machine_media(machine, seafile_client)
     return {"detail": "Создано", "id": machine.id}
 
 
@@ -201,6 +203,7 @@ def update_machine(
     updated = crud.update_coffee_machine(db, machine_id, payload)
     if not updated:
         raise HTTPException(status_code=404, detail="Coffee machine not found")
+    media_cache.cache_machine_media(updated, seafile_client)
     return {"detail": "Обновлено", "id": updated.id}
 
 
@@ -209,6 +212,7 @@ def delete_machine(machine_id: int, db=Depends(get_db)):
     deleted = crud.delete_coffee_machine(db, machine_id)
     if not deleted:
         raise HTTPException(status_code=404, detail="Coffee machine not found")
+    media_cache.clear_machine_cache(machine_id)
     return {"detail": "Удалено", "id": machine_id}
 
 
@@ -246,6 +250,7 @@ def update_image(
     updated = crud.update_coffee_machine(db, machine_id, update_data)
     if not updated:
         raise HTTPException(status_code=404, detail="Coffee machine not found")
+    media_cache.cache_machine_media(updated, seafile_client)
     return {"detail": "Images updated", "item": {"id": updated.id, "main_image": updated.main_image, "gallery_folder": updated.gallery_folder}}
 
 

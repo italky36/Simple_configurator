@@ -46,6 +46,7 @@
     flex-direction: column;
     align-items: center;
     justify-content: center;
+    position: relative;
   }
 
   .cz-conf .product-image img.cfg-main-image {
@@ -75,6 +76,40 @@
   .cz-conf .cfg-gallery img:hover {
     transform: scale(1.05);
   }
+
+  .cz-conf .cfg-image-nav {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+  }
+
+  .cz-conf .cfg-arrow {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    border: none;
+    background: rgba(255, 255, 255, 0.8);
+    box-shadow: 0 4px 10px rgba(0,0,0,0.12);
+    cursor: pointer;
+    pointer-events: auto;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 20px;
+    color: #000;
+    transition: background-color 0.15s ease, box-shadow 0.15s ease;
+  }
+
+  .cz-conf .cfg-arrow:hover {
+    background: rgba(255,255,255,0.95);
+    box-shadow: 0 6px 14px rgba(0,0,0,0.16);
+  }
+
+  .cz-conf .cfg-arrow-prev { left: 10px; }
+  .cz-conf .cfg-arrow-next { right: 10px; }
 
   .cz-conf .specs {
     display: grid;
@@ -450,10 +485,42 @@
 
   const state = { machines: [], specs: {}, current: null };
   const skipValues = new Set(["нет", "не", "-", "none", "", null, undefined]);
+  const STORAGE_KEY = "cz-conf-selection";
 
   const $el = (cls) => $(cls).first();
   const setText = (jq, txt) => jq.length && jq.text(txt || "—");
   const fmtPrice = (v) => (v || v === 0 ? Number(v).toLocaleString("ru-RU") + " ₽" : "—");
+  const normSrc = (src) => {
+    if (!src) return "";
+    if (/^(https?:)?\/\//i.test(src) || src.startsWith("data:")) return src;
+    const base = BACKEND_BASE.replace(/\/+$/, "");
+    const path = src.startsWith("/") ? src : "/" + src;
+    return base + path;
+  };
+
+  function saveSelection() {
+    const data = {
+      machine: $el(".cfg-select-machine").val() || "",
+      frame: $el(".cfg-select-frame").val() || "",
+      frame_color: $el(".cfg-select-frame-color").val() || "",
+      fridge: $el(".cfg-select-fridge").val() || "",
+      terminal: $el(".cfg-select-terminal").val() || "",
+    };
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+    } catch (e) {
+      // ignore quota / private mode errors
+    }
+  }
+
+  function loadSelection() {
+    try {
+      const raw = localStorage.getItem(STORAGE_KEY);
+      return raw ? JSON.parse(raw) : null;
+    } catch (e) {
+      return null;
+    }
+  }
 
   function renderSpecs($block, spec) {
     if (!$block.length) return;
@@ -462,11 +529,13 @@
     const listEl = $block.find('.spec-list');
 
     if (!spec || !spec.name) {
+      $block.hide();
       nameEl.text('—');
       listEl.empty();
       return;
     }
 
+    $block.show();
     nameEl.text(spec.name);
     listEl.empty();
 
@@ -533,8 +602,8 @@
       return;
     }
 
-    const imgs = v.gallery_files ? [...v.gallery_files] : [];
-    const mainSrc = v.main_image || (imgs && imgs[0]) || "";
+    const imgs = v.gallery_files ? v.gallery_files.map(normSrc) : [];
+    const mainSrc = normSrc(v.main_image || (v.gallery_files && v.gallery_files[0]) || "");
 
     $g.empty();
     if (mainSrc && !imgs.includes(mainSrc)) imgs.unshift(mainSrc);
@@ -545,8 +614,72 @@
     });
   }
 
+  function getImages(v) {
+    const imgs = v.gallery_files ? v.gallery_files.map(normSrc) : [];
+    const mainSrc = normSrc(v.main_image || (v.gallery_files && v.gallery_files[0]) || "");
+    if (mainSrc && !imgs.includes(mainSrc)) imgs.unshift(mainSrc);
+    return imgs;
+  }
+
+  function updateMainImage(v, forceIndex) {
+    const imgs = getImages(v);
+    const $mainImg = $el(".cfg-main-image");
+    if (!$mainImg.length) return;
+    if (!imgs.length) {
+      v._imgIdx = 0;
+      $mainImg.attr("src", "");
+      $(".cfg-image-nav").hide();
+      return;
+    }
+    const maxIdx = imgs.length - 1;
+    const idx = Math.min(Math.max(forceIndex !== undefined ? forceIndex : (v._imgIdx || 0), 0), maxIdx);
+    v._imgIdx = idx;
+    $mainImg.attr("src", imgs[idx]);
+
+    const $nav = $(".cfg-image-nav");
+    if ($nav.length) {
+      if (imgs.length > 1) {
+        $nav.show();
+      } else {
+        $nav.hide();
+      }
+    }
+  }
+
+  function ensureImageNav() {
+    const $container = $el(".product-image");
+    if (!$container.length || $container.find(".cfg-image-nav").length) return;
+
+    const nav = $(`
+      <div class="cfg-image-nav">
+        <button type="button" class="cfg-arrow cfg-arrow-left" aria-label="Предыдущее изображение">‹</button>
+        <button type="button" class="cfg-arrow cfg-arrow-right" aria-label="Следующее изображение">›</button>
+      </div>
+    `);
+
+    nav.on("click", ".cfg-arrow-left", () => {
+      const v = state.current;
+      if (!v) return;
+      const imgs = getImages(v);
+      if (!imgs.length) return;
+      const nextIdx = ( (v._imgIdx || 0) - 1 + imgs.length ) % imgs.length;
+      updateMainImage(v, nextIdx);
+    });
+
+    nav.on("click", ".cfg-arrow-right", () => {
+      const v = state.current;
+      if (!v) return;
+      const imgs = getImages(v);
+      if (!imgs.length) return;
+      const nextIdx = ( (v._imgIdx || 0) + 1 ) % imgs.length;
+      updateMainImage(v, nextIdx);
+    });
+
+    $container.append(nav);
+  }
+
   function ensureGallery(v) {
-    if (!v || v.gallery_files || v._galleryLoading || !v.id) return $.Deferred().resolve().promise();
+    if (!v || (v.gallery_files && v.gallery_files.length) || v._galleryLoading || !v.id) return $.Deferred().resolve().promise();
     v._galleryLoading = true;
     renderGallery(v);
     return $.getJSON(API_BASE + "/coffee-machines/" + v.id + "?include_gallery=true")
@@ -556,6 +689,7 @@
       .always(() => {
         v._galleryLoading = false;
         renderGallery(v);
+        updateMainImage(v);
       });
   }
 
@@ -637,11 +771,14 @@
     updateFrameColorState();
     updateTerminalState();
 
-    const mainSrc = v.main_image || (v.gallery_files && v.gallery_files[0]) || "";
+    const mainSrc = normSrc(v.main_image || (v.gallery_files && v.gallery_files[0]) || "");
     const $mainImg = $el(".cfg-main-image");
     if ($mainImg.length) {
       $mainImg.attr("src", mainSrc || "");
     }
+
+    ensureImageNav();
+    updateMainImage(v);
 
     renderGallery(v);
     ensureGallery(v);
@@ -668,12 +805,18 @@
     const specM = state.specs["coffee_machine"]?.[v.model || v.name] || null;
     const specF = state.specs["frame"]?.[v.frame] || null;
     const specR = state.specs["refrigerator"]?.[v.refrigerator] || null;
-    const specT = state.specs["terminal"]?.[v.terminal] || null;
+    // Показ характеристик терминала только если терминал выбран в селекте
+    const selectedTerminal = $el(".cfg-select-terminal").val();
+    const specT = selectedTerminal
+      ? state.specs["terminal"]?.[selectedTerminal] || state.specs["terminal"]?.[v.terminal] || null
+      : null;
 
     renderSpecs($el(".cfg-spec-machine"), specM);
     renderSpecs($el(".cfg-spec-frame"), specF);
     renderSpecs($el(".cfg-spec-fridge"), specR);
     renderSpecs($el(".cfg-spec-terminal"), specT);
+
+    saveSelection();
   }
 
   function bindEvents() {
@@ -722,8 +865,27 @@
     loadData()
       .then(() => {
         fillSelects();
-        const initialVariant = findVariant(false);
-        renderVariant(initialVariant, true);
+
+        // восстановим выбор из хранилища
+        const saved = loadSelection();
+        if (saved) {
+          $el(".cfg-select-machine").val(saved.machine || "");
+          $el(".cfg-select-frame").val(saved.frame || "");
+          $el(".cfg-select-frame-color").val(saved.frame_color || "");
+          $el(".cfg-select-fridge").val(saved.fridge || "");
+          $el(".cfg-select-terminal").val(saved.terminal || "");
+        }
+
+        updateFrameColorState();
+        updateTerminalState();
+
+        let initialVariant = findVariant(true);
+        let syncSelects = false;
+        if (!initialVariant && state.machines.length) {
+          initialVariant = state.machines[0];
+          syncSelects = true; // синхронизируем селекты с первым вариантом
+        }
+        renderVariant(initialVariant, syncSelects);
         bindEvents();
       })
       .fail(() => console.error("Не удалось загрузить конфигуратор"));

@@ -8,6 +8,7 @@ from ..config import Settings
 from ..database import get_db
 from ..seafile_client import SeafileClient
 from ..ozon_client import OzonClient
+from ..services import media_cache
 
 router = APIRouter(prefix="/api")
 settings = Settings()
@@ -20,6 +21,10 @@ def machine_to_dict(
     include_gallery: bool = False,
     include_ozon_price: bool = True,
 ) -> Dict[str, Any]:
+    cached_main = media_cache.get_cached_main(machine.id)
+    if not cached_main and machine.main_image:
+        cached_main = media_cache.cache_main_image(machine.id, machine.main_image)
+
     dto = {
         "id": machine.id,
         "name": machine.name,
@@ -32,15 +37,31 @@ def machine_to_dict(
         "ozon_link": machine.ozon_link,
         "ozon_price": None,
         "graphic_link": machine.graphic_link,
-        "main_image": machine.main_image,
+        "main_image": cached_main or machine.main_image,
         "gallery_folder": machine.gallery_folder,
         "description": machine.description,
     }
     if include_gallery and machine.gallery_folder:
-        try:
-            dto["gallery_files"] = seafile_client.list_file_links(machine.gallery_folder)
-        except Exception:
-            dto["gallery_files"] = []
+        cached_gallery = media_cache.get_cached_gallery(machine.id)
+        if cached_gallery:
+            dto["gallery_files"] = cached_gallery
+        else:
+            # Если нет кеша, пробуем подтянуть и закешировать на лету
+            try:
+                folder_path = machine.gallery_folder
+                if not folder_path.startswith("/"):
+                    folder_path = "/" + folder_path
+                items = seafile_client.list_directory(folder_path)
+                files = []
+                for item in items:
+                    if item.get("type") != "file":
+                        continue
+                    file_path = item.get("path") or f"{folder_path.rstrip('/')}/{item.get('name')}"
+                    link = seafile_client.get_file_download_link(file_path)
+                    files.append((item.get("name"), link))
+                dto["gallery_files"] = media_cache.cache_gallery_files(machine.id, files)
+            except Exception:
+                dto["gallery_files"] = []
     if include_ozon_price and machine.ozon_link and ozon_client:
         try:
             price_data = ozon_client.get_price_by_url(machine.ozon_link)
