@@ -128,20 +128,8 @@ def _build_lead_message(payload: Dict[str, Any]) -> str:
 
 @router.post("/lead")
 def lead(payload: Dict[str, Any]):
-    if not settings.telegram_bot_token or not settings.telegram_chat_id:
-        raise HTTPException(status_code=500, detail="Telegram not configured")
-    msg = _build_lead_message(payload)
-    url = f"https://api.telegram.org/bot{settings.telegram_bot_token}/sendMessage"
-    try:
-        resp = requests.post(
-            url,
-            json={"chat_id": settings.telegram_chat_id, "text": msg},
-            timeout=10,
-        )
-        resp.raise_for_status()
-    except Exception as exc:
-        raise HTTPException(status_code=502, detail=f"Failed to send to Telegram: {exc}")
-    return {"detail": "ok"}
+    # Публичные записи через API временно запрещены
+    raise HTTPException(status_code=403, detail="Writing through public API is disabled")
 
 
 @router.get("/ozon-price")
