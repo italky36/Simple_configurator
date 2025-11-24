@@ -22,18 +22,19 @@ from app.database import SessionLocal, engine
 from app.seafile_client import SeafileClient
 from app.services import media_cache
 from app import crud
+from sqlalchemy import inspect
 
 
 def ensure_main_image_path_column() -> None:
     # Быстрая миграция: добавляем колонку, если её нет
-    conn = engine.connect()
-    try:
-        res = conn.execute("PRAGMA table_info(coffee_machines)")
-        cols = [row[1] for row in res.fetchall()]
-        if "main_image_path" not in cols:
-            conn.execute("ALTER TABLE coffee_machines ADD COLUMN main_image_path VARCHAR(500)")
-    finally:
-        conn.close()
+    insp = inspect(engine)
+    cols = [c["name"] for c in insp.get_columns("coffee_machines")]
+    if "main_image_path" in cols:
+        return
+    ddl = "ALTER TABLE coffee_machines ADD COLUMN main_image_path VARCHAR(500)"
+    with engine.connect() as conn:
+        conn.execution_options(isolation_level="AUTOCOMMIT")
+        conn.exec_driver_sql(ddl)
 
 
 def main() -> None:
