@@ -5,6 +5,7 @@ from starlette.responses import JSONResponse, RedirectResponse
 
 from .config import Settings
 from .database import Base, engine
+from sqlalchemy import text
 from .routes import router as api_router
 from . import models  # noqa: F401
 
@@ -23,6 +24,15 @@ app.add_middleware(
 app.mount("/static", StaticFiles(directory="app/static"), name="static")
 
 Base.metadata.create_all(bind=engine)
+
+# Быстрая миграция: добавляем колонку main_image_path, если её нет
+with engine.connect() as conn:
+    cols = [row[1] for row in conn.execute(text("PRAGMA table_info(coffee_machines)")).fetchall()]
+    if "main_image_path" not in cols:
+        try:
+            conn.execute(text("ALTER TABLE coffee_machines ADD COLUMN main_image_path VARCHAR(500)"))
+        except Exception:
+            pass
 
 
 @app.get("/")

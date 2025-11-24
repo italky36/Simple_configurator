@@ -22,8 +22,19 @@ def machine_to_dict(
     include_ozon_price: bool = True,
 ) -> Dict[str, Any]:
     cached_main = media_cache.get_cached_main(machine.id)
-    if not cached_main and machine.main_image:
-        cached_main = media_cache.cache_main_image(machine.id, machine.main_image)
+
+    # Если есть путь в Seafile — получаем свежую ссылку и кешируем
+    main_source_url = None
+    if machine.main_image_path:
+        try:
+            main_source_url = seafile_client.get_file_download_link(machine.main_image_path)
+        except Exception:
+            main_source_url = None
+    elif machine.main_image:
+        main_source_url = machine.main_image
+
+    if not cached_main and main_source_url:
+        cached_main = media_cache.cache_main_image(machine.id, main_source_url)
 
     dto = {
         "id": machine.id,
@@ -37,7 +48,8 @@ def machine_to_dict(
         "ozon_link": machine.ozon_link,
         "ozon_price": None,
         "graphic_link": machine.graphic_link,
-        "main_image": cached_main or machine.main_image,
+        "main_image": cached_main or main_source_url or machine.main_image,
+        "main_image_path": machine.main_image_path,
         "gallery_folder": machine.gallery_folder,
         "description": machine.description,
     }

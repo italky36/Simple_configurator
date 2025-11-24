@@ -90,8 +90,18 @@ def get_cached_gallery(machine_id: int) -> List[str]:
 def cache_machine_media(machine, seafile_client) -> None:
     """Полное обновление кеша для записи: main + gallery."""
     clear_machine_cache(machine.id)
-    if machine.main_image:
-        cache_main_image(machine.id, machine.main_image)
+
+    main_url = None
+    if getattr(machine, "main_image_path", None):
+        try:
+            main_url = seafile_client.get_file_download_link(machine.main_image_path)
+        except Exception:
+            main_url = None
+    elif machine.main_image:
+        main_url = machine.main_image
+
+    if main_url:
+        cache_main_image(machine.id, main_url)
 
     if not machine.gallery_folder:
         return

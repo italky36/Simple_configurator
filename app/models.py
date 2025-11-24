@@ -19,6 +19,8 @@ class CoffeeMachine(Base):
     ozon_link = Column(String(500))
     graphic_link = Column(String(500))
     main_image = Column(String(500))
+    # Путь в Seafile (чтобы можно было получить свежую ссылку при протухшем токене)
+    main_image_path = Column(String(500))
     gallery_folder = Column(String(500))
     description = Column(Text)
 

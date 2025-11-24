@@ -125,9 +125,13 @@ document.addEventListener("DOMContentLoaded", () => {
             if (!resp.ok) throw new Error(await resp.text());
             const data = await resp.json();
             seafileTargetInput.value = data.link;
+            const pathInput = form?.querySelector('[name="main_image_path"]');
+            if (pathInput) {
+                pathInput.value = data.path || filePath;
+            }
             seafileModal?.hide();
         } catch (err) {
-            alert("Не удалось получить ссылку файла из Seafile");
+            alert("�� ������� �������� ������ ����� �� Seafile");
         }
     }
 
@@ -181,6 +185,13 @@ document.addEventListener("DOMContentLoaded", () => {
                 const evt = new Event("input", { bubbles: true });
                 input.dispatchEvent(evt);
             }
+            // Дополнительно чистим связанный path и флаг, если есть
+            if (target === "main_image") {
+                const pathInput = form?.querySelector("[name="main_image_path"]");
+                const clearPath = form?.querySelector("[name="clear_main_image_path"]");
+                if (pathInput) pathInput.value = "";
+                if (clearPath) clearPath.value = "1";
+            }
             if (clearFlag) {
                 clearFlag.value = "1";
             }
@@ -202,6 +213,7 @@ document.addEventListener("DOMContentLoaded", () => {
             "ozon_link",
             "graphic_link",
             "main_image",
+            "main_image_path",
             "gallery_folder",
             "description",
         ];

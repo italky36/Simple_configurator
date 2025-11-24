@@ -91,9 +91,11 @@ def _build_machine_payload(
     ozon_link: Optional[str],
     graphic_link: Optional[str],
     main_image: Optional[str],
+    main_image_path: Optional[str],
     gallery_folder: Optional[str],
     description: Optional[str],
     clear_main_image: Optional[str] = None,
+    clear_main_image_path: Optional[str] = None,
     clear_gallery_folder: Optional[str] = None,
 ) -> dict:
     data = {
@@ -106,6 +108,7 @@ def _build_machine_payload(
         "ozon_link": ozon_link,
         "graphic_link": graphic_link,
         "main_image": None if clear_main_image else main_image,
+        "main_image_path": None if clear_main_image or clear_main_image_path else main_image_path,
         "gallery_folder": None if clear_gallery_folder else gallery_folder,
         "description": description,
     }
@@ -138,9 +141,11 @@ def create_machine(
     ozon_link: Optional[str] = Form(None),
     graphic_link: Optional[str] = Form(None),
     main_image: Optional[str] = Form(None),
+    main_image_path: Optional[str] = Form(None),
     gallery_folder: Optional[str] = Form(None),
     description: Optional[str] = Form(None),
     clear_main_image: Optional[str] = Form(None),
+    clear_main_image_path: Optional[str] = Form(None),
     clear_gallery_folder: Optional[str] = Form(None),
     db=Depends(get_db),
 ):
@@ -155,9 +160,11 @@ def create_machine(
         ozon_link,
         graphic_link,
         main_image,
+        main_image_path,
         gallery_folder,
         description,
         clear_main_image,
+        clear_main_image_path,
         clear_gallery_folder,
     )
     machine = crud.create_coffee_machine(db, payload)
@@ -178,9 +185,11 @@ def update_machine(
     ozon_link: Optional[str] = Form(None),
     graphic_link: Optional[str] = Form(None),
     main_image: Optional[str] = Form(None),
+    main_image_path: Optional[str] = Form(None),
     gallery_folder: Optional[str] = Form(None),
     description: Optional[str] = Form(None),
     clear_main_image: Optional[str] = Form(None),
+    clear_main_image_path: Optional[str] = Form(None),
     clear_gallery_folder: Optional[str] = Form(None),
     db=Depends(get_db),
 ):
@@ -195,9 +204,11 @@ def update_machine(
         ozon_link,
         graphic_link,
         main_image,
+        main_image_path,
         gallery_folder,
         description,
         clear_main_image,
+        clear_main_image_path,
         clear_gallery_folder,
     )
     updated = crud.update_coffee_machine(db, machine_id, payload)
@@ -239,12 +250,15 @@ async def bulk_delete(request: Request, db=Depends(get_db)):
 def update_image(
     machine_id: int,
     main_image: Optional[str] = Form(None),
+    main_image_path: Optional[str] = Form(None),
     gallery_folder: Optional[str] = Form(None),
     db=Depends(get_db),
 ):
     update_data = {}
     if main_image is not None:
         update_data["main_image"] = main_image
+    if main_image_path is not None:
+        update_data["main_image_path"] = main_image_path
     if gallery_folder is not None:
         update_data["gallery_folder"] = gallery_folder
     updated = crud.update_coffee_machine(db, machine_id, update_data)
