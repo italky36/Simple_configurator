@@ -15,7 +15,11 @@ seafile_client = SeafileClient(settings.seafile_server, settings.seafile_repo_id
 ozon_client = OzonClient(settings.ozon_client_id or "", settings.ozon_api_key or "") if settings.ozon_client_id and settings.ozon_api_key else None
 
 
-def machine_to_dict(machine, include_gallery: bool = False) -> Dict[str, Any]:
+def machine_to_dict(
+    machine,
+    include_gallery: bool = False,
+    include_ozon_price: bool = True,
+) -> Dict[str, Any]:
     dto = {
         "id": machine.id,
         "name": machine.name,
@@ -37,7 +41,7 @@ def machine_to_dict(machine, include_gallery: bool = False) -> Dict[str, Any]:
             dto["gallery_files"] = seafile_client.list_file_links(machine.gallery_folder)
         except Exception:
             dto["gallery_files"] = []
-    if machine.ozon_link and ozon_client:
+    if include_ozon_price and machine.ozon_link and ozon_client:
         try:
             price_data = ozon_client.get_price_by_url(machine.ozon_link)
             if price_data:
@@ -102,6 +106,17 @@ def get_spec_by_name(category: str, name: str, db=Depends(get_db)):
     if not spec:
         raise HTTPException(status_code=404, detail="Spec not found")
     return spec_to_dict(spec)
+
+
+@router.get("/config-data")
+def get_config_data(db=Depends(get_db)):
+    # Легкий агрегированный ответ: машины без галерей и без ozon_price + specs
+    machines = crud.get_coffee_machines(db)
+    specs = crud.get_specs(db)
+    return {
+        "machines": [machine_to_dict(m, include_gallery=False, include_ozon_price=False) for m in machines],
+        "specs": [spec_to_dict(s) for s in specs],
+    }
 
 
 def _build_lead_message(payload: Dict[str, Any]) -> str:

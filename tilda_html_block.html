@@ -429,7 +429,7 @@
       <div class="price-section">
         <div class="price-block">
           <div class="price cfg-price-left">—</div>
-          <a href="#" class="btn btn-primary cfg-btn-ozon">Купить на OZON</a>
+          <a href="#" class="btn btn-primary cfg-btn-ozon" target="_blank" rel="noopener noreferrer">Купить на OZON</a>
         </div>
 
         <div class="price-block">
@@ -486,17 +486,77 @@
     $sel.html(opts.join(""));
   }
 
+  function updateTerminalState() {
+    const mv = $el(".cfg-select-machine").val();
+    const $t = $el(".cfg-select-terminal");
+    if (!$t.length) return;
+    if (!mv) {
+      $t.prop("disabled", true).val("");
+    } else {
+      $t.prop("disabled", false);
+    }
+  }
+
   function loadData() {
-    const mReq = $.getJSON(API_BASE + "/coffee-machines?include_gallery=true");
-    const sReq = $.getJSON(API_BASE + "/specs");
-    return $.when(mReq, sReq).then(([m], [s]) => {
-      state.machines = m || [];
-      state.specs = {};
-      (s || []).forEach((sp) => {
-        if (!state.specs[sp.category]) state.specs[sp.category] = {};
-        state.specs[sp.category][sp.name] = sp;
+    // Пытаемся взять единый легкий ответ (машины без галереи + specs)
+    return $.getJSON(API_BASE + "/config-data")
+      .then((res) => {
+        state.machines = res?.machines || [];
+        state.specs = {};
+        (res?.specs || []).forEach((sp) => {
+          if (!state.specs[sp.category]) state.specs[sp.category] = {};
+          state.specs[sp.category][sp.name] = sp;
+        });
+      })
+      .catch(() => {
+        // Фолбэк: два лёгких запроса, без include_gallery
+        const mReq = $.getJSON(API_BASE + "/coffee-machines");
+        const sReq = $.getJSON(API_BASE + "/specs");
+        return $.when(mReq, sReq).then(([m], [s]) => {
+          state.machines = m || [];
+          state.specs = {};
+          (s || []).forEach((sp) => {
+            if (!state.specs[sp.category]) state.specs[sp.category] = {};
+            state.specs[sp.category][sp.name] = sp;
+          });
+        });
       });
+  }
+
+  function renderGallery(v) {
+    const $g = $el(".cfg-gallery");
+    if (!$g.length) return;
+
+    // placeholder, если ещё грузится
+    if (v._galleryLoading && (!v.gallery_files || !v.gallery_files.length)) {
+      $g.html('<div style="padding:8px 0;color:#888;font-size:13px;">Загрузка фото…</div>');
+      return;
+    }
+
+    const imgs = v.gallery_files ? [...v.gallery_files] : [];
+    const mainSrc = v.main_image || (imgs && imgs[0]) || "";
+
+    $g.empty();
+    if (mainSrc && !imgs.includes(mainSrc)) imgs.unshift(mainSrc);
+    imgs.forEach((src) => {
+      const img = $('<img src="' + src + '" loading="lazy">');
+      img.on("click", () => $el(".cfg-main-image").attr("src", src));
+      $g.append(img);
     });
+  }
+
+  function ensureGallery(v) {
+    if (!v || v.gallery_files || v._galleryLoading || !v.id) return $.Deferred().resolve().promise();
+    v._galleryLoading = true;
+    renderGallery(v);
+    return $.getJSON(API_BASE + "/coffee-machines/" + v.id + "?include_gallery=true")
+      .done((full) => {
+        Object.assign(v, full || {});
+      })
+      .always(() => {
+        v._galleryLoading = false;
+        renderGallery(v);
+      });
   }
 
   function fillSelects() {
@@ -524,12 +584,13 @@
     }
   }
 
-  function findVariant() {
+  function findVariant(allowEmpty = true) {
     const mv = $el(".cfg-select-machine").val();
     const fv = $el(".cfg-select-frame").val();
     const fcv = $el(".cfg-select-frame-color").val();
     const rv = $el(".cfg-select-fridge").val();
     const tv = $el(".cfg-select-terminal").val();
+    if (!mv && allowEmpty) return null;
     const cands = state.machines.filter((v) => {
       if (mv && (v.model || v.name) !== mv) return false;
       if (fv && v.frame !== fv) return false;
@@ -538,12 +599,43 @@
       if (tv && v.terminal !== tv) return false;
       return true;
     });
-    return cands[0] || state.machines[0] || null;
+    if (cands[0]) return cands[0];
+    return allowEmpty ? null : (state.machines[0] || null);
   }
 
-  function renderVariant(v) {
-    if (!v) return;
+  function renderVariant(v, syncSelects = false) {
+    if (!v) {
+      state.current = null;
+      setText($el(".cfg-price-right"), "—");
+      setText($el(".cfg-price-left"), "—");
+      $el(".cfg-gallery").empty();
+      $el(".cfg-main-image").attr("src", "");
+      renderSpecs($el(".cfg-spec-machine"), null);
+      renderSpecs($el(".cfg-spec-frame"), null);
+      renderSpecs($el(".cfg-spec-fridge"), null);
+      renderSpecs($el(".cfg-spec-terminal"), null);
+      updateFrameColorState();
+      updateTerminalState();
+      return;
+    }
     state.current = v;
+
+    if (syncSelects) {
+      // Проставляем выбранные значения в селекты, чтобы пользователь видел текущий вариант
+      const setSelVal = (selector, val) => {
+        const $s = $el(selector);
+        if ($s.length) {
+          $s.val(val || "");
+        }
+      };
+      setSelVal(".cfg-select-machine", v.model || v.name || "");
+      setSelVal(".cfg-select-frame", v.frame || "");
+      setSelVal(".cfg-select-frame-color", v.frame_color || "");
+      setSelVal(".cfg-select-fridge", v.refrigerator || "");
+      setSelVal(".cfg-select-terminal", v.terminal || "");
+    }
+    updateFrameColorState();
+    updateTerminalState();
 
     const mainSrc = v.main_image || (v.gallery_files && v.gallery_files[0]) || "";
     const $mainImg = $el(".cfg-main-image");
@@ -551,17 +643,8 @@
       $mainImg.attr("src", mainSrc || "");
     }
 
-    const $g = $el(".cfg-gallery");
-    if ($g.length) {
-      $g.empty();
-      const imgs = v.gallery_files ? [...v.gallery_files] : [];
-      if (mainSrc && !imgs.includes(mainSrc)) imgs.unshift(mainSrc);
-      imgs.forEach((src) => {
-        const img = $('<img src="' + src + '">');
-        img.on("click", () => $mainImg.attr("src", src));
-        $g.append(img);
-      });
-    }
+    renderGallery(v);
+    ensureGallery(v);
 
     setText($el(".cfg-price-right"), fmtPrice(v.price));
 
@@ -598,7 +681,7 @@
       "change",
       () => {
         updateFrameColorState();
-        renderVariant(findVariant());
+        renderVariant(findVariant(true));
       }
     );
 
@@ -639,7 +722,8 @@
     loadData()
       .then(() => {
         fillSelects();
-        renderVariant(findVariant());
+        const initialVariant = findVariant(false);
+        renderVariant(initialVariant, true);
         bindEvents();
       })
       .fail(() => console.error("Не удалось загрузить конфигуратор"));
