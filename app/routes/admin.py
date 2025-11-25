@@ -175,7 +175,7 @@ def create_machine(
 @router.post("/machine/{machine_id}")
 def update_machine(
     machine_id: int,
-    name: Optional[str] = Form(None),
+    name: str = Form(...),
     model: Optional[str] = Form(None),
     frame: Optional[str] = Form(None),
     frame_color: Optional[str] = Form(None),

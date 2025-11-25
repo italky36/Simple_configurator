@@ -81,7 +81,7 @@
           <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
         </div>
         <div class="modal-body">
-          <input type="hidden" name="id" id="machine-id">
+          <input type="hidden" id="machine-id">
           <div class="row g-3">
             <div class="col-md-6">
               <label class="form-label">Название *</label>
@@ -116,14 +116,18 @@
               <input type="url" class="form-control" name="ozon_link">
             </div>
             <div class="col-md-6">
+              <label class="form-label">Ссылка на графику</label>
+              <input type="url" class="form-control" name="graphic_link">
+            </div>
+            <div class="col-md-6">
               <label class="form-label">Main image</label>
               <div class="input-group">
                 <input type="url" class="form-control" name="main_image">
                 <input type="hidden" name="main_image_path">
                 <input type="hidden" name="clear_main_image" value="">
                 <input type="hidden" name="clear_main_image_path" value="">
-                <button type="button" class="btn btn-outline-secondary btn-seafile" data-mode="file" data-target="main_image">������� � Seafile</button>
-                <button type="button" class="btn btn-outline-danger btn-clear-field" data-target="main_image" data-clear-flag="clear_main_image">��������</button>
+                <button type="button" class="btn btn-outline-secondary btn-seafile" data-mode="file" data-target="main_image">Выбрать в Seafile</button>
+                <button type="button" class="btn btn-outline-danger btn-clear-field" data-target="main_image" data-clear-flag="clear_main_image">Очистить</button>
               </div>
             </div>
                 <span>Gallery folder</span>

@@ -75,7 +75,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 el.type = "button";
                 el.className = "list-group-item list-group-item-action d-flex justify-content-between align-items-center";
                 el.dataset.path = d.path || d.name;
-                el.innerHTML = `<span>📁 ${d.name}</span><span class="text-muted small">папка</span>`;
+                el.innerHTML = `<span>[DIR] ${d.name}</span><span class="text-muted small">Папка</span>`;
                 el.addEventListener("click", () => {
                     const base = seafilePath.replace(/\/$/, "");
                     const targetPath = d.path || `${base}/${d.name}`;
@@ -89,7 +89,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 el.type = "button";
                 el.className = "list-group-item list-group-item-action d-flex justify-content-between align-items-center";
                 el.dataset.path = f.path || f.name;
-                el.innerHTML = `<span>🖼️ ${f.name}</span><span class="text-muted small">${f.size || ""}</span>`;
+                el.innerHTML = `<span>[FILE] ${f.name}</span><span class="text-muted small">${f.size || ""}</span>`;
                 el.addEventListener("click", () => selectSeafileFile(f));
                 frag.appendChild(el);
             });
@@ -131,7 +131,7 @@ document.addEventListener("DOMContentLoaded", () => {
             }
             seafileModal?.hide();
         } catch (err) {
-            alert("�� ������� �������� ������ ����� �� Seafile");
+            alert("Не удалось получить ссылку на файл из Seafile");
         }
     }
 
@@ -187,8 +187,8 @@ document.addEventListener("DOMContentLoaded", () => {
             }
             // Дополнительно чистим связанный path и флаг, если есть
             if (target === "main_image") {
-                const pathInput = form?.querySelector("[name="main_image_path"]");
-                const clearPath = form?.querySelector("[name="clear_main_image_path"]");
+                const pathInput = form?.querySelector('[name="main_image_path"]');
+                const clearPath = form?.querySelector('[name="clear_main_image_path"]');
                 if (pathInput) pathInput.value = "";
                 if (clearPath) clearPath.value = "1";
             }
