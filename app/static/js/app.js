@@ -5,7 +5,6 @@ document.addEventListener("DOMContentLoaded", () => {
     const addBtn = document.getElementById("add-machine-btn");
     const selectAll = document.getElementById("select-all");
     const bulkDeleteBtn = document.getElementById("bulk-delete-btn");
-
     // Seafile picker elements
     const seafileModalEl = document.getElementById("seafileModal");
     const seafileModal = seafileModalEl ? new bootstrap.Modal(seafileModalEl) : null;
@@ -16,11 +15,9 @@ document.addEventListener("DOMContentLoaded", () => {
     const seafileSelectFolderBtn = document.getElementById("seafile-select-folder-btn");
     const seafileSearchInput = document.getElementById("seafile-search");
     const hasSeafile = !!(seafileModalEl && seafileList && seafileStatus && seafileBreadcrumb);
-
     let seafileMode = "file"; // "file" | "folder"
     let seafileTargetInput = null;
     let seafilePath = "/";
-
     function rememberPath(path) {
         try {
             localStorage.setItem("seafile_last_path", path);
@@ -28,7 +25,6 @@ document.addEventListener("DOMContentLoaded", () => {
             /* ignore */
         }
     }
-
     function readRememberedPath() {
         try {
             return localStorage.getItem("seafile_last_path") || "/";
@@ -36,7 +32,6 @@ document.addEventListener("DOMContentLoaded", () => {
             return "/";
         }
     }
-
     function renderBreadcrumb(path) {
         if (!hasSeafile) return;
         const parts = path.split("/").filter(Boolean);
@@ -53,7 +48,6 @@ document.addEventListener("DOMContentLoaded", () => {
             });
         });
     }
-
     async function loadSeafile(path) {
         if (!hasSeafile) return;
         seafileStatus.textContent = "Загрузка...";
@@ -65,11 +59,9 @@ document.addEventListener("DOMContentLoaded", () => {
             seafilePath = data.path || "/";
             rememberPath(seafilePath);
             renderBreadcrumb(seafilePath);
-
             const frag = document.createDocumentFragment();
             const dirs = Array.isArray(data.items) ? data.items.filter((i) => i.type === "dir") : [];
             const files = Array.isArray(data.items) ? data.items.filter((i) => i.type === "file") : [];
-
             dirs.forEach((d) => {
                 const el = document.createElement("button");
                 el.type = "button";
@@ -83,7 +75,6 @@ document.addEventListener("DOMContentLoaded", () => {
                 });
                 frag.appendChild(el);
             });
-
             files.forEach((f) => {
                 const el = document.createElement("button");
                 el.type = "button";
@@ -93,11 +84,9 @@ document.addEventListener("DOMContentLoaded", () => {
                 el.addEventListener("click", () => selectSeafileFile(f));
                 frag.appendChild(el);
             });
-
             seafileList.innerHTML = "";
             seafileList.appendChild(frag);
             seafileStatus.textContent = `${dirs.length} папок, ${files.length} файлов`;
-
             // фильтр по поиску
             const q = (seafileSearchInput?.value || "").trim().toLowerCase();
             if (q) {
@@ -108,7 +97,6 @@ document.addEventListener("DOMContentLoaded", () => {
             seafileStatus.textContent = "Ошибка загрузки";
         }
     }
-
     function filterSeafileList(query) {
         const q = query.toLowerCase();
         seafileList.querySelectorAll(".list-group-item").forEach((el) => {
@@ -116,7 +104,6 @@ document.addEventListener("DOMContentLoaded", () => {
             el.style.display = name.includes(q) ? "" : "none";
         });
     }
-
     async function selectSeafileFile(file) {
         if (!hasSeafile || seafileMode !== "file" || !seafileTargetInput) return;
         const filePath = file.path || `${seafilePath.replace(/\/$/, "")}/${file.name}`;
@@ -134,7 +121,6 @@ document.addEventListener("DOMContentLoaded", () => {
             alert("Не удалось получить ссылку на файл из Seafile");
         }
     }
-
     function openSeafile(mode, targetName) {
         if (!hasSeafile) {
             alert("Seafile UI недоступен на этой странице");
@@ -147,7 +133,6 @@ document.addEventListener("DOMContentLoaded", () => {
         const startPath = readRememberedPath();
         loadSeafile(startPath || "/");
     }
-
     if (hasSeafile) {
         seafileUpBtn?.addEventListener("click", () => {
             if (seafilePath === "/") return;
@@ -156,24 +141,20 @@ document.addEventListener("DOMContentLoaded", () => {
             const newPath = "/" + parts.join("/");
             loadSeafile(newPath || "/");
         });
-
         seafileSelectFolderBtn?.addEventListener("click", () => {
             if (seafileMode !== "folder" || !seafileTargetInput) return;
             seafileTargetInput.value = seafilePath;
             seafileModal?.hide();
         });
-
         seafileSearchInput?.addEventListener("input", (e) => {
             filterSeafileList(e.target.value);
         });
-
         document.querySelectorAll(".btn-seafile").forEach((btn) => {
             btn.addEventListener("click", () => {
                 openSeafile(btn.dataset.mode, btn.dataset.target);
             });
         });
     }
-
     document.querySelectorAll(".btn-clear-field").forEach((btn) => {
         btn.addEventListener("click", () => {
             const target = btn.dataset.target;
@@ -197,7 +178,6 @@ document.addEventListener("DOMContentLoaded", () => {
             }
         });
     });
-
     function fillForm(data) {
         if (!form) return;
         form.reset();
@@ -222,7 +202,6 @@ document.addEventListener("DOMContentLoaded", () => {
             if (el) el.value = data?.[f] ?? "";
         });
     }
-
     function showEdit(btn) {
         const row = btn.closest("tr");
         const dataAttr = row?.dataset.machine;
@@ -231,28 +210,39 @@ document.addEventListener("DOMContentLoaded", () => {
         fillForm(data);
         modal?.show();
     }
-
     function showCreate() {
         fillForm({});
         modal?.show();
     }
-
     async function saveForm(event) {
         event.preventDefault();
         if (!form) return;
         const id = form.querySelector("#machine-id").value;
         const formData = new FormData(form);
         const url = id ? `/admin/machine/${id}` : "/admin/machine";
-        const resp = await fetch(url, { method: "POST", body: formData });
-        if (!resp.ok) {
-            const msg = await resp.text();
-            alert(`Ошибка при сохранении: ${msg}`);
-            return;
+        try {
+            const resp = await fetch(url, { method: "POST", body: formData });
+            if (!resp.ok) {
+                const msg = await resp.text();
+                alert(`Ошибка при сохранении: ${msg}`);
+                return;
+            }
+            if (modalEl) {
+                modalEl.addEventListener(
+                    "hidden.bs.modal",
+                    () => {
+                        location.reload();
+                    },
+                    { once: true }
+                );
+                modal?.hide();
+            } else {
+                location.reload();
+            }
+        } catch (err) {
+            alert("Ошибка при отправке формы.");
         }
-        modal?.hide();
-        location.reload();
     }
-
     async function deleteOne(id) {
         if (!confirm("Удалить запись?")) return;
         const resp = await fetch(`/admin/machine/${id}/delete`, { method: "POST" });
@@ -262,7 +252,6 @@ document.addEventListener("DOMContentLoaded", () => {
         }
         location.reload();
     }
-
     async function bulkDelete() {
         const ids = Array.from(document.querySelectorAll(".row-select:checked")).map((el) =>
             parseInt(el.dataset.id, 10)
@@ -287,16 +276,13 @@ document.addEventListener("DOMContentLoaded", () => {
         }
         location.reload();
     }
-
     function syncBulkButtons() {
         const ids = document.querySelectorAll(".row-select:checked");
         if (bulkDeleteBtn) bulkDeleteBtn.disabled = ids.length === 0;
     }
-
     document.querySelectorAll(".btn-edit").forEach((btn) => {
         btn.addEventListener("click", () => showEdit(btn));
     });
-
     document.querySelectorAll(".btn-delete").forEach((btn) => {
         btn.addEventListener("click", () => {
             const row = btn.closest("tr");
@@ -306,17 +292,14 @@ document.addEventListener("DOMContentLoaded", () => {
             deleteOne(data.id);
         });
     });
-
     addBtn?.addEventListener("click", showCreate);
     form?.addEventListener("submit", saveForm);
-
     document.querySelectorAll(".row-select").forEach((chk) =>
         chk.addEventListener("change", () => {
             syncBulkButtons();
             if (!chk.checked && selectAll) selectAll.checked = false;
         })
     );
-
     selectAll?.addEventListener("change", () => {
         const checked = selectAll.checked;
         document.querySelectorAll(".row-select").forEach((chk) => {
@@ -324,16 +307,13 @@ document.addEventListener("DOMContentLoaded", () => {
         });
         syncBulkButtons();
     });
-
     bulkDeleteBtn?.addEventListener("click", bulkDelete);
-
     // Колонка ресайз
     const table = document.getElementById("machines-table");
     let isResizing = false;
     let startX = 0;
     let startWidth = 0;
     let resizeColIndex = -1;
-
     function startResize(e, th) {
         isResizing = true;
         startX = e.clientX;
@@ -343,7 +323,6 @@ document.addEventListener("DOMContentLoaded", () => {
         document.addEventListener("mouseup", stopResize);
         e.preventDefault();
     }
-
     function onResize(e) {
         if (!isResizing || !table || resizeColIndex < 0) return;
         const delta = e.clientX - startX;
@@ -354,21 +333,18 @@ document.addEventListener("DOMContentLoaded", () => {
             if (cell) cell.style.width = `${newWidth}px`;
         });
     }
-
     function stopResize() {
         isResizing = false;
         resizeColIndex = -1;
         document.removeEventListener("mousemove", onResize);
         document.removeEventListener("mouseup", stopResize);
     }
-
     if (table) {
         table.querySelectorAll("th").forEach((th) => {
             const handle = th.querySelector(".table-resize-handle");
             handle?.addEventListener("mousedown", (e) => startResize(e, th));
         });
     }
-
     // Specs page logic
     const specsTable = document.getElementById("specs-table");
     const specModalEl = document.getElementById("specModal");
@@ -378,7 +354,6 @@ document.addEventListener("DOMContentLoaded", () => {
     const populateSpecsBtn = document.getElementById("populate-specs-btn");
     const bulkDeleteSpecsBtn = document.getElementById("bulk-delete-specs");
     const selectAllSpecs = document.getElementById("select-all-specs");
-
     function fillSpecForm(data) {
         if (!specForm) return;
         specForm.reset();
@@ -388,7 +363,6 @@ document.addEventListener("DOMContentLoaded", () => {
             if (el) el.value = data?.[f] ?? "";
         });
     }
-
     function showSpecEdit(btn) {
         const row = btn.closest("tr");
         const dataAttr = row?.dataset.spec;
@@ -397,12 +371,10 @@ document.addEventListener("DOMContentLoaded", () => {
         fillSpecForm(data);
         specModal?.show();
     }
-
     function showSpecCreate() {
         fillSpecForm({});
         specModal?.show();
     }
-
     async function saveSpec(event) {
         event.preventDefault();
         if (!specForm) return;
@@ -418,7 +390,6 @@ document.addEventListener("DOMContentLoaded", () => {
         specModal?.hide();
         location.reload();
     }
-
     async function deleteSpec(id) {
         if (!confirm("Удалить характеристику?")) return;
         const resp = await fetch(`/admin/spec/${id}/delete`, { method: "POST" });
@@ -428,7 +399,6 @@ document.addEventListener("DOMContentLoaded", () => {
         }
         location.reload();
     }
-
     if (specsTable) {
         specsTable.querySelectorAll(".btn-spec-edit").forEach((btn) => {
             btn.addEventListener("click", () => showSpecEdit(btn));
@@ -453,12 +423,10 @@ document.addEventListener("DOMContentLoaded", () => {
             }
             location.reload();
         });
-
         const syncSpecsBulk = () => {
             const selected = document.querySelectorAll(".spec-row-select:checked");
             if (bulkDeleteSpecsBtn) bulkDeleteSpecsBtn.disabled = selected.length === 0;
         };
-
         specsTable.querySelectorAll(".spec-row-select").forEach((chk) =>
             chk.addEventListener("change", () => {
                 syncSpecsBulk();
@@ -472,7 +440,6 @@ document.addEventListener("DOMContentLoaded", () => {
             });
             syncSpecsBulk();
         });
-
         bulkDeleteSpecsBtn?.addEventListener("click", async () => {
             const ids = Array.from(document.querySelectorAll(".spec-row-select:checked")).map((el) =>
                 parseInt(el.dataset.id, 10)
@@ -490,7 +457,6 @@ document.addEventListener("DOMContentLoaded", () => {
             }
             location.reload();
         });
-
         syncSpecsBulk();
     }
 });

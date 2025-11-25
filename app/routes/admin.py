@@ -208,6 +208,9 @@ def update_machine(
     clear_gallery_folder: Optional[str] = Form(None),
     db=Depends(get_db),
 ):
+    print(f"=== UPDATE MACHINE {machine_id} ===")
+    print(f"Received: name={name}, model={model}, frame={frame}")
+
     payload = _build_machine_payload(
         name,
         model,
@@ -227,6 +230,8 @@ def update_machine(
         clear_gallery_folder,
         is_update=True,
     )
+
+    print(f"Payload to update: {payload}")
 
     updated = crud.update_coffee_machine(db, machine_id, payload)
     if not updated:
