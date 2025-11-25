@@ -19,7 +19,7 @@ ozon_client = OzonClient(settings.ozon_client_id or "", settings.ozon_api_key or
 def machine_to_dict(
     machine,
     include_gallery: bool = False,
-    include_ozon_price: bool = True,
+    include_ozon_price: bool = False,
 ) -> Dict[str, Any]:
     cached_main = media_cache.get_cached_main(machine.id)
 
@@ -74,13 +74,7 @@ def machine_to_dict(
                 dto["gallery_files"] = media_cache.cache_gallery_files(machine.id, files)
             except Exception:
                 dto["gallery_files"] = []
-    if include_ozon_price and machine.ozon_link and ozon_client:
-        try:
-            price_data = ozon_client.get_price_by_url(machine.ozon_link)
-            if price_data:
-                dto["ozon_price"] = price_data.get("price")
-        except Exception:
-            dto["ozon_price"] = None
+    # Ozon price fetching отключено: ozon_price оставляем None
     return dto
 
 
@@ -182,24 +176,4 @@ def lead(payload: Dict[str, Any]):
 
 @router.get("/ozon-price")
 def get_ozon_price(url: str):
-    if not ozon_client:
-        raise HTTPException(status_code=500, detail="Ozon API not configured")
-
-    if not url:
-        raise HTTPException(status_code=400, detail="URL parameter is required")
-
-    try:
-        result = ozon_client.get_price_by_url(url)
-        if not result:
-            return {"found": False, "price": None, "currency": None, "name": None}
-
-        return {
-            "found": True,
-            "price": result.get("price"),
-            "currency": result.get("currency", "RUB"),
-            "name": result.get("name"),
-            "product_id": result.get("product_id"),
-            "offer_id": result.get("offer_id"),
-        }
-    except Exception as exc:
-        raise HTTPException(status_code=500, detail=f"Failed to fetch Ozon price: {exc}")
+    raise HTTPException(status_code=503, detail="Ozon price API temporarily disabled")

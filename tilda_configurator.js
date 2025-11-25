@@ -110,16 +110,15 @@
     setText($el(".cfg-price-right"), fmtPrice(v.price));
     const ozonBtn = $el(".cfg-btn-ozon");
     const $priceLeft = $el(".cfg-price-left");
-    if (v.ozon_link && v.ozon_price !== null && v.ozon_price !== undefined) {
-      setText($priceLeft, fmtPrice(v.ozon_price));
-      if (ozonBtn.length) ozonBtn.prop("disabled", false).attr("href", v.ozon_link).text("Купить на OZON");
-    } else if (v.ozon_link) {
-      setText($priceLeft, "Цена по ссылке");
-      if (ozonBtn.length) ozonBtn.prop("disabled", false).attr("href", v.ozon_link).text("Купить на OZON");
-    } else {
-      setText($priceLeft, "Нет на OZON");
-      if (ozonBtn.length) ozonBtn.prop("disabled", true).attr("href", "#").text("Нет на OZON");
+    $priceLeft.empty();
+    if (ozonBtn.length) {
+      if (v.ozon_link) {
+        ozonBtn.prop("disabled", false).attr("href", v.ozon_link).text("Купить на OZON");
+      } else {
+        ozonBtn.prop("disabled", true).attr("href", "#").text("Нет на OZON");
+      }
     }
+
 
     const specM = state.specs["coffee_machine"]?.[v.model || v.name] || null;
     const specF = state.specs["frame"]?.[v.frame] || null;

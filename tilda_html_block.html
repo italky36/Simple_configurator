@@ -782,25 +782,19 @@
 
     renderGallery(v);
     ensureGallery(v);
-
     setText($el(".cfg-price-right"), fmtPrice(v.price));
 
     const $priceLeft = $el(".cfg-price-left");
     const ozonBtn = $el(".cfg-btn-ozon");
-
-    if (v.ozon_link && v.ozon_price !== null && v.ozon_price !== undefined) {
-      // Если есть и ссылка, и цена Ozon
-      setText($priceLeft, fmtPrice(v.ozon_price));
-      ozonBtn.removeClass("disabled").attr("href", v.ozon_link).text("Купить на OZON");
-    } else if (v.ozon_link) {
-      // Есть ссылка, но цена пока не пришла
-      $priceLeft.html('<span class="price-small">Цена по ссылке</span>');
-      ozonBtn.removeClass("disabled").attr("href", v.ozon_link).text("Купить на OZON");
-    } else {
-      // Нет ссылки на OZON
-      $priceLeft.html('<span class="price-small">Нет на OZON</span>');
-      ozonBtn.addClass("disabled").attr("href", "#").text("Нет на OZON");
+    $priceLeft.empty();
+    if (ozonBtn.length) {
+      if (v.ozon_link) {
+        ozonBtn.removeClass("disabled").attr("href", v.ozon_link).text("Купить на OZON");
+      } else {
+        ozonBtn.addClass("disabled").attr("href", "#").text("Нет на OZON");
+      }
     }
+
 
     const specM = state.specs["coffee_machine"]?.[v.model || v.name] || null;
     const specF = state.specs["frame"]?.[v.frame] || null;
