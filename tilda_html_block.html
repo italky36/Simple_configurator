@@ -47,34 +47,20 @@
     align-items: center;
     justify-content: center;
     position: relative;
+    min-height: 520px;
+    overflow: hidden;
   }
 
   .cz-conf .product-image img.cfg-main-image {
-    max-width: 100%;
-    max-height: 600px;
-    width: auto;
-    height: auto;
+    width: 100%;
+    height: 100%;
     display: block;
     object-fit: contain;
   }
 
+  /* Превью-галерею скрываем: только основное изображение + стрелки */
   .cz-conf .cfg-gallery {
-    display: flex;
-    gap: 10px;
-    margin-top: 20px;
-    justify-content: center;
-    flex-wrap: wrap;
-  }
-
-  .cz-conf .cfg-gallery img {
-    max-height: 80px;
-    cursor: pointer;
-    border-radius: 4px;
-    transition: transform 0.2s ease;
-  }
-
-  .cz-conf .cfg-gallery img:hover {
-    transform: scale(1.05);
+    display: none !important;
   }
 
   .cz-conf .cfg-image-nav {
@@ -100,12 +86,19 @@
     justify-content: center;
     font-size: 20px;
     color: #000;
-    transition: background-color 0.15s ease, box-shadow 0.15s ease;
+    transition: background-color 0.15s ease, box-shadow 0.15s ease, opacity 0.15s ease;
   }
 
-  .cz-conf .cfg-arrow:hover {
+  .cz-conf .cfg-arrow:hover:not(:disabled):not(.disabled) {
     background: rgba(255,255,255,0.95);
     box-shadow: 0 6px 14px rgba(0,0,0,0.16);
+  }
+
+  .cz-conf .cfg-arrow:disabled,
+  .cz-conf .cfg-arrow.disabled {
+    opacity: 0.3;
+    cursor: default;
+    pointer-events: none;
   }
 
   .cz-conf .cfg-arrow-prev { left: 10px; }
@@ -592,26 +585,11 @@
       });
   }
 
+  // Галерея превью скрыта, поэтому функция просто очищает контейнер (для совместимости).
   function renderGallery(v) {
     const $g = $el(".cfg-gallery");
     if (!$g.length) return;
-
-    // placeholder, если ещё грузится
-    if (v._galleryLoading && (!v.gallery_files || !v.gallery_files.length)) {
-      $g.html('<div style="padding:8px 0;color:#888;font-size:13px;">Загрузка фото…</div>');
-      return;
-    }
-
-    const imgs = v.gallery_files ? v.gallery_files.map(normSrc) : [];
-    const mainSrc = normSrc(v.main_image || (v.gallery_files && v.gallery_files[0]) || "");
-
     $g.empty();
-    if (mainSrc && !imgs.includes(mainSrc)) imgs.unshift(mainSrc);
-    imgs.forEach((src) => {
-      const img = $('<img src="' + src + '" loading="lazy">');
-      img.on("click", () => $el(".cfg-main-image").attr("src", src));
-      $g.append(img);
-    });
   }
 
   function getImages(v) {
@@ -625,23 +603,32 @@
     const imgs = getImages(v);
     const $mainImg = $el(".cfg-main-image");
     if (!$mainImg.length) return;
+
+    const $nav = $(".cfg-image-nav");
+    const $prevArrow = $nav.find(".cfg-arrow-prev");
+    const $nextArrow = $nav.find(".cfg-arrow-next");
+
     if (!imgs.length) {
       v._imgIdx = 0;
       $mainImg.attr("src", "");
-      $(".cfg-image-nav").hide();
+      $nav.hide();
       return;
     }
+
     const maxIdx = imgs.length - 1;
     const idx = Math.min(Math.max(forceIndex !== undefined ? forceIndex : (v._imgIdx || 0), 0), maxIdx);
     v._imgIdx = idx;
     $mainImg.attr("src", imgs[idx]);
 
-    const $nav = $(".cfg-image-nav");
     if ($nav.length) {
-      if (imgs.length > 1) {
-        $nav.show();
+      $nav.show();
+      // Если одно фото — стрелки неактивны
+      if (imgs.length <= 1) {
+        $prevArrow.addClass("disabled").prop("disabled", true);
+        $nextArrow.addClass("disabled").prop("disabled", true);
       } else {
-        $nav.hide();
+        $prevArrow.removeClass("disabled").prop("disabled", false);
+        $nextArrow.removeClass("disabled").prop("disabled", false);
       }
     }
   }
@@ -652,31 +639,36 @@
 
     const nav = $(`
       <div class="cfg-image-nav">
-        <button type="button" class="cfg-arrow cfg-arrow-left" aria-label="Предыдущее изображение">‹</button>
-        <button type="button" class="cfg-arrow cfg-arrow-right" aria-label="Следующее изображение">›</button>
+        <button type="button" class="cfg-arrow cfg-arrow-prev" aria-label="Предыдущее изображение">‹</button>
+        <button type="button" class="cfg-arrow cfg-arrow-next" aria-label="Следующее изображение">›</button>
       </div>
     `);
 
-    nav.on("click", ".cfg-arrow-left", () => {
+    nav.on("click", ".cfg-arrow-prev", () => {
       const v = state.current;
       if (!v) return;
       const imgs = getImages(v);
-      if (!imgs.length) return;
-      const nextIdx = ( (v._imgIdx || 0) - 1 + imgs.length ) % imgs.length;
+      if (imgs.length <= 1) return;
+      const nextIdx = ((v._imgIdx || 0) - 1 + imgs.length) % imgs.length;
       updateMainImage(v, nextIdx);
     });
 
-    nav.on("click", ".cfg-arrow-right", () => {
+    nav.on("click", ".cfg-arrow-next", () => {
       const v = state.current;
       if (!v) return;
       const imgs = getImages(v);
-      if (!imgs.length) return;
-      const nextIdx = ( (v._imgIdx || 0) + 1 ) % imgs.length;
+      if (imgs.length <= 1) return;
+      const nextIdx = ((v._imgIdx || 0) + 1) % imgs.length;
       updateMainImage(v, nextIdx);
     });
 
     $container.append(nav);
   }
+
+  // Полностью убираем превью-галерею из DOM (на случай старого кэша)
+  $(document).on("DOMContentLoaded", () => {
+    $(".cfg-gallery").remove();
+  });
 
   function ensureGallery(v) {
     if (!v || (v.gallery_files && v.gallery_files.length) || v._galleryLoading || !v.id) return $.Deferred().resolve().promise();
@@ -779,8 +771,6 @@
 
     ensureImageNav();
     updateMainImage(v);
-
-    renderGallery(v);
     ensureGallery(v);
     setText($el(".cfg-price-right"), fmtPrice(v.price));
 
