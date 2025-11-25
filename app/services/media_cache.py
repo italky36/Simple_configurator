@@ -30,7 +30,9 @@ def clear_machine_cache(machine_id: int) -> None:
 
 def _download_to(path: Path, url: str) -> Optional[Path]:
     try:
-        resp = requests.get(url, stream=True, timeout=20)
+        # Seafile ссылки могут быть с самоподписанным/несовпадающим сертификатом (seafhttp),
+        # поэтому отключаем verify, чтобы гарантированно скачать и положить в кеш.
+        resp = requests.get(url, stream=True, timeout=20, verify=False)
         if resp.status_code == 403 or resp.status_code == 401:
             return None
         resp.raise_for_status()
