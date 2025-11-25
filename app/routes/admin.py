@@ -97,6 +97,7 @@ def _build_machine_payload(
     clear_main_image: Optional[str] = None,
     clear_main_image_path: Optional[str] = None,
     clear_gallery_folder: Optional[str] = None,
+    is_update: bool = False,
 ) -> dict:
     data = {
         "name": name,
@@ -113,18 +114,31 @@ def _build_machine_payload(
         "description": description,
     }
 
-    # Пустая строка должна очищать поле: заменяем "" на None
-    for key, value in list(data.items()):
-        if isinstance(value, str) and value == "":
-            data[key] = None
+    # При обновлении пустые строки означают "не менять", при создании - "оставить None"
+    if not is_update:
+        # При создании: пустая строка = None
+        for key, value in list(data.items()):
+            if isinstance(value, str) and value == "":
+                data[key] = None
+    else:
+        # При обновлении: исключаем пустые строки (не обновляем эти поля)
+        data = {k: v for k, v in data.items() if not (isinstance(v, str) and v == "")}
+        # Но явно очищенные поля должны быть None
+        if clear_main_image:
+            data["main_image"] = None
+        if clear_main_image_path or clear_main_image:
+            data["main_image_path"] = None
+        if clear_gallery_folder:
+            data["gallery_folder"] = None
 
     if price not in (None, ""):
         try:
             data["price"] = float(price)
         except ValueError:
             raise HTTPException(status_code=400, detail="Некорректное значение цены")
-    else:
+    elif not is_update or price is None:
         data["price"] = None
+    # При обновлении, если price пустая строка, не включаем в data (уже исключена выше)
 
     return data
 
@@ -166,6 +180,7 @@ def create_machine(
         clear_main_image,
         clear_main_image_path,
         clear_gallery_folder,
+        is_update=False,
     )
     machine = crud.create_coffee_machine(db, payload)
     media_cache.cache_machine_media(machine, seafile_client)
@@ -210,7 +225,9 @@ def update_machine(
         clear_main_image,
         clear_main_image_path,
         clear_gallery_folder,
+        is_update=True,
     )
+
     updated = crud.update_coffee_machine(db, machine_id, payload)
     if not updated:
         raise HTTPException(status_code=404, detail="Coffee machine not found")
