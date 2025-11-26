@@ -57,6 +57,22 @@ def cache_main_image(machine_id: int, url: str) -> Optional[str]:
     return f"{STATIC_PREFIX}/{machine_id}/{path.name}"
 
 
+def cache_design_image(machine_id: int, frame_color: str, insert_color: str, url: str) -> Optional[str]:
+    """Кеширует фото для конкретной комбинации цветов каркаса и вставки"""
+    if not url:
+        return None
+    # Создаем безопасное имя файла из цветов
+    safe_frame = frame_color.replace("/", "_").replace("\\", "_")
+    safe_insert = insert_color.replace("/", "_").replace("\\", "_")
+    filename = f"design_{safe_frame}_{safe_insert}"
+    ext = _guess_ext(url)
+    dest = CACHE_ROOT / str(machine_id) / f"{filename}{ext}"
+    path = _download_to(dest, url)
+    if not path:
+        return None
+    return f"{STATIC_PREFIX}/{machine_id}/{path.name}"
+
+
 def cache_gallery_files(machine_id: int, files: Iterable[Tuple[str, str]]) -> List[str]:
     """files: iterable of (name, url)"""
     cached: List[str] = []
@@ -82,6 +98,19 @@ def get_cached_main(machine_id: int) -> Optional[str]:
     return None
 
 
+def get_cached_design_image(machine_id: int, frame_color: str, insert_color: str) -> Optional[str]:
+    """Получает закешированное фото для комбинации цветов"""
+    folder = CACHE_ROOT / str(machine_id)
+    if not folder.exists():
+        return None
+    safe_frame = frame_color.replace("/", "_").replace("\\", "_")
+    safe_insert = insert_color.replace("/", "_").replace("\\", "_")
+    pattern = f"design_{safe_frame}_{safe_insert}.*"
+    for file in folder.glob(pattern):
+        return f"{STATIC_PREFIX}/{machine_id}/{file.name}"
+    return None
+
+
 def get_cached_gallery(machine_id: int) -> List[str]:
     folder = CACHE_ROOT / str(machine_id) / "gallery"
     if not folder.exists():
@@ -90,7 +119,7 @@ def get_cached_gallery(machine_id: int) -> List[str]:
 
 
 def cache_machine_media(machine, seafile_client) -> None:
-    """Полное обновление кеша для записи: main + gallery."""
+    """Полное обновление кеша для записи: main + gallery + design_images."""
     clear_machine_cache(machine.id)
 
     main_url = None
@@ -104,6 +133,21 @@ def cache_machine_media(machine, seafile_client) -> None:
 
     if main_url:
         cache_main_image(machine.id, main_url)
+
+    # Кешируем design_images если есть
+    if hasattr(machine, 'design_images') and machine.design_images:
+        print(f"🎨 Caching design_images for machine {machine.id}")
+        for frame_color, insert_colors in machine.design_images.items():
+            for insert_color, config in insert_colors.items():
+                img_path = config.get("main_image_path") or config.get("main_image")
+                if img_path:
+                    try:
+                        img_url = seafile_client.get_file_download_link(img_path)
+                        cached = cache_design_image(machine.id, frame_color, insert_color, img_url)
+                        if cached:
+                            print(f"  ✓ Cached {frame_color}/{insert_color}: {cached}")
+                    except Exception as e:
+                        print(f"  ⚠️  Failed to cache {frame_color}/{insert_color}: {e}")
 
     if not machine.gallery_folder:
         return

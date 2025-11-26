@@ -61,7 +61,7 @@ def machine_to_dict(
     # Используем переопределенную gallery_folder если есть
     effective_gallery_folder = gallery_folder_override or machine.gallery_folder
 
-    # Обработка design_images: преобразуем пути Seafile в прямые ссылки
+    # Обработка design_images: преобразуем пути Seafile в прямые ссылки И кешируем
     processed_design_images = None
     if hasattr(machine, 'design_images') and machine.design_images:
         print(f"🎨 Processing design_images for machine {machine.id} ({machine.name})")
@@ -73,16 +73,32 @@ def machine_to_dict(
                 # Получаем ссылку на main_image
                 if config.get("main_image_path") or config.get("main_image"):
                     img_path = config.get("main_image_path") or config.get("main_image")
-                    try:
-                        img_url = seafile_client.get_file_download_link(img_path)
-                        processed_config["main_image"] = img_url
+
+                    # Проверяем кеш
+                    cached_design = media_cache.get_cached_design_image(machine.id, frame_col, insert_col)
+                    if cached_design:
+                        processed_config["main_image"] = cached_design
                         processed_config["main_image_path"] = img_path
-                        print(f"  ✓ {frame_col}/{insert_col}: {img_path[:50]}... -> {img_url[:80]}...")
-                    except Exception as e:
-                        print(f"  ⚠️  Failed to get Seafile link for {frame_col}/{insert_col}: {img_path} - {e}")
-                        # Если не удалось получить ссылку, используем путь как есть (может быть уже URL)
-                        processed_config["main_image"] = img_path
-                        processed_config["main_image_path"] = img_path
+                        print(f"  ✓ {frame_col}/{insert_col}: Using cached {cached_design}")
+                    else:
+                        # Кеша нет, получаем Seafile ссылку и кешируем
+                        try:
+                            img_url = seafile_client.get_file_download_link(img_path)
+                            # Кешируем на диск
+                            cached_design = media_cache.cache_design_image(machine.id, frame_col, insert_col, img_url)
+                            if cached_design:
+                                processed_config["main_image"] = cached_design
+                                print(f"  ✓ {frame_col}/{insert_col}: Cached {img_path[:50]}... -> {cached_design}")
+                            else:
+                                # Не удалось закешировать, используем прямую ссылку
+                                processed_config["main_image"] = img_url
+                                print(f"  ⚠️  {frame_col}/{insert_col}: Failed to cache, using direct link")
+                            processed_config["main_image_path"] = img_path
+                        except Exception as e:
+                            print(f"  ❌ Failed to get Seafile link for {frame_col}/{insert_col}: {img_path} - {e}")
+                            # Если не удалось получить ссылку, используем путь как есть
+                            processed_config["main_image"] = img_path
+                            processed_config["main_image_path"] = img_path
 
                 # Копируем gallery_folder если есть
                 if config.get("gallery_folder"):
