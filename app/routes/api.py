@@ -41,8 +41,12 @@ def machine_to_dict(
     if not main_source_path:
         main_source_path = machine.main_image_path or machine.main_image
 
-    # Получаем ссылку из Seafile
-    cached_main = media_cache.get_cached_main(machine.id)
+    # Получаем ссылку из Seafile с учетом цветов для кэша
+    cache_key = f"{machine.id}"
+    if frame_color and insert_color:
+        cache_key = f"{machine.id}_{frame_color}_{insert_color}"
+
+    cached_main = media_cache.get_cached_main(cache_key)
     if main_source_path:
         try:
             main_source_url = seafile_client.get_file_download_link(main_source_path)
@@ -50,10 +54,35 @@ def machine_to_dict(
             main_source_url = main_source_path
 
     if not cached_main and main_source_url:
-        cached_main = media_cache.cache_main_image(machine.id, main_source_url)
+        cached_main = media_cache.cache_main_image(cache_key, main_source_url)
 
     # Используем переопределенную gallery_folder если есть
     effective_gallery_folder = gallery_folder_override or machine.gallery_folder
+
+    # Обработка design_images: преобразуем пути Seafile в прямые ссылки
+    processed_design_images = None
+    if hasattr(machine, 'design_images') and machine.design_images:
+        processed_design_images = {}
+        for frame_col, insert_colors in machine.design_images.items():
+            processed_design_images[frame_col] = {}
+            for insert_col, config in insert_colors.items():
+                processed_config = {}
+                # Получаем ссылку на main_image
+                if config.get("main_image_path") or config.get("main_image"):
+                    img_path = config.get("main_image_path") or config.get("main_image")
+                    try:
+                        img_url = seafile_client.get_file_download_link(img_path)
+                        processed_config["main_image"] = img_url
+                        processed_config["main_image_path"] = img_path
+                    except Exception:
+                        processed_config["main_image"] = config.get("main_image", "")
+                        processed_config["main_image_path"] = img_path
+
+                # Копируем gallery_folder если есть
+                if config.get("gallery_folder"):
+                    processed_config["gallery_folder"] = config["gallery_folder"]
+
+                processed_design_images[frame_col][insert_col] = processed_config
 
     dto = {
         "id": machine.id,
@@ -71,7 +100,7 @@ def machine_to_dict(
         "main_image_path": main_source_path,
         "gallery_folder": effective_gallery_folder,
         "description": machine.description,
-        "design_images": machine.design_images if hasattr(machine, 'design_images') else None,
+        "design_images": processed_design_images,
     }
     if include_gallery and effective_gallery_folder:
         cached_gallery = media_cache.get_cached_gallery(machine.id)

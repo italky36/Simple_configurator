@@ -1,7 +1,10 @@
 from fastapi import FastAPI, HTTPException, Request, status
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
+from fastapi.responses import HTMLResponse
 from starlette.responses import JSONResponse, RedirectResponse
+from datetime import datetime
+import os
 
 from .config import Settings
 from .database import Base, engine
@@ -50,6 +53,21 @@ async def custom_http_exception_handler(request: Request, exc: HTTPException):
     ):
         return RedirectResponse(url="/login", status_code=303)
     return JSONResponse({"detail": exc.detail}, status_code=exc.status_code, headers=exc.headers)
+
+
+@app.get("/privacy-policy", response_class=HTMLResponse)
+async def privacy_policy():
+    """Возвращает страницу политики конфиденциальности"""
+    template_path = os.path.join(os.path.dirname(__file__), "templates", "privacy_policy.html")
+    try:
+        with open(template_path, "r", encoding="utf-8") as f:
+            html_content = f.read()
+        # Подставляем текущую дату
+        current_date = datetime.now().strftime("%d.%m.%Y")
+        html_content = html_content.replace("{{ current_date }}", current_date)
+        return HTMLResponse(content=html_content)
+    except FileNotFoundError:
+        raise HTTPException(status_code=404, detail="Privacy policy not found")
 
 
 app.include_router(api_router)

@@ -648,7 +648,7 @@
       <div class="cfg-form-group cfg-checkbox-group">
         <label class="cfg-checkbox-label">
           <input type="checkbox" id="cfg-lead-consent" class="cfg-checkbox">
-          <span>Я согласен(а) с <a href="/privacy-policy" target="_blank" class="cfg-link">обработкой персональных данных</a> <span class="cfg-required">*</span></span>
+          <span>Я согласен(а) с <a href="https://93-170-123-229.nip.io/privacy-policy" target="_blank" class="cfg-link">обработкой персональных данных</a> <span class="cfg-required">*</span></span>
         </label>
       </div>
 
@@ -974,15 +974,41 @@
     updateFrameColorState();
     updateTerminalState();
 
-    const mainSrc = normSrc(v.main_image || (v.gallery_files && v.gallery_files[0]) || "");
+    // Проверяем, нужно ли использовать design_images
+    let mainSrc = "";
+    let galleryFolder = v.gallery_folder;
+    const frameValue = ($el(".cfg-select-frame").val() || "").toLowerCase();
+    const frameColor = $el(".cfg-select-frame-color").val();
+    const insertColor = $el(".cfg-select-insert-color").val();
+
+    // Если выбраны цвета и есть design_images, используем их
+    if (frameValue && frameValue !== "нет" && frameValue !== "no" &&
+        frameColor && insertColor && v.design_images) {
+      const designConfig = v.design_images[frameColor]?.[insertColor];
+      if (designConfig) {
+        mainSrc = normSrc(designConfig.main_image || designConfig.main_image_path || "");
+        if (designConfig.gallery_folder) {
+          galleryFolder = designConfig.gallery_folder;
+        }
+      }
+    }
+
+    // Если не нашли в design_images, используем основное изображение
+    if (!mainSrc) {
+      mainSrc = normSrc(v.main_image || (v.gallery_files && v.gallery_files[0]) || "");
+    }
+
     const $mainImg = $el(".cfg-main-image");
     if ($mainImg.length) {
       $mainImg.attr("src", mainSrc || "");
     }
 
+    // Обновляем gallery_folder для текущего варианта
+    const vWithGallery = { ...v, gallery_folder: galleryFolder };
+
     ensureImageNav();
-    updateMainImage(v);
-    ensureGallery(v);
+    updateMainImage(vWithGallery);
+    ensureGallery(vWithGallery);
     setText($el(".cfg-price-right"), fmtPrice(v.price));
 
     const $priceLeft = $el(".cfg-price-left");
