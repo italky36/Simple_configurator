@@ -65,6 +65,18 @@ def machine_to_dict(
     processed_design_images = None
     if hasattr(machine, 'design_images') and machine.design_images:
         print(f"🎨 Processing design_images for machine {machine.id} ({machine.name})")
+        print(f"   📊 Type: {type(machine.design_images)}, Value: {machine.design_images}")
+
+        # Проверяем что это dict, а не list
+        if isinstance(machine.design_images, list):
+            print(f"   ❌ ERROR: design_images is a LIST, converting to dict...")
+            temp_dict = {}
+            for item in machine.design_images:
+                if isinstance(item, dict):
+                    temp_dict.update(item)
+            machine.design_images = temp_dict if temp_dict else {}
+            print(f"   ✓ Converted: {machine.design_images}")
+
         processed_design_images = {}
         for frame_col, insert_colors in machine.design_images.items():
             processed_design_images[frame_col] = {}
@@ -105,7 +117,7 @@ def machine_to_dict(
                     processed_config["gallery_folder"] = config["gallery_folder"]
 
                 processed_design_images[frame_col][insert_col] = processed_config
-        print(f"  🎨 Processed {len(processed_design_images)} frame colors with design_images")
+        print(f"  🎨 Processed: type={type(processed_design_images)}, keys={list(processed_design_images.keys())}")
 
     dto = {
         "id": machine.id,
@@ -147,6 +159,11 @@ def machine_to_dict(
             except Exception:
                 dto["gallery_files"] = []
     # Ozon price fetching отключено: ozon_price оставляем None
+
+    # Debug: проверяем финальный тип design_images в DTO
+    if dto.get("design_images"):
+        print(f"  📤 Returning design_images: type={type(dto['design_images'])}, keys={list(dto['design_images'].keys()) if isinstance(dto['design_images'], dict) else 'NOT A DICT'}")
+
     return dto
 
 
@@ -157,12 +174,16 @@ def test_design_images(db=Depends(get_db)):
     result = []
     for m in machines:
         if hasattr(m, 'design_images') and m.design_images:
+            di_type = type(m.design_images).__name__
+            di_keys = list(m.design_images.keys()) if isinstance(m.design_images, dict) else f"NOT_DICT (is {di_type})"
+            print(f"Machine {m.id}: design_images type={di_type}, keys={di_keys}")
             result.append({
                 "id": m.id,
                 "name": m.name,
+                "design_images_type": di_type,
                 "design_images_raw": m.design_images,
                 "has_design_images": True,
-                "frame_colors": list(m.design_images.keys()) if m.design_images else []
+                "frame_colors": di_keys
             })
     return {"machines_with_design_images": len(result), "data": result}
 
