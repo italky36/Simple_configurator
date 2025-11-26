@@ -177,40 +177,38 @@ def get_config_data(db=Depends(get_db)):
     }
 
 
-def _build_lead_message(payload: Dict[str, Any]) -> str:
-    phone = payload.get("phone") or "-"
-    tg = payload.get("telegram") or "-"
-    sel = payload.get("selection") or {}
-    lines = [
-        "Новая заявка с конфигуратора",
-        f"Телефон: {phone}",
-        f"Telegram: {tg}",
-        "",
-        "Выбор пользователя:",
-        f"Кофемашина: {sel.get('machine') or '-'}",
-        f"Каркас: {sel.get('frame') or '-'}",
-        f"Цвет каркаса: {sel.get('frame_color') or '-'}",
-        f"Холодильник: {sel.get('refrigerator') or '-'}",
-        f"Терминал: {sel.get('terminal') or '-'}",
-        f"Цена: {sel.get('price') or '-'}",
-        f"OZON: {sel.get('ozon_link') or '-'}",
-        f"Gallery: {sel.get('gallery_folder') or '-'}",
-    ]
-    return "\n".join(lines)
-
-
 def send_to_telegram(lead_data: Dict[str, Any]) -> bool:
     """
     Отправляет данные лида в Telegram через бот API
     """
-    bot_token = settings.telegram_bot_token
-    chat_id = settings.telegram_chat_id
+    raw_token = settings.telegram_bot_token
+    raw_chat_id = settings.telegram_chat_id
+    
+    bot_token = str(raw_token or "").strip()
+    chat_id = str(raw_chat_id or "").strip()
+
+    # === ИСПРАВЛЕНИЕ: Если в токен попало "ИМЯ_ПЕРЕМЕННОЙ=...", удаляем это ===
+    if "=" in bot_token:
+        # Разбиваем по знаку '=' и берем вторую часть (само значение)
+        bot_token = bot_token.split("=", 1)[1].strip()
+
+    # Убираем префикс bot, если он там оказался
+    if bot_token.lower().startswith("bot"):
+        bot_token = bot_token[3:]
 
     if not bot_token or not chat_id:
         print("⚠️  Telegram bot token or chat_id not configured")
         return False
+        
+    # Формируем URL
+    url = f"https://api.telegram.org/bot{bot_token}/sendMessage"
 
-    # Форматируем сообщение
+    # ВЫВОД В КОНСОЛЬ (Можно удалить потом)
+    print("\n" + "="*40)
+    print(f"DEBUG: FINAL Cleaned Token: '{bot_token}'")
+    print(f"DEBUG: FINAL URL:           '{url}'")
+    print("="*40 + "\n")
+
     message_lines = [
         "🔔 <b>Новая заявка на счёт</b>",
         "",
@@ -224,7 +222,6 @@ def send_to_telegram(lead_data: Dict[str, Any]) -> bool:
     if lead_data.get('email'):
         message_lines.append(f"📧 <b>Email:</b> {lead_data.get('email')}")
 
-    # Добавляем информацию о конфигурации
     selection = lead_data.get('selection')
     if selection:
         message_lines.extend([
@@ -243,8 +240,6 @@ def send_to_telegram(lead_data: Dict[str, Any]) -> bool:
 
     message = "\n".join(message_lines)
 
-    # Отправляем сообщение
-    url = f"https://api.telegram.org/bot{bot_token}/sendMessage"
     data = {
         "chat_id": chat_id,
         "text": message,
@@ -253,6 +248,7 @@ def send_to_telegram(lead_data: Dict[str, Any]) -> bool:
 
     try:
         response = requests.post(url, json=data, timeout=10)
+        
         if response.status_code == 200:
             print("✓ Message sent to Telegram successfully")
             return True
