@@ -41,20 +41,22 @@ def machine_to_dict(
     if not main_source_path:
         main_source_path = machine.main_image_path or machine.main_image
 
-    # Получаем ссылку из Seafile с учетом цветов для кэша
-    cache_key = f"{machine.id}"
-    if frame_color and insert_color:
-        cache_key = f"{machine.id}_{frame_color}_{insert_color}"
+    # Кеширование работает только для обычных main_image (без цветов)
+    # Для design_images возвращаем прямые Seafile ссылки без кеширования
+    cached_main = None
+    if not frame_color and not insert_color:
+        # Обычная машина без выбора цветов - используем кеш
+        cached_main = media_cache.get_cached_main(machine.id)
 
-    cached_main = media_cache.get_cached_main(cache_key)
     if main_source_path:
         try:
             main_source_url = seafile_client.get_file_download_link(main_source_path)
         except Exception:
             main_source_url = main_source_path
 
-    if not cached_main and main_source_url:
-        cached_main = media_cache.cache_main_image(cache_key, main_source_url)
+    # Кешируем только обычные main_image
+    if not cached_main and main_source_url and not frame_color and not insert_color:
+        cached_main = media_cache.cache_main_image(machine.id, main_source_url)
 
     # Используем переопределенную gallery_folder если есть
     effective_gallery_folder = gallery_folder_override or machine.gallery_folder

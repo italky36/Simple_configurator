@@ -943,7 +943,8 @@
     const cands = state.machines.filter((v) => {
       if (mv && (v.model || v.name) !== mv) return false;
       if (fv && v.frame !== fv) return false;
-      if (fcv && v.frame_color !== fcv) return false;
+      // НЕ фильтруем по frame_color! Это виртуальный выбор для design_images
+      // if (fcv && v.frame_color !== fcv) return false;
       if (rv && v.refrigerator !== rv) return false;
       if (tv && v.terminal !== tv) return false;
       return true;
