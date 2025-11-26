@@ -314,6 +314,35 @@ document.addEventListener("DOMContentLoaded", () => {
         return result;
     }
 
+    function updateDesignSectionVisibility() {
+        if (!form) return;
+        const frameValue = (form.querySelector('[name="frame"]')?.value || "").toLowerCase();
+        const designSection = document.getElementById("design-images-section");
+        const mainImageInput = form.querySelector('[name="main_image"]');
+        const mainImagePathInput = form.querySelector('[name="main_image_path"]');
+        const galleryFolderInput = form.querySelector('[name="gallery_folder"]');
+
+        // Если каркас = "нет" или пустой, показываем обычные поля
+        if (!frameValue || frameValue === "нет" || frameValue === "no") {
+            if (designSection) designSection.style.display = "none";
+            if (mainImageInput) mainImageInput.disabled = false;
+            if (galleryFolderInput) galleryFolderInput.disabled = false;
+            // Включаем кнопки Seafile для обычных полей
+            document.querySelectorAll('.btn-seafile[data-target="main_image"], .btn-seafile[data-target="gallery_folder"]').forEach(btn => {
+                btn.disabled = false;
+            });
+        } else {
+            // Если выбран каркас, показываем секцию дизайна
+            if (designSection) designSection.style.display = "block";
+            if (mainImageInput) mainImageInput.disabled = true;
+            if (galleryFolderInput) galleryFolderInput.disabled = true;
+            // Отключаем кнопки Seafile для обычных полей
+            document.querySelectorAll('.btn-seafile[data-target="main_image"], .btn-seafile[data-target="gallery_folder"]').forEach(btn => {
+                btn.disabled = true;
+            });
+        }
+    }
+
     function fillForm(data) {
         if (!form) return;
         form.reset();
@@ -338,6 +367,7 @@ document.addEventListener("DOMContentLoaded", () => {
             if (el) el.value = data?.[f] ?? "";
         });
         loadDesignImages(data?.design_images);
+        updateDesignSectionVisibility();
     }
     function showEdit(btn) {
         const row = btn.closest("tr");
@@ -453,6 +483,17 @@ document.addEventListener("DOMContentLoaded", () => {
 
     // Initialize design images UI
     initDesignImagesUI();
+
+    // Watch for frame field changes to show/hide design section
+    const frameInput = form?.querySelector('[name="frame"]');
+    if (frameInput) {
+        frameInput.addEventListener('change', updateDesignSectionVisibility);
+        frameInput.addEventListener('input', updateDesignSectionVisibility);
+    }
+
+    // Initial visibility update
+    updateDesignSectionVisibility();
+
     // Колонка ресайз
     const table = document.getElementById("machines-table");
     let isResizing = false;

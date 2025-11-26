@@ -259,6 +259,22 @@
     loadData()
       .then(() => {
         fillSelects();
+
+        // Установить значения по умолчанию для цветов
+        const frameColorSelect = $el(".cfg-select-frame-color");
+        const insertColorSelect = $el(".cfg-select-insert-color");
+
+        // Устанавливаем чёрный корпус и синий цвет вставки по умолчанию
+        if (frameColorSelect.length && frameColorSelect.find('option[value="чёрный"]').length) {
+          frameColorSelect.val("чёрный");
+        } else if (frameColorSelect.length && frameColorSelect.find('option[value="Чёрный"]').length) {
+          frameColorSelect.val("Чёрный");
+        }
+
+        if (insertColorSelect.length) {
+          insertColorSelect.val("синий");
+        }
+
         renderVariant(findVariant());
         bindEvents();
       })
