@@ -20,21 +20,37 @@ def machine_to_dict(
     machine,
     include_gallery: bool = False,
     include_ozon_price: bool = False,
+    frame_color: Optional[str] = None,
+    insert_color: Optional[str] = None,
 ) -> Dict[str, Any]:
-    cached_main = media_cache.get_cached_main(machine.id)
-
-    # Если есть путь в Seafile — получаем свежую ссылку и кешируем
+    # Выбор изображения на основе design_images, если указаны frame_color и insert_color
     main_source_url = None
-    if machine.main_image_path:
+    main_source_path = None
+    gallery_folder_override = None
+
+    if frame_color and insert_color and machine.design_images:
+        design_config = machine.design_images.get(frame_color, {}).get(insert_color, {})
+        if design_config:
+            main_source_path = design_config.get("main_image_path") or design_config.get("main_image")
+            gallery_folder_override = design_config.get("gallery_folder")
+
+    # Если не нашли в design_images, используем стандартные поля
+    if not main_source_path:
+        main_source_path = machine.main_image_path or machine.main_image
+
+    # Получаем ссылку из Seafile
+    cached_main = media_cache.get_cached_main(machine.id)
+    if main_source_path:
         try:
-            main_source_url = seafile_client.get_file_download_link(machine.main_image_path)
+            main_source_url = seafile_client.get_file_download_link(main_source_path)
         except Exception:
-            main_source_url = None
-    elif machine.main_image:
-        main_source_url = machine.main_image
+            main_source_url = main_source_path
 
     if not cached_main and main_source_url:
         cached_main = media_cache.cache_main_image(machine.id, main_source_url)
+
+    # Используем переопределенную gallery_folder если есть
+    effective_gallery_folder = gallery_folder_override or machine.gallery_folder
 
     dto = {
         "id": machine.id,
@@ -49,18 +65,19 @@ def machine_to_dict(
         "ozon_price": None,
         "graphic_link": machine.graphic_link,
         "main_image": cached_main or main_source_url or machine.main_image,
-        "main_image_path": machine.main_image_path,
-        "gallery_folder": machine.gallery_folder,
+        "main_image_path": main_source_path,
+        "gallery_folder": effective_gallery_folder,
         "description": machine.description,
+        "design_images": machine.design_images if hasattr(machine, 'design_images') else None,
     }
-    if include_gallery and machine.gallery_folder:
+    if include_gallery and effective_gallery_folder:
         cached_gallery = media_cache.get_cached_gallery(machine.id)
         if cached_gallery:
             dto["gallery_files"] = cached_gallery
         else:
             # Если нет кеша, пробуем подтянуть и закешировать на лету
             try:
-                folder_path = machine.gallery_folder
+                folder_path = effective_gallery_folder
                 if not folder_path.startswith("/"):
                     folder_path = "/" + folder_path
                 items = seafile_client.list_directory(folder_path)
@@ -79,17 +96,28 @@ def machine_to_dict(
 
 
 @router.get("/coffee-machines")
-def list_coffee_machines(include_gallery: bool = False, db=Depends(get_db)):
+def list_coffee_machines(
+    include_gallery: bool = False,
+    frame_color: Optional[str] = None,
+    insert_color: Optional[str] = None,
+    db=Depends(get_db)
+):
     machines = crud.get_coffee_machines(db)
-    return [machine_to_dict(m, include_gallery=include_gallery) for m in machines]
+    return [machine_to_dict(m, include_gallery=include_gallery, frame_color=frame_color, insert_color=insert_color) for m in machines]
 
 
 @router.get("/coffee-machines/{machine_id}")
-def get_coffee_machine(machine_id: int, include_gallery: bool = False, db=Depends(get_db)):
+def get_coffee_machine(
+    machine_id: int,
+    include_gallery: bool = False,
+    frame_color: Optional[str] = None,
+    insert_color: Optional[str] = None,
+    db=Depends(get_db)
+):
     machine = crud.get_coffee_machine(db, machine_id)
     if not machine:
         raise HTTPException(status_code=404, detail="Coffee machine not found")
-    return machine_to_dict(machine, include_gallery=include_gallery)
+    return machine_to_dict(machine, include_gallery=include_gallery, frame_color=frame_color, insert_color=insert_color)
 
 
 @router.get("/models")

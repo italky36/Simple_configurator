@@ -1,4 +1,5 @@
 from sqlalchemy import Column, Float, Integer, String, Text
+from sqlalchemy.types import JSON
 
 from .database import Base
 
@@ -23,6 +24,9 @@ class CoffeeMachine(Base):
     main_image_path = Column(String(500))
     gallery_folder = Column(String(500))
     description = Column(Text)
+    # Фото для комбинаций цвета корпуса и цвета вставки
+    # Структура: {"белый": {"жёлтый": {"main_image": "...", "main_image_path": "...", "gallery_folder": "..."}, ...}, "чёрный": {...}}
+    design_images = Column(JSON, nullable=True)
 
 
 class DeviceSpec(Base):
