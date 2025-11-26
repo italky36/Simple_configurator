@@ -65,6 +65,30 @@
     populateSelect($el(".cfg-select-fridge"), m.map((x) => x.refrigerator), "Холодильник");
     populateSelect($el(".cfg-select-terminal"), m.map((x) => x.terminal), "Терминал");
     populateSelect($el(".cfg-select-insert-color"), INSERT_COLORS, "Цвет вставки");
+
+    // Обновляем состояние селектора цветов дизайна при инициализации
+    updateInsertColorState();
+  }
+
+  function updateInsertColorState() {
+    const frameValue = ($el(".cfg-select-frame").val() || "").toLowerCase();
+    const insertColorSelect = $el(".cfg-select-insert-color");
+
+    // Отключаем селектор цвета вставки если каркас не выбран или = "нет"
+    if (!frameValue || frameValue === "нет" || frameValue === "no") {
+      if (insertColorSelect.length) {
+        insertColorSelect.prop("disabled", true);
+        insertColorSelect.val("");
+      }
+    } else {
+      if (insertColorSelect.length) {
+        insertColorSelect.prop("disabled", false);
+        // Устанавливаем синий по умолчанию только если значение пустое
+        if (!insertColorSelect.val()) {
+          insertColorSelect.val("синий");
+        }
+      }
+    }
   }
 
   function findVariant() {
@@ -94,6 +118,7 @@
     state.current = v;
 
     // Получаем выбранные цвета
+    const frameValue = ($el(".cfg-select-frame").val() || "").toLowerCase();
     const frameColor = $el(".cfg-select-frame-color").val();
     const insertColor = $el(".cfg-select-insert-color").val();
 
@@ -101,7 +126,8 @@
     let mainSrc = v.main_image;
     let galleryFiles = v.gallery_files || [];
 
-    if (frameColor && insertColor) {
+    // Используем design_images только если выбран каркас (не "нет")
+    if (frameValue && frameValue !== "нет" && frameValue !== "no" && frameColor && insertColor) {
       const designImages = getDesignImages(v, frameColor, insertColor);
       if (designImages) {
         // Если есть специальные изображения для этой комбинации, используем их
@@ -201,6 +227,12 @@
       () => renderVariant(findVariant())
     );
 
+    // Обновляем состояние селектора цветов вставки при изменении каркаса
+    $el(".cfg-select-frame").on("change", () => {
+      updateInsertColorState();
+      renderVariant(findVariant());
+    });
+
     $el(".cfg-btn-quote").on("click", (e) => {
       e.preventDefault();
       openModal();
@@ -260,19 +292,25 @@
       .then(() => {
         fillSelects();
 
-        // Установить значения по умолчанию для цветов
+        // Установить значения по умолчанию для цветов только если выбран каркас
+        const frameSelect = $el(".cfg-select-frame");
         const frameColorSelect = $el(".cfg-select-frame-color");
         const insertColorSelect = $el(".cfg-select-insert-color");
 
-        // Устанавливаем чёрный корпус и синий цвет вставки по умолчанию
-        if (frameColorSelect.length && frameColorSelect.find('option[value="чёрный"]').length) {
-          frameColorSelect.val("чёрный");
-        } else if (frameColorSelect.length && frameColorSelect.find('option[value="Чёрный"]').length) {
-          frameColorSelect.val("Чёрный");
-        }
+        // Проверяем, выбран ли каркас (не "нет")
+        const frameValue = (frameSelect.val() || "").toLowerCase();
+        if (frameValue && frameValue !== "нет" && frameValue !== "no") {
+          // Устанавливаем чёрный корпус и синий цвет вставки по умолчанию
+          if (frameColorSelect.length && frameColorSelect.find('option[value="чёрный"]').length) {
+            frameColorSelect.val("чёрный");
+          } else if (frameColorSelect.length && frameColorSelect.find('option[value="Чёрный"]').length) {
+            frameColorSelect.val("Чёрный");
+          }
 
-        if (insertColorSelect.length) {
-          insertColorSelect.val("синий");
+          if (insertColorSelect.length) {
+            insertColorSelect.val("синий");
+            insertColorSelect.prop("disabled", false);
+          }
         }
 
         renderVariant(findVariant());
