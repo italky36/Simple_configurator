@@ -62,6 +62,7 @@ def machine_to_dict(
     # Обработка design_images: преобразуем пути Seafile в прямые ссылки
     processed_design_images = None
     if hasattr(machine, 'design_images') and machine.design_images:
+        print(f"🎨 Processing design_images for machine {machine.id} ({machine.name})")
         processed_design_images = {}
         for frame_col, insert_colors in machine.design_images.items():
             processed_design_images[frame_col] = {}
@@ -74,8 +75,11 @@ def machine_to_dict(
                         img_url = seafile_client.get_file_download_link(img_path)
                         processed_config["main_image"] = img_url
                         processed_config["main_image_path"] = img_path
-                    except Exception:
-                        processed_config["main_image"] = config.get("main_image", "")
+                        print(f"  ✓ {frame_col}/{insert_col}: {img_path[:50]}... -> {img_url[:80]}...")
+                    except Exception as e:
+                        print(f"  ⚠️  Failed to get Seafile link for {frame_col}/{insert_col}: {img_path} - {e}")
+                        # Если не удалось получить ссылку, используем путь как есть (может быть уже URL)
+                        processed_config["main_image"] = img_path
                         processed_config["main_image_path"] = img_path
 
                 # Копируем gallery_folder если есть
@@ -83,6 +87,7 @@ def machine_to_dict(
                     processed_config["gallery_folder"] = config["gallery_folder"]
 
                 processed_design_images[frame_col][insert_col] = processed_config
+        print(f"  🎨 Processed {len(processed_design_images)} frame colors with design_images")
 
     dto = {
         "id": machine.id,

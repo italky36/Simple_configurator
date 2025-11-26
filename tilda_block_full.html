@@ -657,6 +657,12 @@
         if (!state.specs[sp.category]) state.specs[sp.category] = {};
         state.specs[sp.category][sp.name] = sp;
       });
+      console.log("📡 Loaded machines from /coffee-machines:", state.machines.length);
+      state.machines.forEach(m => {
+        if (m.design_images) {
+          console.log(`  Machine ${m.id} (${m.name}) has design_images:`, Object.keys(m.design_images));
+        }
+      });
     });
   }
 
@@ -707,18 +713,48 @@
     const frameColor = $el(".cfg-select-frame-color").val();
     const insertColor = $el(".cfg-select-insert-color").val();
 
+    console.log("🔍 renderVariant Debug:", {
+      machineId: v.id,
+      machineName: v.name,
+      frameValue,
+      frameColor,
+      insertColor,
+      hasDesignImages: !!v.design_images,
+      designImagesKeys: v.design_images ? Object.keys(v.design_images) : [],
+      mainImage: v.main_image
+    });
+
     // Если выбраны цвета и есть design_images, используем их
     if (frameValue && frameValue !== "нет" && frameValue !== "no" &&
         frameColor && insertColor && v.design_images) {
       const designConfig = v.design_images[frameColor]?.[insertColor];
+      console.log("✓ Checking design_images:", {
+        frameColor,
+        insertColor,
+        availableFrameColors: Object.keys(v.design_images),
+        designConfig: designConfig,
+        foundConfig: !!designConfig
+      });
+
       if (designConfig) {
         mainSrc = designConfig.main_image || designConfig.main_image_path || "";
+        console.log("✓ Using design_images URL:", {
+          rawMainImage: designConfig.main_image,
+          rawMainImagePath: designConfig.main_image_path,
+          finalSrc: mainSrc
+        });
+      } else {
+        console.warn("⚠️  No design config found for", frameColor, "/", insertColor);
       }
     }
 
     // Если не нашли в design_images, используем основное изображение
     if (!mainSrc) {
       mainSrc = v.main_image || (v.gallery_files && v.gallery_files[0]) || "";
+      console.log("📷 Using fallback main_image:", {
+        rawMainImage: v.main_image,
+        finalSrc: mainSrc
+      });
     }
 
     const $mainImg = $el(".cfg-main-image");
