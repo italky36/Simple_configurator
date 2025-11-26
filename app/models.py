@@ -1,5 +1,6 @@
-from sqlalchemy import Column, Float, Integer, String, Text
+from sqlalchemy import Column, Float, Integer, String, Text, DateTime
 from sqlalchemy.types import JSON
+from datetime import datetime
 
 from .database import Base
 
@@ -38,3 +39,15 @@ class DeviceSpec(Base):
     title = Column(String(255))  # человекочитаемое название (можно не использовать)
     specs_text = Column(Text, nullable=True)  # характеристики построчно
     description = Column(Text)
+
+
+class Lead(Base):
+    __tablename__ = "leads"
+
+    id = Column(Integer, primary_key=True, index=True)
+    name = Column(String(255), nullable=False)
+    phone = Column(String(50), nullable=False)
+    telegram = Column(String(255), nullable=True)
+    email = Column(String(255), nullable=True)
+    selection_data = Column(JSON, nullable=True)  # Данные о выбранной конфигурации
+    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)

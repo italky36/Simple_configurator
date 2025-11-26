@@ -370,6 +370,155 @@
       font-size: 36px;
     }
   }
+
+  /* Модальное окно */
+  .cfg-modal {
+    display: none;
+    position: fixed;
+    inset: 0;
+    z-index: 10000;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .cfg-modal.is-open {
+    display: flex;
+  }
+
+  .cfg-modal-overlay {
+    position: absolute;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.5);
+    backdrop-filter: blur(2px);
+  }
+
+  .cfg-modal-content {
+    position: relative;
+    background: #fff;
+    padding: 40px;
+    border-radius: 8px;
+    max-width: 500px;
+    width: 90%;
+    max-height: 90vh;
+    overflow-y: auto;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+    z-index: 1;
+  }
+
+  .cfg-modal-close {
+    position: absolute;
+    top: 15px;
+    right: 15px;
+    background: none;
+    border: none;
+    font-size: 32px;
+    line-height: 1;
+    cursor: pointer;
+    color: #999;
+    padding: 0;
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: color 0.2s ease;
+  }
+
+  .cfg-modal-close:hover {
+    color: #000;
+  }
+
+  .cfg-modal-title {
+    font-size: 24px;
+    font-weight: 600;
+    margin: 0 0 24px 0;
+    color: #000;
+  }
+
+  .cfg-form-group {
+    margin-bottom: 20px;
+  }
+
+  .cfg-form-group label {
+    display: block;
+    font-size: 14px;
+    font-weight: 600;
+    margin-bottom: 6px;
+    color: #000;
+  }
+
+  .cfg-required {
+    color: #ff0000;
+  }
+
+  .cfg-form-control {
+    width: 100%;
+    height: 50px;
+    padding: 0 20px;
+    border: 1px solid #e8e8e8;
+    border-radius: 5px;
+    font-family: "Montserrat", sans-serif;
+    font-size: 15px;
+    color: #000;
+    transition: border-color 0.2s ease;
+  }
+
+  .cfg-form-control:focus {
+    outline: none;
+    border-color: #0064fc;
+  }
+
+  .cfg-checkbox-group {
+    margin-bottom: 24px;
+  }
+
+  .cfg-checkbox-label {
+    display: flex;
+    align-items: flex-start;
+    cursor: pointer;
+    font-weight: 400;
+  }
+
+  .cfg-checkbox {
+    margin-right: 10px;
+    margin-top: 2px;
+    width: 18px;
+    height: 18px;
+    cursor: pointer;
+    flex-shrink: 0;
+  }
+
+  .cfg-link {
+    color: #0064fc;
+    text-decoration: none;
+  }
+
+  .cfg-link:hover {
+    text-decoration: underline;
+  }
+
+  .cfg-form-message {
+    margin-top: 15px;
+    padding: 12px;
+    border-radius: 5px;
+    font-size: 14px;
+    text-align: center;
+    display: none;
+  }
+
+  .cfg-form-message.success {
+    display: block;
+    background: #d4edda;
+    color: #155724;
+    border: 1px solid #c3e6cb;
+  }
+
+  .cfg-form-message.error {
+    display: block;
+    background: #f8d7da;
+    color: #721c24;
+    border: 1px solid #f5c6cb;
+  }
 </style>
 
 <div class="cz-conf">
@@ -466,6 +615,46 @@
         </div>
       </div>
     </div>
+  </div>
+</div>
+
+<!-- Модальное окно формы запроса счёта -->
+<div class="cfg-modal" id="cfg-quote-modal">
+  <div class="cfg-modal-overlay"></div>
+  <div class="cfg-modal-content">
+    <button class="cfg-modal-close" aria-label="Закрыть">&times;</button>
+    <h2 class="cfg-modal-title">Запросить счёт</h2>
+    <form class="cfg-quote-form" id="cfg-quote-form">
+      <div class="cfg-form-group">
+        <label for="cfg-lead-name">Имя <span class="cfg-required">*</span></label>
+        <input type="text" id="cfg-lead-name" class="cfg-form-control" required>
+      </div>
+
+      <div class="cfg-form-group">
+        <label for="cfg-lead-phone">Номер телефона <span class="cfg-required">*</span></label>
+        <input type="tel" id="cfg-lead-phone" class="cfg-form-control" required>
+      </div>
+
+      <div class="cfg-form-group">
+        <label for="cfg-lead-telegram">Telegram ID</label>
+        <input type="text" id="cfg-lead-telegram" class="cfg-form-control" placeholder="@username или ID">
+      </div>
+
+      <div class="cfg-form-group">
+        <label for="cfg-lead-email">Email</label>
+        <input type="email" id="cfg-lead-email" class="cfg-form-control">
+      </div>
+
+      <div class="cfg-form-group cfg-checkbox-group">
+        <label class="cfg-checkbox-label">
+          <input type="checkbox" id="cfg-lead-consent" class="cfg-checkbox">
+          <span>Я согласен(а) с <a href="/privacy-policy" target="_blank" class="cfg-link">обработкой персональных данных</a> <span class="cfg-required">*</span></span>
+        </label>
+      </div>
+
+      <button type="submit" class="btn btn-primary cfg-lead-submit" disabled>Отправить</button>
+      <div class="cfg-form-message"></div>
+    </form>
   </div>
 </div>
 
@@ -825,6 +1014,65 @@
     saveSelection();
   }
 
+  function openModal() {
+    $("#cfg-quote-modal").addClass("is-open");
+    $("body").css("overflow", "hidden");
+  }
+
+  function closeModal() {
+    $("#cfg-quote-modal").removeClass("is-open");
+    $("body").css("overflow", "");
+    // Очистка формы
+    $("#cfg-quote-form")[0].reset();
+    $("#cfg-lead-consent").prop("checked", false);
+    $(".cfg-lead-submit").prop("disabled", true);
+    $(".cfg-form-message").removeClass("success error").hide();
+  }
+
+  function validateForm() {
+    const name = $("#cfg-lead-name").val().trim();
+    const phone = $("#cfg-lead-phone").val().trim();
+    const consent = $("#cfg-lead-consent").is(":checked");
+
+    // Кнопка активна только если заполнены обязательные поля и есть согласие
+    const isValid = name && phone && consent;
+    $(".cfg-lead-submit").prop("disabled", !isValid);
+    return isValid;
+  }
+
+  function sendLead() {
+    const v = state.current;
+    const name = $("#cfg-lead-name").val().trim();
+    const phone = $("#cfg-lead-phone").val().trim();
+    const telegram = $("#cfg-lead-telegram").val().trim();
+    const email = $("#cfg-lead-email").val().trim();
+
+    const payload = {
+      name: name,
+      phone: phone,
+      telegram: telegram || "",
+      email: email || "",
+      selection: v ? {
+        id: v.id,
+        machine: v.model || v.name,
+        frame: v.frame,
+        frame_color: v.frame_color,
+        refrigerator: v.refrigerator,
+        terminal: v.terminal,
+        price: v.price,
+        ozon_link: v.ozon_link,
+        gallery_folder: v.gallery_folder,
+      } : null,
+    };
+
+    return $.ajax({
+      url: LEAD_ENDPOINT,
+      method: "POST",
+      contentType: "application/json",
+      data: JSON.stringify(payload),
+    });
+  }
+
   function bindEvents() {
     $(".cfg-select-machine, .cfg-select-frame, .cfg-select-frame-color, .cfg-select-fridge, .cfg-select-terminal, .cfg-select-insert-color").on(
       "change",
@@ -835,36 +1083,46 @@
       }
     );
 
+    // Открытие модального окна
     $el(".cfg-btn-quote").on("click", (e) => {
       e.preventDefault();
-      const phone = prompt("Введите ваш телефон:");
-      if (!phone) return;
+      openModal();
+    });
 
-      const v = state.current;
-      const payload = {
-        phone: phone,
-        telegram: "",
-        selection: v ? {
-          id: v.id,
-          machine: v.model || v.name,
-          frame: v.frame,
-          frame_color: v.frame_color,
-          refrigerator: v.refrigerator,
-          terminal: v.terminal,
-          price: v.price,
-          ozon_link: v.ozon_link,
-          gallery_folder: v.gallery_folder,
-        } : null,
-      };
+    // Закрытие модального окна
+    $(".cfg-modal-close, .cfg-modal-overlay").on("click", (e) => {
+      e.preventDefault();
+      closeModal();
+    });
 
-      $.ajax({
-        url: LEAD_ENDPOINT,
-        method: "POST",
-        contentType: "application/json",
-        data: JSON.stringify(payload),
-      })
-        .done(() => alert("Заявка отправлена"))
-        .fail(() => alert("Не удалось отправить заявку"));
+    // Валидация при изменении полей и чекбокса
+    $("#cfg-lead-name, #cfg-lead-phone, #cfg-lead-consent").on("input change", validateForm);
+
+    // Отправка формы
+    $("#cfg-quote-form").on("submit", (e) => {
+      e.preventDefault();
+
+      if (!validateForm()) {
+        return;
+      }
+
+      const $submitBtn = $(".cfg-lead-submit");
+      const $message = $(".cfg-form-message");
+
+      $submitBtn.prop("disabled", true).text("Отправка...");
+      $message.removeClass("success error").hide();
+
+      sendLead()
+        .done(() => {
+          $message.addClass("success").text("Заявка успешно отправлена!").show();
+          setTimeout(() => {
+            closeModal();
+          }, 2000);
+        })
+        .fail(() => {
+          $message.addClass("error").text("Не удалось отправить заявку. Попробуйте ещё раз.").show();
+          $submitBtn.prop("disabled", false).text("Отправить");
+        });
     });
   }
 

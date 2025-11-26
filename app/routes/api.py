@@ -1,5 +1,7 @@
 from typing import Any, Dict, List, Optional
 import requests
+import json
+from sqlalchemy.orm import Session
 
 from fastapi import APIRouter, Depends, HTTPException
 
@@ -9,6 +11,7 @@ from ..database import get_db
 from ..seafile_client import SeafileClient
 from ..ozon_client import OzonClient
 from ..services import media_cache
+from ..models import Lead
 
 router = APIRouter(prefix="/api")
 settings = Settings()
@@ -196,10 +199,121 @@ def _build_lead_message(payload: Dict[str, Any]) -> str:
     return "\n".join(lines)
 
 
+def send_to_telegram(lead_data: Dict[str, Any]) -> bool:
+    """
+    Отправляет данные лида в Telegram через бот API
+    """
+    bot_token = settings.telegram_bot_token
+    chat_id = settings.telegram_chat_id
+
+    if not bot_token or not chat_id:
+        print("⚠️  Telegram bot token or chat_id not configured")
+        return False
+
+    # Форматируем сообщение
+    message_lines = [
+        "🔔 <b>Новая заявка на счёт</b>",
+        "",
+        f"👤 <b>Имя:</b> {lead_data.get('name', '-')}",
+        f"📞 <b>Телефон:</b> {lead_data.get('phone', '-')}",
+    ]
+
+    if lead_data.get('telegram'):
+        message_lines.append(f"✈️ <b>Telegram:</b> {lead_data.get('telegram')}")
+
+    if lead_data.get('email'):
+        message_lines.append(f"📧 <b>Email:</b> {lead_data.get('email')}")
+
+    # Добавляем информацию о конфигурации
+    selection = lead_data.get('selection')
+    if selection:
+        message_lines.extend([
+            "",
+            "⚙️ <b>Выбранная конфигурация:</b>",
+            f"• Кофемашина: {selection.get('machine', '-')}",
+            f"• Каркас: {selection.get('frame', '-')}",
+            f"• Цвет каркаса: {selection.get('frame_color', '-')}",
+            f"• Холодильник: {selection.get('refrigerator', '-')}",
+            f"• Терминал: {selection.get('terminal', '-')}",
+            f"• Цена: {selection.get('price', '-')} ₽",
+        ])
+
+        if selection.get('ozon_link'):
+            message_lines.append(f"• <a href=\"{selection.get('ozon_link')}\">Ссылка на OZON</a>")
+
+    message = "\n".join(message_lines)
+
+    # Отправляем сообщение
+    url = f"https://api.telegram.org/bot{bot_token}/sendMessage"
+    data = {
+        "chat_id": chat_id,
+        "text": message,
+        "parse_mode": "HTML"
+    }
+
+    try:
+        response = requests.post(url, json=data, timeout=10)
+        if response.status_code == 200:
+            print("✓ Message sent to Telegram successfully")
+            return True
+        else:
+            print(f"⚠️  Telegram API error: {response.status_code} - {response.text}")
+            return False
+    except Exception as e:
+        print(f"❌ Failed to send to Telegram: {e}")
+        return False
+
+
 @router.post("/lead")
-def lead(payload: Dict[str, Any]):
-    # Публичные записи через API временно запрещены
-    raise HTTPException(status_code=403, detail="Writing through public API is disabled")
+def create_lead(payload: Dict[str, Any], db: Session = Depends(get_db)):
+    """
+    Создаёт новый лид и отправляет уведомление в Telegram
+    """
+    try:
+        # Извлекаем данные
+        name = payload.get("name", "").strip()
+        phone = payload.get("phone", "").strip()
+        telegram = payload.get("telegram", "").strip()
+        email = payload.get("email", "").strip()
+        selection = payload.get("selection")
+
+        # Валидация обязательных полей
+        if not name or not phone:
+            raise HTTPException(status_code=400, detail="Name and phone are required")
+
+        # Создаём запись в БД
+        lead = Lead(
+            name=name,
+            phone=phone,
+            telegram=telegram if telegram else None,
+            email=email if email else None,
+            selection_data=selection
+        )
+        db.add(lead)
+        db.commit()
+        db.refresh(lead)
+
+        # Отправляем в Telegram
+        telegram_sent = send_to_telegram({
+            "name": name,
+            "phone": phone,
+            "telegram": telegram,
+            "email": email,
+            "selection": selection
+        })
+
+        return {
+            "success": True,
+            "id": lead.id,
+            "telegram_sent": telegram_sent
+        }
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        db.rollback()
+        print(f"Error creating lead: {e}")
+        raise HTTPException(status_code=500, detail="Failed to create lead")
 
 
 @router.get("/ozon-price")
