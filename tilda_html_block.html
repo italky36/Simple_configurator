@@ -479,6 +479,7 @@
   const state = { machines: [], specs: {}, current: null };
   const skipValues = new Set(["нет", "не", "-", "none", "", null, undefined]);
   const STORAGE_KEY = "cz-conf-selection";
+  const INSERT_COLORS = ["жёлтый", "зелёный", "красный", "серый", "синий", "фиолетовый"];
 
   const $el = (cls) => $(cls).first();
   const setText = (jq, txt) => jq.length && jq.text(txt || "—");
@@ -556,6 +557,25 @@
       $t.prop("disabled", true).val("");
     } else {
       $t.prop("disabled", false);
+    }
+  }
+
+  function updateInsertColorState() {
+    const frameValue = ($el(".cfg-select-frame").val() || "").toLowerCase();
+    const insertColorSelect = $el(".cfg-select-insert-color");
+
+    if (!frameValue || frameValue === "нет" || frameValue === "no") {
+      if (insertColorSelect.length) {
+        insertColorSelect.prop("disabled", true);
+        insertColorSelect.val("");
+      }
+    } else {
+      if (insertColorSelect.length) {
+        insertColorSelect.prop("disabled", false);
+        if (!insertColorSelect.val()) {
+          insertColorSelect.val("синий");
+        }
+      }
     }
   }
 
@@ -692,7 +712,9 @@
     populateSelect($el(".cfg-select-frame-color"), m.map((x) => x.frame_color), "Выберите цвет");
     populateSelect($el(".cfg-select-fridge"), m.map((x) => x.refrigerator), "Выберите холодильник");
     populateSelect($el(".cfg-select-terminal"), m.map((x) => x.terminal), "Выберите терминал");
+    populateSelect($el(".cfg-select-insert-color"), INSERT_COLORS, "—");
     updateFrameColorState();
+    updateInsertColorState();
   }
 
   function updateFrameColorState() {
@@ -804,10 +826,11 @@
   }
 
   function bindEvents() {
-    $(".cfg-select-machine, .cfg-select-frame, .cfg-select-frame-color, .cfg-select-fridge, .cfg-select-terminal").on(
+    $(".cfg-select-machine, .cfg-select-frame, .cfg-select-frame-color, .cfg-select-fridge, .cfg-select-terminal, .cfg-select-insert-color").on(
       "change",
       () => {
         updateFrameColorState();
+        updateInsertColorState();
         renderVariant(findVariant(true));
       }
     );

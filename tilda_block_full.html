@@ -402,6 +402,7 @@
 
   const state = { machines: [], specs: {}, current: null };
   const skipValues = new Set(["да", "нет", "-", "none", "", null, undefined]);
+  const INSERT_COLORS = ["жёлтый", "зелёный", "красный", "серый", "синий", "фиолетовый"];
 
   const $el = (cls) => $(cls).first();
   const setText = (jq, txt) => jq.length && jq.text(txt || "—");
@@ -438,6 +439,25 @@
     $sel.html(opts.join(""));
   }
 
+  function updateInsertColorState() {
+    const frameValue = ($el(".cfg-select-frame").val() || "").toLowerCase();
+    const insertColorSelect = $el(".cfg-select-insert-color");
+
+    if (!frameValue || frameValue === "нет" || frameValue === "no") {
+      if (insertColorSelect.length) {
+        insertColorSelect.prop("disabled", true);
+        insertColorSelect.val("");
+      }
+    } else {
+      if (insertColorSelect.length) {
+        insertColorSelect.prop("disabled", false);
+        if (!insertColorSelect.val()) {
+          insertColorSelect.val("синий");
+        }
+      }
+    }
+  }
+
   function loadData() {
     const mReq = $.getJSON(API_BASE + "/coffee-machines?include_gallery=true");
     const sReq = $.getJSON(API_BASE + "/specs");
@@ -458,6 +478,8 @@
     populateSelect($el(".cfg-select-frame-color"), m.map((x) => x.frame_color), "Цвет каркаса");
     populateSelect($el(".cfg-select-fridge"), m.map((x) => x.refrigerator), "Холодильник");
     populateSelect($el(".cfg-select-terminal"), m.map((x) => x.terminal), "Терминал");
+    populateSelect($el(".cfg-select-insert-color"), INSERT_COLORS, "—");
+    updateInsertColorState();
   }
 
   function findVariant() {
@@ -533,9 +555,12 @@
   }
 
   function bindEvents() {
-    $(".cfg-select-machine, .cfg-select-frame, .cfg-select-frame-color, .cfg-select-fridge, .cfg-select-terminal").on(
+    $(".cfg-select-machine, .cfg-select-frame, .cfg-select-frame-color, .cfg-select-fridge, .cfg-select-terminal, .cfg-select-insert-color").on(
       "change",
-      () => renderVariant(findVariant())
+      () => {
+        updateInsertColorState();
+        renderVariant(findVariant());
+      }
     );
 
     $el(".cfg-btn-quote").on("click", (e) => {
