@@ -757,9 +757,14 @@
       });
     }
 
+    console.log("🖼️ Final image URL being set:", mainSrc);
+
     const $mainImg = $el(".cfg-main-image");
     if ($mainImg.length) {
       $mainImg.attr("src", mainSrc || "");
+      console.log("✅ Image src attribute set to:", $mainImg.attr("src"));
+    } else {
+      console.error("❌ Main image element not found!");
     }
 
     const $g = $el(".cfg-gallery");

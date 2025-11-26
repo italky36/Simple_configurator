@@ -70,4 +70,22 @@ async def privacy_policy():
         raise HTTPException(status_code=404, detail="Privacy policy not found")
 
 
+@app.get("/page{page_id}.html", response_class=HTMLResponse)
+@app.get("/tilda-block", response_class=HTMLResponse)
+@app.get("/configurator", response_class=HTMLResponse)
+async def serve_tilda_configurator():
+    """Обслуживает страницу конфигуратора Tilda"""
+    # Пробуем найти HTML файл в корне проекта
+    base_dir = os.path.dirname(os.path.dirname(__file__))
+    possible_files = ["tilda_html_block.html", "tilda_block_full.html"]
+
+    for filename in possible_files:
+        file_path = os.path.join(base_dir, filename)
+        if os.path.exists(file_path):
+            with open(file_path, "r", encoding="utf-8") as f:
+                return HTMLResponse(content=f.read())
+
+    raise HTTPException(status_code=404, detail="Configurator page not found")
+
+
 app.include_router(api_router)

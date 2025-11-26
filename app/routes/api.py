@@ -132,6 +132,23 @@ def machine_to_dict(
     return dto
 
 
+@router.get("/test-design-images")
+def test_design_images(db=Depends(get_db)):
+    """Тестовый endpoint для проверки design_images"""
+    machines = crud.get_coffee_machines(db)
+    result = []
+    for m in machines:
+        if hasattr(m, 'design_images') and m.design_images:
+            result.append({
+                "id": m.id,
+                "name": m.name,
+                "design_images_raw": m.design_images,
+                "has_design_images": True,
+                "frame_colors": list(m.design_images.keys()) if m.design_images else []
+            })
+    return {"machines_with_design_images": len(result), "data": result}
+
+
 @router.get("/coffee-machines")
 def list_coffee_machines(
     include_gallery: bool = False,
