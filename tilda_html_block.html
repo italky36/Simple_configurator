@@ -1,1159 +1,684 @@
-<style>
-  .cz-conf {
-    font-family: 'Montserrat', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-    background: #FFFFFF;
-    color: #000;
-    padding: 40px 20px;
-    margin: 0 auto;
-    width: 100%;
-    box-sizing: border-box;
-  }
-
-  .cz-conf *,
-  .cz-conf *::before,
-  .cz-conf *::after {
-    box-sizing: border-box;
-  }
-
-  .cz-conf .container {
-    max-width: 1520px;
-    margin: 0 auto;
-  }
-
-  .cz-conf h1 {
-    font-size: 30px;
-    font-weight: 600;
-    line-height: 36px;
-    margin: 0 0 20px 0;
-    color: #000000;
-  }
-
-  .cz-conf .main-content {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 30px;
-    margin-bottom: 0;
-    background: #F7F7F7;
-    padding: 20px 20px 0 20px;
-    border-radius: 8px;
-  }
-
-  .cz-conf .product-image {
-    background: transparent;
-    border-radius: 0;
-    padding: 20px;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    position: relative;
-    min-height: 520px;
-    overflow: hidden;
-  }
-
-  .cz-conf .product-image img.cfg-main-image {
-    width: 100%;
-    height: 100%;
-    display: block;
-    object-fit: contain;
-  }
-
-  /* Превью-галерею скрываем: только основное изображение + стрелки */
-  .cz-conf .cfg-gallery {
-    display: none !important;
-  }
-
-  .cz-conf .cfg-image-nav {
-    position: absolute;
-    inset: 0;
-    pointer-events: none;
-  }
-
-  .cz-conf .cfg-arrow {
-    position: absolute;
-    top: 50%;
-    transform: translateY(-50%);
-    width: 44px;
-    height: 44px;
-    border-radius: 50%;
-    border: none;
-    background: rgba(255, 255, 255, 0.8);
-    box-shadow: 0 4px 10px rgba(0,0,0,0.12);
-    cursor: pointer;
-    pointer-events: auto;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 20px;
-    color: #000;
-    transition: background-color 0.15s ease, box-shadow 0.15s ease, opacity 0.15s ease;
-  }
-
-  .cz-conf .cfg-arrow:hover:not(:disabled):not(.disabled) {
-    background: rgba(255,255,255,0.95);
-    box-shadow: 0 6px 14px rgba(0,0,0,0.16);
-  }
-
-  .cz-conf .cfg-arrow:disabled,
-  .cz-conf .cfg-arrow.disabled {
-    opacity: 0.3;
-    cursor: default;
-    pointer-events: none;
-  }
-
-  .cz-conf .cfg-arrow-prev { left: 10px; }
-  .cz-conf .cfg-arrow-next { right: 10px; }
-
-  .cz-conf .specs {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 20px;
-  }
-
-  .cz-conf .spec-block {
-    padding-bottom: 0;
-  }
-
-  .cz-conf .spec-title {
-    color: #999;
-    font-size: 14px;
-    text-transform: capitalize;
-    margin-bottom: 8px;
-  }
-
-  .cz-conf .spec-name {
-    font-size: 18px;
-    font-weight: 700;
-    margin-bottom: 8px;
-    text-transform: uppercase;
-  }
-
-  .cz-conf .spec-list {
-    list-style: none;
-    margin: 0;
-    padding: 0;
-  }
-
-  .cz-conf .spec-list li {
-    font-size: 13px;
-    line-height: 1.5;
-    color: #333;
-  }
-
-  .cz-conf .spec-list li:before {
-    content: "• ";
-    font-weight: bold;
-    color: #000;
-  }
-
-  .cz-conf .configurator-wrapper {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 30px;
-    margin-top: 20px;
-    margin-bottom: 30px;
-    align-items: stretch;
-  }
-
-  .cz-conf .configurator {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    grid-template-rows: auto auto;
-    gap: 15px;
-  }
-
-  .cz-conf .config-item {
-    display: flex;
-    flex-direction: column;
-    gap: 6px;
-  }
-
-  .cz-conf .config-label {
-    font-size: 14px;
-    font-weight: 600;
-    color: #000;
-    transition: color 0.2s ease;
-  }
-
-  .cz-conf .config-item:has(.config-select:disabled) .config-label,
-  .cz-conf .config-label.disabled-label {
-    color: #b3b3b3 !important;
-  }
-
-  .cz-conf .config-select {
-    appearance: none;
-    width: 100%;
-    height: 50px;
-    padding: 0 45px 0 20px;
-    cursor: pointer;
-    outline: none;
-    background-color: #f8f8f8;
-    border: 1px solid #e8e8e8;
-    border-radius: 5px;
-    font-family: "Montserrat", sans-serif;
-    font-size: 15px;
-    font-weight: 400;
-    color: #000;
-    background-image: url("data:image/svg+xml,%3Csvg width='10' height='6' viewBox='0 0 10 6' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%23999' stroke-width='1.2' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
-    background-repeat: no-repeat;
-    background-position: right 16px center;
-    background-size: 10px 6px;
-    transition: border-color 0.2s ease, box-shadow 0.2s ease, transform 0.12s ease-out;
-  }
-
-  .cz-conf .config-select:hover:not(:disabled) {
-    border-color: #bdbdbd;
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.08);
-    transform: translateY(-1px);
-  }
-
-  .cz-conf .config-select:disabled {
-    background-color: #FFFFFF;
-    border-color: #e5e5e5;
-    color: #b3b3b3;
-    cursor: not-allowed;
-  }
-
-  .cz-conf .price-section {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 20px;
-    align-items: stretch;
-    align-self: start;
-    height: 100%;
-  }
-
-  .cz-conf .price-block {
-    display: grid;
-    grid-template-rows: 1fr auto;
-    text-align: center;
-  }
-
-  .cz-conf .price {
-    font-size: 44px;
-    font-weight: 700;
-    margin: 0;
-    min-height: 1em;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    padding-top: 26px;
-    padding-bottom: 10px;
-  }
-
-  .cz-conf .price.cfg-price-left {
-    color: #0066FF;
-  }
-
-  .cz-conf .price.cfg-price-right {
-    color: #000;
-  }
-
-  .cz-conf .price-small {
-    font-size: 16px !important;
-    font-weight: 400 !important;
-    color: #666 !important;
-  }
-
-  .cz-conf .btn {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    padding: 16px 32px;
-    font-size: 16px;
-    font-weight: 600;
-    border: none;
-    border-radius: 5px;
-    cursor: pointer;
-    transition: background-color 0.2s ease-in-out;
-    width: 100%;
-    text-decoration: none;
-    height: 50px;
-    align-self: end;
-  }
-
-  .cz-conf .btn-primary,
-  .cz-conf a.btn-primary {
-    background-color: #0064fc;
-    color: #ffffff !important;
-  }
-
-  .cz-conf .btn-primary:hover:not(:disabled):not(.disabled),
-  .cz-conf a.btn-primary:hover:not(:disabled):not(.disabled) {
-    background-color: #0052d4;
-    color: #ffffff !important;
-  }
-
-  .cz-conf .btn-primary:disabled,
-  .cz-conf .btn-primary[disabled],
-  .cz-conf .btn-primary.disabled,
-  .cz-conf a.btn-primary:disabled,
-  .cz-conf a.btn-primary[disabled],
-  .cz-conf a.btn-primary.disabled {
-    background-color: #d3d3d3 !important;
-    color: #ffffff !important;
-    cursor: not-allowed !important;
-    opacity: 0.7 !important;
-    pointer-events: none !important;
-    text-decoration: none !important;
-  }
-
-  .cz-conf a.btn-primary[disabled]:hover,
-  .cz-conf a.btn-primary[disabled]:focus,
-  .cz-conf a.btn-primary[disabled]:active,
-  .cz-conf a.btn-primary.disabled:hover,
-  .cz-conf a.btn-primary.disabled:focus,
-  .cz-conf a.btn-primary.disabled:active {
-    color: #ffffff !important;
-    background-color: #d3d3d3 !important;
-  }
-
-  .cz-conf .btn-secondary {
-    background-color: #fff;
-    color: #000;
-    border: 2px solid #000;
-  }
-
-  .cz-conf .btn-secondary:hover {
-    background-color: #000;
-    color: #fff;
-  }
-
-  @media (min-width: 969px) {
-    .cz-conf .configurator-wrapper {
-      align-items: start;
-    }
-
-    .cz-conf .price-section {
-      padding-top: 0;
-    }
-
-    .cz-conf .price-block {
-      grid-template-rows: minmax(50px, 1fr) 50px;
-      gap: 15px;
-    }
-
-    .cz-conf .price {
-      padding-top: 10px;
-      font-size: 32px;
-    }
-
-    .cz-conf .btn {
-      height: 50px;
-    }
-  }
-
-  @media (max-width: 968px) {
-    .cz-conf .main-content {
-      grid-template-columns: 1fr;
-    }
-
-    .cz-conf .configurator-wrapper {
-      grid-template-columns: 1fr;
-      gap: 20px;
-    }
-
-    .cz-conf .configurator {
-      grid-template-columns: repeat(2, 1fr);
-    }
-
-    .cz-conf .price-section {
-      display: flex;
-      gap: 20px;
-    }
-
-    .cz-conf .price-block {
-      flex: 1;
-    }
-
-    .cz-conf .price {
-      font-size: 36px;
-    }
-  }
-
-  /* Модальное окно */
-  .cfg-modal {
-    display: none;
-    position: fixed;
-    inset: 0;
-    z-index: 10000;
-    align-items: center;
-    justify-content: center;
-  }
-
-  .cfg-modal.is-open {
-    display: flex;
-  }
-
-  .cfg-modal-overlay {
-    position: absolute;
-    inset: 0;
-    background: rgba(0, 0, 0, 0.5);
-    backdrop-filter: blur(2px);
-  }
-
-  .cfg-modal-content {
-    position: relative;
-    background: #fff;
-    padding: 40px;
-    border-radius: 8px;
-    max-width: 500px;
-    width: 90%;
-    max-height: 90vh;
-    overflow-y: auto;
-    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
-    z-index: 1;
-  }
-
-  .cfg-modal-close {
-    position: absolute;
-    top: 15px;
-    right: 15px;
-    background: none;
-    border: none;
-    font-size: 32px;
-    line-height: 1;
-    cursor: pointer;
-    color: #999;
-    padding: 0;
-    width: 32px;
-    height: 32px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    transition: color 0.2s ease;
-  }
-
-  .cfg-modal-close:hover {
-    color: #000;
-  }
-
-  .cfg-modal-title {
-    font-size: 24px;
-    font-weight: 600;
-    margin: 0 0 24px 0;
-    color: #000;
-  }
-
-  .cfg-form-group {
-    margin-bottom: 20px;
-  }
-
-  .cfg-form-group label {
-    display: block;
-    font-size: 14px;
-    font-weight: 600;
-    margin-bottom: 6px;
-    color: #000;
-  }
-
-  .cfg-required {
-    color: #ff0000;
-  }
-
-  .cfg-form-control {
-    width: 100%;
-    height: 50px;
-    padding: 0 20px;
-    border: 1px solid #e8e8e8;
-    border-radius: 5px;
-    font-family: "Montserrat", sans-serif;
-    font-size: 15px;
-    color: #000;
-    transition: border-color 0.2s ease;
-  }
-
-  .cfg-form-control:focus {
-    outline: none;
-    border-color: #0064fc;
-  }
-
-  .cfg-checkbox-group {
-    margin-bottom: 24px;
-  }
-
-  .cfg-checkbox-label {
-    display: flex;
-    align-items: flex-start;
-    cursor: pointer;
-    font-weight: 400;
-  }
-
-  .cfg-checkbox {
-    margin-right: 10px;
-    margin-top: 2px;
-    width: 18px;
-    height: 18px;
-    cursor: pointer;
-    flex-shrink: 0;
-  }
-
-  .cfg-link {
-    color: #0064fc;
-    text-decoration: none;
-  }
-
-  .cfg-link:hover {
-    text-decoration: underline;
-  }
-
-  .cfg-form-message {
-    margin-top: 15px;
-    padding: 12px;
-    border-radius: 5px;
-    font-size: 14px;
-    text-align: center;
-    display: none;
-  }
-
-  .cfg-form-message.success {
-    display: block;
-    background: #d4edda;
-    color: #155724;
-    border: 1px solid #c3e6cb;
-  }
-
-  .cfg-form-message.error {
-    display: block;
-    background: #f8d7da;
-    color: #721c24;
-    border: 1px solid #f5c6cb;
-  }
-</style>
-
-<div class="cz-conf">
-  <div class="container">
-    <h1>Конфигуратор</h1>
-
-    <div class="main-content">
-      <div class="product-image">
-        <img class="cfg-main-image" src="" alt="Конфигурация">
-        <div class="cfg-gallery"></div>
-      </div>
-
-      <div class="specs">
-        <div class="spec-block cfg-spec-machine">
-          <div class="spec-title">Кофемашина</div>
-          <div class="spec-name">—</div>
-          <ul class="spec-list"></ul>
-        </div>
-
-        <div class="spec-block cfg-spec-fridge">
-          <div class="spec-title">Холодильник</div>
-          <div class="spec-name">—</div>
-          <ul class="spec-list"></ul>
-        </div>
-
-        <div class="spec-block cfg-spec-frame">
-          <div class="spec-title">Каркас</div>
-          <div class="spec-name">—</div>
-          <ul class="spec-list"></ul>
-        </div>
-
-        <div class="spec-block cfg-spec-terminal">
-          <div class="spec-title">Терминал</div>
-          <div class="spec-name">—</div>
-          <ul class="spec-list"></ul>
-        </div>
-      </div>
-    </div>
-
-    <div class="configurator-wrapper">
-      <div class="configurator">
-        <div class="config-item">
-          <label class="config-label">Кофемашина</label>
-          <select class="config-select cfg-select-machine">
-            <option value="">Загрузка...</option>
-          </select>
-        </div>
-
-        <div class="config-item">
-          <label class="config-label">Холодильник</label>
-          <select class="config-select cfg-select-fridge">
-            <option value="">Загрузка...</option>
-          </select>
-        </div>
-
-        <div class="config-item">
-          <label class="config-label">Терминал</label>
-          <select class="config-select cfg-select-terminal">
-            <option value="">Загрузка...</option>
-          </select>
-        </div>
-
-        <div class="config-item">
-          <label class="config-label">Каркас</label>
-          <select class="config-select cfg-select-frame">
-            <option value="">Загрузка...</option>
-          </select>
-        </div>
-
-        <div class="config-item">
-          <label class="config-label">Цвет каркаса</label>
-          <select class="config-select cfg-select-frame-color">
-            <option value="">—</option>
-          </select>
-        </div>
-
-        <div class="config-item">
-          <label class="config-label">Цвета дизайна</label>
-          <select class="config-select cfg-select-insert-color" disabled>
-            <option value="">—</option>
-          </select>
-        </div>
-      </div>
-
-      <div class="price-section">
-        <div class="price-block">
-          <div class="price cfg-price-left">—</div>
-          <a href="#" class="btn btn-primary cfg-btn-ozon" target="_blank" rel="noopener noreferrer">Купить на OZON</a>
-        </div>
-
-        <div class="price-block">
-          <div class="price cfg-price-right">—</div>
-          <button class="btn btn-secondary cfg-btn-quote">Запросить счёт</button>
-        </div>
-      </div>
-    </div>
-  </div>
-</div>
-
-<!-- Модальное окно формы запроса счёта -->
-<div class="cfg-modal" id="cfg-quote-modal">
-  <div class="cfg-modal-overlay"></div>
-  <div class="cfg-modal-content">
-    <button class="cfg-modal-close" aria-label="Закрыть">&times;</button>
-    <h2 class="cfg-modal-title">Запросить счёт</h2>
-    <form class="cfg-quote-form" id="cfg-quote-form">
-      <div class="cfg-form-group">
-        <label for="cfg-lead-name">Имя <span class="cfg-required">*</span></label>
-        <input type="text" id="cfg-lead-name" class="cfg-form-control" required>
-      </div>
-
-      <div class="cfg-form-group">
-        <label for="cfg-lead-phone">Номер телефона <span class="cfg-required">*</span></label>
-        <input type="tel" id="cfg-lead-phone" class="cfg-form-control" required>
-      </div>
-
-      <div class="cfg-form-group">
-        <label for="cfg-lead-telegram">Telegram ID</label>
-        <input type="text" id="cfg-lead-telegram" class="cfg-form-control" placeholder="@username или ID">
-      </div>
-
-      <div class="cfg-form-group">
-        <label for="cfg-lead-email">Email</label>
-        <input type="email" id="cfg-lead-email" class="cfg-form-control">
-      </div>
-
-      <div class="cfg-form-group cfg-checkbox-group">
-        <label class="cfg-checkbox-label">
-          <input type="checkbox" id="cfg-lead-consent" class="cfg-checkbox">
-          <span>Я согласен(а) с <a href="/privacy-policy" target="_blank" class="cfg-link">обработкой персональных данных</a> <span class="cfg-required">*</span></span>
-        </label>
-      </div>
-
-      <button type="submit" class="btn btn-primary cfg-lead-submit" disabled>Отправить</button>
-      <div class="cfg-form-message"></div>
-    </form>
-  </div>
-</div>
-
-<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 <script>
-(function ($) {
-  const BACKEND_BASE = "https://93-170-123-229.nip.io";
-  const API_BASE = BACKEND_BASE + "/api";
-  const LEAD_ENDPOINT = API_BASE + "/lead";
+  (function () {
+    // Укажите ваш реальный адрес API
+    const API_BASE = 'https://93-170-123-229.nip.io/api';
+    
+    let META = null;
+    let currentVariationId = null;
+    let currentSlideIndex = 0;
 
-  const state = { machines: [], specs: {}, current: null };
-  const skipValues = new Set(["нет", "не", "-", "none", "", null, undefined]);
-  const STORAGE_KEY = "cz-conf-selection";
-  const INSERT_COLORS = ["жёлтый", "зелёный", "красный", "серый", "синий", "фиолетовый"];
+    function getEl(id) { return document.getElementById(id); }
 
-  const $el = (cls) => $(cls).first();
-  const setText = (jq, txt) => jq.length && jq.text(txt || "—");
-  const fmtPrice = (v) => (v || v === 0 ? Number(v).toLocaleString("ru-RU") + " ₽" : "—");
-  const normSrc = (src) => {
-    if (!src) return "";
-    if (/^(https?:)?\/\//i.test(src) || src.startsWith("data:")) return src;
-    const base = BACKEND_BASE.replace(/\/+$/, "");
-    const path = src.startsWith("/") ? src : "/" + src;
-    return base + path;
-  };
+    // =========================================================
+    // 1. ЛОГИКА МОДАЛЬНОГО ОКНА И ОТПРАВКИ ФОРМЫ
+    // =========================================================
+    const modal = getEl('invoice-modal');
+    const btnOpen = getEl('btn-invoice');
+    const btnCloseX = getEl('modal-close-x');
+    const btnCancel = getEl('modal-cancel-btn');
+    const form = getEl('invoice-form');
 
-  function saveSelection() {
-    const data = {
-      machine: $el(".cfg-select-machine").val() || "",
-      frame: $el(".cfg-select-frame").val() || "",
-      frame_color: $el(".cfg-select-frame-color").val() || "",
-      fridge: $el(".cfg-select-fridge").val() || "",
-      terminal: $el(".cfg-select-terminal").val() || "",
-    };
-    try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
-    } catch (e) {
-      // ignore quota / private mode errors
-    }
-  }
+    function openModal() { modal.classList.add('is-open'); }
+    function closeModal() { modal.classList.remove('is-open'); }
 
-  function loadSelection() {
-    try {
-      const raw = localStorage.getItem(STORAGE_KEY);
-      return raw ? JSON.parse(raw) : null;
-    } catch (e) {
-      return null;
-    }
-  }
-
-  function renderSpecs($block, spec) {
-    if (!$block.length) return;
-
-    const nameEl = $block.find('.spec-name');
-    const listEl = $block.find('.spec-list');
-
-    if (!spec || !spec.name) {
-      $block.hide();
-      nameEl.text('—');
-      listEl.empty();
-      return;
-    }
-
-    $block.show();
-    nameEl.text(spec.name);
-    listEl.empty();
-
-    const lines = spec.specs || [];
-    if (lines.length) {
-      lines.forEach(line => {
-        listEl.append('<li>' + line + '</li>');
+    if (btnOpen) btnOpen.addEventListener('click', openModal);
+    if (btnCloseX) btnCloseX.addEventListener('click', closeModal);
+    if (btnCancel) btnCancel.addEventListener('click', closeModal);
+    
+    // Закрытие по клику на затемненный фон
+    if (modal) {
+      modal.addEventListener('click', (e) => {
+        if (e.target === modal) closeModal();
       });
     }
-  }
 
-  function populateSelect($sel, values, placeholder) {
-    if (!$sel.length) return;
-    const uniq = Array.from(new Set(values.filter((v) => v && !skipValues.has(String(v).toLowerCase()))));
-    const opts = placeholder ? ['<option value="">' + placeholder + '</option>'] : [];
-    uniq.forEach((v) => opts.push('<option value="' + v + '">' + v + '</option>'));
-    $sel.html(opts.join(""));
-  }
+    // --- САМОЕ ВАЖНОЕ: ОТПРАВКА ДАННЫХ ---
+    if (form) {
+      form.addEventListener('submit', async (e) => {
+        e.preventDefault(); // Останавливаем перезагрузку страницы
+        
+        const formData = new FormData(form);
+        const submitBtn = form.querySelector('.cz-btn-submit');
+        const originalText = submitBtn.textContent;
+        
+        // Блокируем кнопку, чтобы не нажали дважды
+        submitBtn.disabled = true;
+        submitBtn.textContent = 'Отправка...';
 
-  function updateTerminalState() {
-    const mv = $el(".cfg-select-machine").val();
-    const $t = $el(".cfg-select-terminal");
-    if (!$t.length) return;
-    if (!mv) {
-      $t.prop("disabled", true).val("");
-    } else {
-      $t.prop("disabled", false);
-    }
-  }
+        // Вспомогательная функция: получить текст выбранного пункта
+        const getSelectText = (id) => {
+          const el = getEl(id);
+          if (el && el.selectedIndex >= 0) return el.options[el.selectedIndex].text;
+          return null;
+        };
 
-  function updateInsertColorState() {
-    const frameValue = ($el(".cfg-select-frame").val() || "").toLowerCase();
-    const insertColorSelect = $el(".cfg-select-insert-color");
+        // Собираем данные о том, что выбрал пользователь в конфигураторе
+        const selectionData = {
+          machine: getSelectText('machine-select'),
+          frame: getSelectText('carcass-select'),
+          frame_color: getSelectText('carcass-color-select'),
+          refrigerator: getSelectText('fridge-select'),
+          terminal: getSelectText('terminal-select'),
+          price: getEl('price-regular')?.textContent || '-',
+          ozon_link: getEl('btn-ozon')?.disabled ? null : (currentVariationId ? 'Есть ссылка' : null),
+          gallery_folder: currentVariationId ? ('Variation ID: ' + currentVariationId) : 'Не выбрано'
+        };
 
-    if (!frameValue || frameValue === "нет" || frameValue === "no") {
-      if (insertColorSelect.length) {
-        insertColorSelect.prop("disabled", true);
-        insertColorSelect.val("");
-      }
-    } else {
-      if (insertColorSelect.length) {
-        insertColorSelect.prop("disabled", false);
-        if (!insertColorSelect.val()) {
-          insertColorSelect.val("синий");
-        }
-      }
-    }
-  }
+        // Формируем итоговый объект для Python
+        const payload = {
+          name: formData.get('name'),
+          phone: formData.get('phone'),
+          telegram: formData.get('telegram'),
+          email: formData.get('email'),
+          selection: selectionData // Вкладываем конфигурацию
+        };
 
-  function loadData() {
-    // Пытаемся взять единый легкий ответ (машины без галереи + specs)
-    return $.getJSON(API_BASE + "/config-data")
-      .then((res) => {
-        state.machines = res?.machines || [];
-        state.specs = {};
-        (res?.specs || []).forEach((sp) => {
-          if (!state.specs[sp.category]) state.specs[sp.category] = {};
-          state.specs[sp.category][sp.name] = sp;
-        });
-      })
-      .catch(() => {
-        // Фолбэк: два лёгких запроса, без include_gallery
-        const mReq = $.getJSON(API_BASE + "/coffee-machines");
-        const sReq = $.getJSON(API_BASE + "/specs");
-        return $.when(mReq, sReq).then(([m], [s]) => {
-          state.machines = m || [];
-          state.specs = {};
-          (s || []).forEach((sp) => {
-            if (!state.specs[sp.category]) state.specs[sp.category] = {};
-            state.specs[sp.category][sp.name] = sp;
+        try {
+          const res = await fetch(API_BASE + '/lead', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
           });
-        });
-      });
-  }
 
-  // Галерея превью скрыта, поэтому функция просто очищает контейнер (для совместимости).
-  function renderGallery(v) {
-    const $g = $el(".cfg-gallery");
-    if (!$g.length) return;
-    $g.empty();
-  }
-
-  function getImages(v) {
-    const imgs = v.gallery_files ? v.gallery_files.map(normSrc) : [];
-    const mainSrc = normSrc(v.main_image || (v.gallery_files && v.gallery_files[0]) || "");
-    if (mainSrc && !imgs.includes(mainSrc)) imgs.unshift(mainSrc);
-    return imgs;
-  }
-
-  function updateMainImage(v, forceIndex) {
-    const imgs = getImages(v);
-    const $mainImg = $el(".cfg-main-image");
-    if (!$mainImg.length) return;
-
-    const $nav = $(".cfg-image-nav");
-    const $prevArrow = $nav.find(".cfg-arrow-prev");
-    const $nextArrow = $nav.find(".cfg-arrow-next");
-
-    if (!imgs.length) {
-      v._imgIdx = 0;
-      $mainImg.attr("src", "");
-      $nav.hide();
-      return;
-    }
-
-    const maxIdx = imgs.length - 1;
-    const idx = Math.min(Math.max(forceIndex !== undefined ? forceIndex : (v._imgIdx || 0), 0), maxIdx);
-    v._imgIdx = idx;
-    $mainImg.attr("src", imgs[idx]);
-
-    if ($nav.length) {
-      $nav.show();
-      // Если одно фото — стрелки неактивны
-      if (imgs.length <= 1) {
-        $prevArrow.addClass("disabled").prop("disabled", true);
-        $nextArrow.addClass("disabled").prop("disabled", true);
-      } else {
-        $prevArrow.removeClass("disabled").prop("disabled", false);
-        $nextArrow.removeClass("disabled").prop("disabled", false);
-      }
-    }
-  }
-
-  function ensureImageNav() {
-    const $container = $el(".product-image");
-    if (!$container.length || $container.find(".cfg-image-nav").length) return;
-
-    const nav = $(`
-      <div class="cfg-image-nav">
-        <button type="button" class="cfg-arrow cfg-arrow-prev" aria-label="Предыдущее изображение">‹</button>
-        <button type="button" class="cfg-arrow cfg-arrow-next" aria-label="Следующее изображение">›</button>
-      </div>
-    `);
-
-    nav.on("click", ".cfg-arrow-prev", () => {
-      const v = state.current;
-      if (!v) return;
-      const imgs = getImages(v);
-      if (imgs.length <= 1) return;
-      const nextIdx = ((v._imgIdx || 0) - 1 + imgs.length) % imgs.length;
-      updateMainImage(v, nextIdx);
-    });
-
-    nav.on("click", ".cfg-arrow-next", () => {
-      const v = state.current;
-      if (!v) return;
-      const imgs = getImages(v);
-      if (imgs.length <= 1) return;
-      const nextIdx = ((v._imgIdx || 0) + 1) % imgs.length;
-      updateMainImage(v, nextIdx);
-    });
-
-    $container.append(nav);
-  }
-
-  // Полностью убираем превью-галерею из DOM (на случай старого кэша)
-  $(document).on("DOMContentLoaded", () => {
-    $(".cfg-gallery").remove();
-  });
-
-  function ensureGallery(v) {
-    if (!v || (v.gallery_files && v.gallery_files.length) || v._galleryLoading || !v.id) return $.Deferred().resolve().promise();
-    v._galleryLoading = true;
-    renderGallery(v);
-    return $.getJSON(API_BASE + "/coffee-machines/" + v.id + "?include_gallery=true")
-      .done((full) => {
-        Object.assign(v, full || {});
-      })
-      .always(() => {
-        v._galleryLoading = false;
-        renderGallery(v);
-        updateMainImage(v);
-      });
-  }
-
-  function fillSelects() {
-    const m = state.machines;
-    populateSelect($el(".cfg-select-machine"), m.map((x) => x.model || x.name), "Выберите кофемашину");
-    populateSelect($el(".cfg-select-frame"), m.map((x) => x.frame), "Выберите каркас");
-    populateSelect($el(".cfg-select-frame-color"), m.map((x) => x.frame_color), "Выберите цвет");
-    populateSelect($el(".cfg-select-fridge"), m.map((x) => x.refrigerator), "Выберите холодильник");
-    populateSelect($el(".cfg-select-terminal"), m.map((x) => x.terminal), "Выберите терминал");
-    populateSelect($el(".cfg-select-insert-color"), INSERT_COLORS, "—");
-    updateFrameColorState();
-    updateInsertColorState();
-  }
-
-  function updateFrameColorState() {
-    const frameValue = $el(".cfg-select-frame").val();
-    const $frameColor = $el(".cfg-select-frame-color");
-    const $frameColorLabel = $frameColor.closest('.config-item').find('.config-label');
-
-    // Если каркас не выбран или "Нет" - отключаем выбор цвета
-    if (!frameValue || frameValue === "" || frameValue.toLowerCase() === "нет") {
-      $frameColor.prop("disabled", true);
-      $frameColorLabel.addClass('disabled-label');
-    } else {
-      $frameColor.prop("disabled", false);
-      $frameColorLabel.removeClass('disabled-label');
-    }
-  }
-
-  function findVariant(allowEmpty = true) {
-    const mv = $el(".cfg-select-machine").val();
-    const fv = $el(".cfg-select-frame").val();
-    const fcv = $el(".cfg-select-frame-color").val();
-    const rv = $el(".cfg-select-fridge").val();
-    const tv = $el(".cfg-select-terminal").val();
-    if (!mv && allowEmpty) return null;
-    const cands = state.machines.filter((v) => {
-      if (mv && (v.model || v.name) !== mv) return false;
-      if (fv && v.frame !== fv) return false;
-      if (fcv && v.frame_color !== fcv) return false;
-      if (rv && v.refrigerator !== rv) return false;
-      if (tv && v.terminal !== tv) return false;
-      return true;
-    });
-    if (cands[0]) return cands[0];
-    return allowEmpty ? null : (state.machines[0] || null);
-  }
-
-  function renderVariant(v, syncSelects = false) {
-    if (!v) {
-      state.current = null;
-      setText($el(".cfg-price-right"), "—");
-      setText($el(".cfg-price-left"), "—");
-      $el(".cfg-gallery").empty();
-      $el(".cfg-main-image").attr("src", "");
-      renderSpecs($el(".cfg-spec-machine"), null);
-      renderSpecs($el(".cfg-spec-frame"), null);
-      renderSpecs($el(".cfg-spec-fridge"), null);
-      renderSpecs($el(".cfg-spec-terminal"), null);
-      updateFrameColorState();
-      updateTerminalState();
-      return;
-    }
-    state.current = v;
-
-    if (syncSelects) {
-      // Проставляем выбранные значения в селекты, чтобы пользователь видел текущий вариант
-      const setSelVal = (selector, val) => {
-        const $s = $el(selector);
-        if ($s.length) {
-          $s.val(val || "");
+          if (res.ok) {
+            alert('Спасибо! Ваша заявка отправлена.');
+            closeModal();
+            form.reset(); // Очищаем поля формы
+          } else {
+            const errData = await res.json().catch(() => ({}));
+            alert('Ошибка при отправке: ' + (errData.detail || 'Попробуйте позже.'));
+          }
+        } catch (err) {
+          console.error(err);
+          alert('Ошибка соединения с сервером.');
+        } finally {
+          // Возвращаем кнопку в исходное состояние
+          submitBtn.disabled = false;
+          submitBtn.textContent = originalText;
         }
+      });
+    }
+
+    // =========================================================
+    // 2. ЛОГИКА КОНФИГУРАТОРА (Слайдер, API, Цены)
+    // =========================================================
+
+    async function fetchJson(url) {
+      const res = await fetch(url, { headers: { 'Accept': 'application/json' } });
+      if (!res.ok) throw new Error('API error ' + res.status);
+      return res.json();
+    }
+
+    function getIntValue(id) {
+      const el = getEl(id);
+      if (!el) return null;
+      const v = el.value;
+      if (v === '' || v == null) return null;
+      const n = Number(v);
+      return Number.isFinite(n) ? n : null;
+    }
+
+    function saveState() {
+      const state = {
+        machineId: getEl('machine-select')?.value || '',
+        fridgeId: getEl('fridge-select')?.value || '',
+        terminalId: getEl('terminal-select')?.value || '',
+        carcassId: getEl('carcass-select')?.value || '',
+        carcassColorId: getEl('carcass-color-select')?.value || '',
+        designColorId: getEl('design-color-select')?.value || ''
       };
-      setSelVal(".cfg-select-machine", v.model || v.name || "");
-      setSelVal(".cfg-select-frame", v.frame || "");
-      setSelVal(".cfg-select-frame-color", v.frame_color || "");
-      setSelVal(".cfg-select-fridge", v.refrigerator || "");
-      setSelVal(".cfg-select-terminal", v.terminal || "");
-    }
-    updateFrameColorState();
-    updateTerminalState();
-
-    const mainSrc = normSrc(v.main_image || (v.gallery_files && v.gallery_files[0]) || "");
-    const $mainImg = $el(".cfg-main-image");
-    if ($mainImg.length) {
-      $mainImg.attr("src", mainSrc || "");
+      try { localStorage.setItem('configurator-state', JSON.stringify(state)); } catch (e) {}
     }
 
-    ensureImageNav();
-    updateMainImage(v);
-    ensureGallery(v);
-    setText($el(".cfg-price-right"), fmtPrice(v.price));
-
-    const $priceLeft = $el(".cfg-price-left");
-    const ozonBtn = $el(".cfg-btn-ozon");
-    $priceLeft.empty();
-    if (ozonBtn.length) {
-      if (v.ozon_link) {
-        ozonBtn.removeClass("disabled").attr("href", v.ozon_link).text("Купить на OZON");
-      } else {
-        ozonBtn.addClass("disabled").attr("href", "#").text("Нет на OZON");
-      }
+    function restoreState() {
+      try { return JSON.parse(localStorage.getItem('configurator-state')); } catch (e) { return null; }
     }
 
+    function fillSelect(select, items, mapFn) {
+      if (!select) return;
+      select.innerHTML = '';
+      items.forEach(item => {
+        const { value, label } = mapFn(item);
+        const opt = document.createElement('option');
+        opt.value = value;
+        opt.textContent = label;
+        select.appendChild(opt);
+      });
+    }
 
-    const specM = state.specs["coffee_machine"]?.[v.model || v.name] || null;
-    const specF = state.specs["frame"]?.[v.frame] || null;
-    const specR = state.specs["refrigerator"]?.[v.refrigerator] || null;
-    // Показ характеристик терминала только если терминал выбран в селекте
-    const selectedTerminal = $el(".cfg-select-terminal").val();
-    const specT = selectedTerminal
-      ? state.specs["terminal"]?.[selectedTerminal] || state.specs["terminal"]?.[v.terminal] || null
-      : null;
+    function uniqueById(arr) {
+      const map = new Map();
+      arr.forEach(item => {
+        if (!item || item.id == null) return;
+        if (!map.has(item.id)) map.set(item.id, item);
+      });
+      return Array.from(map.values());
+    }
 
-    renderSpecs($el(".cfg-spec-machine"), specM);
-    renderSpecs($el(".cfg-spec-frame"), specF);
-    renderSpecs($el(".cfg-spec-fridge"), specR);
-    renderSpecs($el(".cfg-spec-terminal"), specT);
+    function findCarcass(id) {
+      return (META?.carcasses || []).find(c => c.id === id) || null;
+    }
 
-    saveSelection();
-  }
+    function setOzonPlaceholder() {
+      const priceSaleEl = getEl('price-sale');
+      if (!priceSaleEl) return;
+      priceSaleEl.innerHTML =
+        '<span class="price-placeholder">' +
+          '<span class="price-placeholder__icon">ⓘ</span>' +
+          '<span class="price-placeholder__text">Нет комплекта OZON</span>' +
+        '</span>';
+    }
 
-  function openModal() {
-    $("#cfg-quote-modal").addClass("is-open");
-    $("body").css("overflow", "hidden");
-  }
+    function updateCarcassColorsAndDesigns() {
+      const carcassColorSelect = getEl('carcass-color-select');
+      const designColorSelect  = getEl('design-color-select');
+      if (!META || !carcassColorSelect || !designColorSelect) return;
 
-  function closeModal() {
-    $("#cfg-quote-modal").removeClass("is-open");
-    $("body").css("overflow", "");
-    // Очистка формы
-    $("#cfg-quote-form")[0].reset();
-    $("#cfg-lead-consent").prop("checked", false);
-    $(".cfg-lead-submit").prop("disabled", true);
-    $(".cfg-form-message").removeClass("success error").hide();
-  }
+      const carcassId = getIntValue('carcass-select');
 
-  function validateForm() {
-    const name = $("#cfg-lead-name").val().trim();
-    const phone = $("#cfg-lead-phone").val().trim();
-    const consent = $("#cfg-lead-consent").is(":checked");
-
-    // Кнопка активна только если заполнены обязательные поля и есть согласие
-    const isValid = name && phone && consent;
-    $(".cfg-lead-submit").prop("disabled", !isValid);
-    return isValid;
-  }
-
-  function sendLead() {
-    const v = state.current;
-    const name = $("#cfg-lead-name").val().trim();
-    const phone = $("#cfg-lead-phone").val().trim();
-    const telegram = $("#cfg-lead-telegram").val().trim();
-    const email = $("#cfg-lead-email").val().trim();
-
-    const payload = {
-      name: name,
-      phone: phone,
-      telegram: telegram || "",
-      email: email || "",
-      selection: v ? {
-        id: v.id,
-        machine: v.model || v.name,
-        frame: v.frame,
-        frame_color: v.frame_color,
-        refrigerator: v.refrigerator,
-        terminal: v.terminal,
-        price: v.price,
-        ozon_link: v.ozon_link,
-        gallery_folder: v.gallery_folder,
-      } : null,
-    };
-
-    return $.ajax({
-      url: LEAD_ENDPOINT,
-      method: "POST",
-      contentType: "application/json",
-      data: JSON.stringify(payload),
-    });
-  }
-
-  function bindEvents() {
-    $(".cfg-select-machine, .cfg-select-frame, .cfg-select-frame-color, .cfg-select-fridge, .cfg-select-terminal, .cfg-select-insert-color").on(
-      "change",
-      () => {
-        updateFrameColorState();
-        updateInsertColorState();
-        renderVariant(findVariant(true));
-      }
-    );
-
-    // Открытие модального окна
-    $el(".cfg-btn-quote").on("click", (e) => {
-      e.preventDefault();
-      openModal();
-    });
-
-    // Закрытие модального окна
-    $(".cfg-modal-close, .cfg-modal-overlay").on("click", (e) => {
-      e.preventDefault();
-      closeModal();
-    });
-
-    // Валидация при изменении полей и чекбокса
-    $("#cfg-lead-name, #cfg-lead-phone, #cfg-lead-consent").on("input change", validateForm);
-
-    // Отправка формы
-    $("#cfg-quote-form").on("submit", (e) => {
-      e.preventDefault();
-
-      if (!validateForm()) {
+      if (!carcassId) {
+        carcassColorSelect.innerHTML = ''; designColorSelect.innerHTML = '';
+        carcassColorSelect.disabled = true; designColorSelect.disabled = true;
         return;
       }
 
-      const $submitBtn = $(".cfg-lead-submit");
-      const $message = $(".cfg-form-message");
+      const carcass = findCarcass(carcassId);
+      if (!carcass || !Array.isArray(carcass.variations)) {
+        carcassColorSelect.innerHTML = ''; designColorSelect.innerHTML = '';
+        carcassColorSelect.disabled = true; designColorSelect.disabled = true;
+        return;
+      }
 
-      $submitBtn.prop("disabled", true).text("Отправка...");
-      $message.removeClass("success error").hide();
+      const variations = carcass.variations;
+      const carcassColors = uniqueById(variations.map(v => v.carcass_color));
 
-      sendLead()
-        .done(() => {
-          $message.addClass("success").text("Заявка успешно отправлена!").show();
-          setTimeout(() => {
-            closeModal();
-          }, 2000);
-        })
-        .fail(() => {
-          $message.addClass("error").text("Не удалось отправить заявку. Попробуйте ещё раз.").show();
-          $submitBtn.prop("disabled", false).text("Отправить");
+      carcassColorSelect.disabled = false;
+      // designColorSelect пока блокируем, пока не выберут цвет каркаса
+      
+      fillSelect(carcassColorSelect, carcassColors, c => ({
+        value: c.id, label: c.name || c.code
+      }));
+
+      // Сразу обновляем доступные цвета дизайна для первого цвета каркаса
+      updateDesignColors();
+    }
+
+    function updateDesignColors() {
+      const designColorSelect = getEl('design-color-select');
+      if (!META || !designColorSelect) return;
+      const carcassId = getIntValue('carcass-select');
+      const carcassColorId = getIntValue('carcass-color-select');
+
+      if (!carcassId || !carcassColorId) {
+        designColorSelect.innerHTML = ''; designColorSelect.disabled = true; return;
+      }
+
+      const carcass = findCarcass(carcassId);
+      if (!carcass || !Array.isArray(carcass.variations)) return;
+
+      const variations = carcass.variations.filter(v => v.carcass_color?.id === carcassColorId);
+      const designColors = uniqueById(variations.map(v => v.design_color));
+
+      designColorSelect.disabled = false;
+      fillSelect(designColorSelect, designColors, c => ({
+        value: c.id, label: c.name || c.code
+      }));
+    }
+
+    function getTerminalOptions() {
+      return [{ id: '', name: 'Нет' }].concat(META?.terminals || []);
+    }
+
+    function updateTerminalAvailability() {
+      const terminalSelect = getEl('terminal-select');
+      if (!terminalSelect) return;
+      const machineId = getIntValue('machine-select');
+      
+      if (!machineId) {
+        terminalSelect.dataset.prevTerminal = terminalSelect.value || '';
+        terminalSelect.innerHTML = '';
+        terminalSelect.disabled = true;
+        return;
+      }
+
+      // Если включили машину, разблокируем терминал
+      terminalSelect.disabled = false;
+      
+      // Если список пуст (был очищен), заполняем заново
+      if (terminalSelect.options.length === 0) {
+          fillSelect(terminalSelect, getTerminalOptions(), t => ({
+            value: t.id, label: t.name
+          }));
+      }
+
+      const prev = terminalSelect.dataset.prevTerminal;
+      if (prev) {
+        const hasPrev = Array.from(terminalSelect.options).some(opt => opt.value == prev);
+        if (hasPrev) terminalSelect.value = prev;
+      }
+    }
+
+    function getActiveCarcassVariation() {
+      const carcassId = getIntValue('carcass-select');
+      if (!carcassId) return null;
+      const carcassColorId = getIntValue('carcass-color-select');
+      const designColorId  = getIntValue('design-color-select');
+      const carcass = findCarcass(carcassId);
+      if (!carcass || !Array.isArray(carcass.variations)) return null;
+
+      let variation = carcass.variations.find(v =>
+        v.carcass_color?.id === carcassColorId && v.design_color?.id === designColorId
+      );
+      // Если точного совпадения нет, берем первую вариацию (fallback)
+      if (!variation) variation = carcass.variations[0] || null;
+      return variation || null;
+    }
+
+    function updateSliderPosition() {
+      const track = document.getElementById('slider-track');
+      if (!track || track.children.length <= 0) return;
+      const total = track.children.length;
+      if (currentSlideIndex < 0) currentSlideIndex = 0;
+      if (currentSlideIndex > total - 1) currentSlideIndex = total - 1;
+      track.style.transform = 'translateX(-' + (currentSlideIndex * 100) + '%)';
+    }
+
+    function renderGallery(variation) {
+      const trackEl = document.getElementById('slider-track');
+      if (!trackEl) return;
+      
+      // Удаляем все слайды кроме первого (интерактивного)
+      // Предполагаем, что интерактивный слайд всегда первый
+      while (trackEl.children.length > 1) { trackEl.removeChild(trackEl.lastChild); }
+
+      const urls = variation?.gallery_image_urls || [];
+      const carcassId = getIntValue('carcass-select');
+      const hasFrame = !!carcassId;
+      const hasAnyItem = !!(getIntValue('machine-select') || getIntValue('fridge-select') || getIntValue('terminal-select'));
+
+      // Добавляем картинки из галереи
+      urls.forEach(url => {
+        const slide = document.createElement('div');
+        slide.className = 'slider-slide';
+        const img = document.createElement('img');
+        img.src = url; img.loading = 'lazy';
+        img.style.width = '100%'; img.style.height = 'auto'; img.style.maxWidth = '400px';
+        slide.appendChild(img);
+        trackEl.appendChild(slide);
+      });
+      
+      // Если выбран каркас и товары, добавляем "превью сборки" в конец галереи
+      if (hasFrame && hasAnyItem) {
+        const original = document.getElementById('config-layers');
+        if (original) {
+          const slide = document.createElement('div');
+          slide.className = 'slider-slide';
+          const clone = original.cloneNode(true);
+          clone.removeAttribute('id');
+          clone.querySelectorAll('[id]').forEach(node => node.removeAttribute('id'));
+          clone.classList.add('config-layers-preview');
+          slide.appendChild(clone);
+          trackEl.appendChild(slide);
+        }
+      }
+      currentSlideIndex = 0;
+      updateSliderPosition();
+    }
+
+    function updateLayers() {
+      if (!META) return;
+      const machineId  = getIntValue('machine-select');
+      const fridgeId   = getIntValue('fridge-select');
+      const terminalId = getIntValue('terminal-select');
+      const carcassId  = getIntValue('carcass-select');
+
+      const machine  = (META.machines  || []).find(m => m.id === machineId);
+      const fridge   = (META.fridges   || []).find(f => f.id === fridgeId);
+      const terminal = (META.terminals || []).find(t => t.id === terminalId);
+      const carcass  = findCarcass(carcassId);
+
+      const variation = getActiveCarcassVariation();
+      currentVariationId = variation ? variation.id : null;
+
+      const layerCarcass = getEl('layer-carcass');
+      const layerFridge  = getEl('layer-fridge');
+      const layerMachine = getEl('layer-machine');
+      const layerTerminal = getEl('layer-terminal');
+      const configLayers = getEl('config-layers');
+      const productImage = document.querySelector('.cz-conf .product-image');
+      const itemsContainer = document.querySelector('.cz-conf .items-container');
+      const emptyState = getEl('empty-state');
+
+      if (layerCarcass) layerCarcass.src = variation?.main_image_url || '';
+      
+      if (layerFridge) {
+        layerFridge.src = fridge?.main_image_url || '';
+        layerFridge.classList.toggle('is-active', !!fridge);
+      }
+      if (layerMachine) {
+        layerMachine.src = machine?.main_image_url || '';
+        layerMachine.classList.toggle('is-active', !!machine);
+      }
+      if (layerTerminal) {
+        layerTerminal.src = terminal?.main_image_url || '';
+        layerTerminal.classList.toggle('is-active', !!terminal);
+      }
+
+      const hasFrame = !!carcassId;
+      const hasCoffee = !!machineId;
+      const hasFridge = !!fridgeId;
+      const hasTerminal = !!terminalId;
+
+      const elementCount = (hasCoffee ? 1 : 0) + (hasFridge ? 1 : 0) + (hasTerminal ? 1 : 0);
+      const nothingSelected = !hasFrame && !hasCoffee && !hasFridge && !hasTerminal;
+
+      if (configLayers) {
+        configLayers.classList.toggle('carcass-selected', hasFrame);
+        configLayers.classList.toggle('no-frame', !hasFrame && elementCount > 0);
+        configLayers.classList.toggle('frame-only', hasFrame && elementCount === 0);
+      }
+
+      if (productImage) {
+         if (hasFrame) productImage.classList.add('carcass-active');
+         else productImage.classList.remove('carcass-active');
+      }
+
+      if (emptyState) emptyState.style.display = nothingSelected ? 'flex' : 'none';
+
+      if (itemsContainer) {
+        const isBusinessCarcass = !!carcass && typeof carcass.name === 'string' && carcass.name.toLowerCase().includes('coffee zone business');
+        
+        // Сброс классов лейаута
+        itemsContainer.className = 'items-container'; 
+        if (isBusinessCarcass && hasFrame) itemsContainer.classList.add('carcass-business');
+
+        if (nothingSelected) {
+          renderGallery(variation);
+          return;
+        }
+
+        if (hasFrame && elementCount > 0) {
+             if (elementCount === 1) {
+               if (hasCoffee) itemsContainer.classList.add('layout-frame-coffee-only');
+               else if (hasFridge) itemsContainer.classList.add('layout-frame-fridge-only');
+               else if (hasTerminal) itemsContainer.classList.add('layout-frame-terminal-only');
+             }
+        } else if (!hasFrame && elementCount > 0) {
+             if (elementCount === 1) {
+               if (hasCoffee) itemsContainer.classList.add('layout-alone-coffee');
+               else if (hasFridge) itemsContainer.classList.add('layout-alone-fridge');
+               else if (hasTerminal) itemsContainer.classList.add('layout-alone-terminal');
+             } else if (elementCount === 2) {
+               if (hasCoffee && hasFridge) itemsContainer.classList.add('layout-pair-coffee-fridge');
+               else if (hasCoffee && hasTerminal) itemsContainer.classList.add('layout-pair-coffee-terminal');
+               else if (hasFridge && hasTerminal) itemsContainer.classList.add('layout-pair-fridge-terminal');
+             } else if (elementCount === 3) {
+               itemsContainer.classList.add('layout-trio-all');
+             }
+        }
+        void itemsContainer.offsetHeight; // force reflow
+      }
+
+      renderGallery(variation);
+    }
+
+    function renderSpecs() {
+      const container = getEl('specs-container');
+      if (!container || !META) return;
+      container.innerHTML = '';
+
+      const machineId  = getIntValue('machine-select');
+      const fridgeId   = getIntValue('fridge-select');
+      const terminalId = getIntValue('terminal-select');
+      const carcassId  = getIntValue('carcass-select');
+
+      const machine  = (META.machines  || []).find(m => m.id === machineId);
+      const fridge   = (META.fridges   || []).find(f => f.id === fridgeId);
+      const terminal = (META.terminals || []).find(t => t.id === terminalId);
+      const carcass  = findCarcass(carcassId);
+
+      const blocks = [
+        { title: 'Кофемашина', item: machine },
+        { title: 'Холодильник', item: fridge },
+        { title: 'Каркас', item: carcass },
+        { title: 'Терминал', item: terminal }
+      ];
+
+      blocks.forEach(({ title, item }) => {
+        if (!item || item.id == null) return;
+        const block = document.createElement('div');
+        block.className = 'spec-block';
+        
+        const t = document.createElement('div');
+        t.className = 'spec-title';
+        t.textContent = title;
+        block.appendChild(t);
+
+        const nameDiv = document.createElement('div');
+        nameDiv.className = 'spec-name';
+        nameDiv.textContent = item.name || '';
+        block.appendChild(nameDiv);
+
+        const specs = item.specs_short || item.specs || null;
+        if (Array.isArray(specs) && specs.length) {
+          const ul = document.createElement('ul');
+          ul.className = 'spec-list';
+          specs.forEach(s => {
+            const li = document.createElement('li');
+            li.textContent = s;
+            ul.appendChild(li);
+          });
+          block.appendChild(ul);
+        }
+        container.appendChild(block);
+      });
+    }
+
+    async function updatePreview() {
+      if (!META) return;
+      const coffee_machine_id = getIntValue('machine-select');
+      const fridge_id         = getIntValue('fridge-select');
+      const carcass_id        = getIntValue('carcass-select');
+      const carcass_color_id  = getIntValue('carcass-color-select');
+      const design_color_id   = getIntValue('design-color-select');
+      const terminal_id       = getIntValue('terminal-select');
+
+      const priceSaleEl    = getEl('price-sale');
+      const priceRegularEl = getEl('price-regular');
+      const btnOzon        = getEl('btn-ozon');
+
+      // Локальный расчет "Обычной цены" (сумма компонентов)
+      let basePrice = 0;
+      function addPrice(item) { if (item && typeof item.price === 'number') basePrice += item.price; }
+
+      const machine  = (META.machines  || []).find(m => m.id === coffee_machine_id);
+      const fridge   = (META.fridges   || []).find(f => f.id === fridge_id);
+      const terminal = (META.terminals || []).find(t => t.id === terminal_id);
+      const carcass  = findCarcass(carcass_id);
+
+      addPrice(machine); addPrice(fridge); addPrice(terminal); addPrice(carcass);
+
+      if (priceRegularEl) {
+        if (basePrice > 0) {
+          priceRegularEl.classList.add('updating');
+          priceRegularEl.textContent = basePrice.toLocaleString('ru-RU') + '₽';
+          setTimeout(() => priceRegularEl.classList.remove('updating'), 400);
+        } else {
+          priceRegularEl.textContent = '';
+        }
+      }
+
+      // Если конфигурация неполная для каркаса, то OZON не считаем
+      if (!coffee_machine_id || !carcass_id || !carcass_color_id || !design_color_id) {
+        if (priceSaleEl) setOzonPlaceholder();
+        if (btnOzon) { btnOzon.disabled = true; btnOzon.removeAttribute('onclick'); }
+        return;
+      }
+
+      // Запрос цены OZON и ссылки
+      const params = new URLSearchParams();
+      params.set('coffee_machine_id', coffee_machine_id);
+      params.set('carcass_id',        carcass_id);
+      params.set('carcass_color_id',  carcass_color_id);
+      params.set('design_color_id',   design_color_id);
+      if (fridge_id)   params.set('fridge_id', fridge_id);
+      if (terminal_id) params.set('terminal_id', terminal_id);
+      if (currentVariationId) params.set('carcass_design_combination_id', currentVariationId);
+
+      let preview;
+      try {
+        preview = await fetchJson(API_BASE + '/preview?' + params.toString());
+      } catch (e) {
+        console.error('preview error', e);
+        return;
+      }
+
+      if (!preview || !preview.is_exact_bundle) {
+        if (priceSaleEl) setOzonPlaceholder();
+        if (btnOzon) { btnOzon.disabled = true; btnOzon.removeAttribute('onclick'); }
+        return;
+      }
+
+      if (priceSaleEl && preview.custom_price != null) {
+        priceSaleEl.classList.add('updating');
+        priceSaleEl.textContent = preview.custom_price.toLocaleString('ru-RU') + '₽';
+        setTimeout(() => priceSaleEl.classList.remove('updating'), 400);
+      }
+
+      if (btnOzon) {
+        if (preview.ozon_url) {
+          btnOzon.disabled = false;
+          btnOzon.textContent = 'Заказать на OZON';
+          btnOzon.onclick = function () { window.open(preview.ozon_url, '_blank'); };
+        } else {
+          btnOzon.disabled = true;
+          btnOzon.textContent = 'Нет ссылки OZON';
+          btnOzon.removeAttribute('onclick');
+        }
+      }
+    }
+
+    async function init() {
+      try {
+        META = await fetchJson(API_BASE + '/meta');
+      } catch (e) {
+        console.error('Failed to load /meta', e);
+        return;
+      }
+
+      const machinesSelect  = getEl('machine-select');
+      const fridgesSelect   = getEl('fridge-select');
+      const terminalsSelect = getEl('terminal-select');
+      const carcassesSelect = getEl('carcass-select');
+
+      const savedState = restoreState();
+
+      // Заполнение селектов
+      if (machinesSelect) {
+        const items = [{ id: '', name: 'Нет' }].concat(META.machines || []);
+        fillSelect(machinesSelect, items, m => ({ value: m.id, label: m.name }));
+        if (savedState?.machineId) machinesSelect.value = savedState.machineId;
+        else if (META.machines && META.machines.length) machinesSelect.value = META.machines[0].id;
+      }
+
+      if (fridgesSelect) {
+        const items = [{ id: '', name: 'Нет' }].concat(META.fridges || []);
+        fillSelect(fridgesSelect, items, f => ({ value: f.id, label: f.name }));
+        if (savedState?.fridgeId) fridgesSelect.value = savedState.fridgeId;
+        else if (META.fridges && META.fridges.length) fridgesSelect.value = META.fridges[0].id;
+      }
+
+      if (terminalsSelect) {
+        const items = [{ id: '', name: 'Нет' }].concat(META.terminals || []);
+        fillSelect(terminalsSelect, items, t => ({ value: t.id, label: t.name }));
+        if (savedState?.terminalId) terminalsSelect.value = savedState.terminalId;
+        else if (META.terminals && META.terminals.length) terminalsSelect.value = META.terminals[0].id;
+      }
+
+      if (carcassesSelect) {
+        const items = [{ id: '', name: 'Нет' }].concat(META.carcasses || []);
+        fillSelect(carcassesSelect, items, c => ({ value: c.id, label: c.name }));
+        if (savedState?.carcassId) carcassesSelect.value = savedState.carcassId;
+        else if (META.carcasses && META.carcasses.length) carcassesSelect.value = META.carcasses[0].id;
+      }
+
+      updateCarcassColorsAndDesigns();
+      updateTerminalAvailability();
+      
+      // Попытка восстановить сложные зависимости (цвета) из LocalStorage
+      if (savedState?.carcassId && (savedState.carcassColorId || savedState.designColorId)) {
+        requestAnimationFrame(() => {
+          const carcassColorSelect = getEl('carcass-color-select');
+          const designColorSelect = getEl('design-color-select');
+          
+          if (carcassColorSelect && savedState.carcassColorId) {
+             // Проверяем, есть ли такая опция
+             const hasOp = Array.from(carcassColorSelect.options).some(o => o.value == savedState.carcassColorId);
+             if (hasOp) {
+               carcassColorSelect.value = savedState.carcassColorId;
+               updateDesignColors();
+               
+               requestAnimationFrame(() => {
+                 if (designColorSelect && savedState.designColorId) {
+                    const hasD = Array.from(designColorSelect.options).some(o => o.value == savedState.designColorId);
+                    if (hasD) designColorSelect.value = savedState.designColorId;
+                 }
+                 updateLayers(); renderSpecs(); updatePreview();
+               });
+             } else {
+               updateLayers(); renderSpecs(); updatePreview();
+             }
+          } else {
+             updateLayers(); renderSpecs(); updatePreview();
+          }
         });
-    });
-  }
+      } else {
+        updateLayers();
+        renderSpecs();
+        await updatePreview();
+      }
+      
+      attachEvents();
+    }
 
-  $(document).ready(function () {
-    loadData()
-      .then(() => {
-        fillSelects();
+    function attachEvents() {
+      const ids = [
+        'machine-select', 'fridge-select', 'terminal-select',
+        'carcass-select', 'carcass-color-select', 'design-color-select'
+      ];
 
-        // восстановим выбор из хранилища
-        const saved = loadSelection();
-        if (saved) {
-          $el(".cfg-select-machine").val(saved.machine || "");
-          $el(".cfg-select-frame").val(saved.frame || "");
-          $el(".cfg-select-frame-color").val(saved.frame_color || "");
-          $el(".cfg-select-fridge").val(saved.fridge || "");
-          $el(".cfg-select-terminal").val(saved.terminal || "");
-        }
+      ids.forEach(id => {
+        const el = getEl(id);
+        if (!el) return;
+        el.addEventListener('change', async () => {
+          if (id === 'carcass-select') updateCarcassColorsAndDesigns();
+          else if (id === 'carcass-color-select') updateDesignColors();
+          else if (id === 'machine-select') updateTerminalAvailability();
+          
+          updateLayers();
+          renderSpecs();
+          await updatePreview();
+          saveState();
+        });
+      });
 
-        updateFrameColorState();
-        updateTerminalState();
+      const arrowLeft = document.querySelector('.cz-conf .arrow-left');
+      const arrowRight = document.querySelector('.cz-conf .arrow-right');
+      
+      if (arrowLeft) {
+        arrowLeft.addEventListener('click', () => {
+          currentSlideIndex -= 1;
+          updateSliderPosition();
+        });
+      }
+      if (arrowRight) {
+        arrowRight.addEventListener('click', () => {
+          currentSlideIndex += 1;
+          updateSliderPosition();
+        });
+      }
+    }
 
-        let initialVariant = findVariant(true);
-        let syncSelects = false;
-        if (!initialVariant && state.machines.length) {
-          initialVariant = state.machines[0];
-          syncSelects = true; // синхронизируем селекты с первым вариантом
-        }
-        renderVariant(initialVariant, syncSelects);
-        bindEvents();
-      })
-      .fail(() => console.error("Не удалось загрузить конфигуратор"));
-  });
-})(jQuery);
+    document.addEventListener('DOMContentLoaded', init);
+  })();
 </script>
