@@ -174,12 +174,38 @@ def match_frame(db_frame: str, folder_name: str) -> bool:
 def pick_entry(items: List[dict], target: str) -> Optional[str]:
     """Выбирает имя из items по нормализованному соответствию target (регистронезависимо)."""
     t_norm = norm_key(target)
+    candidates = []
+
+    if VERBOSE:
+        print(f"  [pick_entry] Ищем '{target}' (norm: '{t_norm}')")
+
     for it in items:
         name = it.get("name") or ""
         if it.get("type") != "dir":
             continue
-        if norm_key(name) == t_norm:
+        name_norm = norm_key(name)
+
+        # Точное совпадение
+        if name_norm == t_norm:
+            if VERBOSE:
+                print(f"  [pick_entry] ✓ Точное совпадение: '{name}'")
             return name
+
+        # Частичное совпадение (для случаев вроде "JL15_VIVA-ST-MW-PRO" vs "JL15_VIVA-ST-MW PRO")
+        if t_norm in name_norm or name_norm in t_norm:
+            candidates.append(name)
+            if VERBOSE:
+                print(f"  [pick_entry] ~ Частичное совпадение: '{name}' (norm: '{name_norm}')")
+
+    # Если есть кандидаты с частичным совпадением, выбираем самый длинный
+    if candidates:
+        result = max(candidates, key=lambda x: len(norm_key(x)))
+        if VERBOSE:
+            print(f"  [pick_entry] → Выбран из кандидатов: '{result}'")
+        return result
+
+    if VERBOSE:
+        print(f"  [pick_entry] ✗ Совпадений не найдено")
     return None
 
 
@@ -212,10 +238,13 @@ def parse_signature_folder(name: str) -> Tuple[str, Optional[str], Optional[str]
     return model, fridge, terminal
 
 
-def pick_file_for_insert(path: str, client: SeafileClient, machine: CoffeeMachine) -> Optional[str]:
+def pick_file_for_insert(path: str, client: SeafileClient, machine: CoffeeMachine) -> Optional[Tuple[str, str]]:
     """
     Выбирает файл в папке insert_color с учётом сигнатуры (модель/холодильник/терминал).
     Все сравнения регистронезависимы.
+
+    Returns:
+        Tuple[str, str]: (file_path, gallery_folder_path) или None
     """
     try:
         items = client.list_directory(path)
@@ -226,40 +255,61 @@ def pick_file_for_insert(path: str, client: SeafileClient, machine: CoffeeMachin
     direct_files = [it for it in items if it.get("type") == "file"]
     if direct_files:
         f = direct_files[0]
-        return f.get("path") or f"{path.rstrip('/')}/{f.get('name')}"
+        file_path = f.get("path") or f"{path.rstrip('/')}/{f.get('name')}"
+        # В этом случае gallery_folder - это сама папка цвета вставки
+        return (file_path, path)
 
     # Определяем, есть ли у машины холодильник/терминал (регистронезависимо)
     has_fridge = not is_empty_value(machine.refrigerator)
     has_terminal = not is_empty_value(machine.terminal)
 
     # Иначе ищем в подпапках с сигнатурой
-    candidates: List[Tuple[int, str]] = []
+    candidates: List[Tuple[int, str, str]] = []
+
+    if VERBOSE:
+        print(f"    [pick_file] Машина: model={machine.model}, fridge={machine.refrigerator if has_fridge else 'нет'}, terminal={machine.terminal if has_terminal else 'нет'}")
+
     for it in items:
         if it.get("type") != "dir":
             continue
         folder_name = it.get("name") or ""
         sig_model, sig_fridge, sig_terminal = parse_signature_folder(folder_name)
 
+        if VERBOSE:
+            print(f"    [pick_file] Проверяем папку: '{folder_name}' -> model={sig_model}, fridge={sig_fridge}, terminal={sig_terminal}")
+
         # Строгая проверка модели (регистронезависимо)
         if machine.model and norm_key(sig_model) != norm_key(machine.model):
+            if VERBOSE:
+                print(f"    [pick_file]   ✗ Модель не совпадает")
             continue
 
         # Холодильник
         if has_fridge:
             if sig_fridge and norm_key(sig_fridge) != norm_key(machine.refrigerator):
+                if VERBOSE:
+                    print(f"    [pick_file]   ✗ Холодильник не совпадает")
                 continue
             if not sig_fridge:
+                if VERBOSE:
+                    print(f"    [pick_file]   ✗ Холодильник требуется, но не указан в папке")
                 continue
         else:
             if sig_fridge:
+                if VERBOSE:
+                    print(f"    [pick_file]   ✗ Холодильник не требуется, но указан в папке")
                 continue
 
         # Терминал
         if has_terminal:
             if sig_terminal and norm_key(sig_terminal) != norm_key(machine.terminal):
+                if VERBOSE:
+                    print(f"    [pick_file]   ✗ Терминал не совпадает")
                 continue
         else:
             if sig_terminal:
+                if VERBOSE:
+                    print(f"    [pick_file]   ✗ Терминал не требуется, но указан в папке")
                 continue
 
         # Подсчёт релевантности
@@ -275,16 +325,23 @@ def pick_file_for_insert(path: str, client: SeafileClient, machine: CoffeeMachin
         try:
             inner_items = client.list_directory(inner_path)
         except Exception:
+            if VERBOSE:
+                print(f"    [pick_file]   ✗ Не удалось открыть папку")
             continue
         file_item = next((inn for inn in inner_items if inn.get("type") == "file"), None)
         if not file_item:
+            if VERBOSE:
+                print(f"    [pick_file]   ✗ Нет файлов в папке")
             continue
         file_path = file_item.get("path") or f"{inner_path.rstrip('/')}/{file_item.get('name')}"
-        candidates.append((score, file_path))
+        # gallery_folder - это папка с сигнатурой (содержит все изображения для данной конфигурации)
+        if VERBOSE:
+            print(f"    [pick_file]   ✓ Подходит! Score={score}, file={file_item.get('name')}, gallery={inner_path}")
+        candidates.append((score, file_path, inner_path))
 
     if candidates:
         candidates.sort(key=lambda x: x[0], reverse=True)
-        return candidates[0][1]
+        return (candidates[0][1], candidates[0][2])
     return None
 
 
@@ -350,13 +407,15 @@ def build_design_images(machine: CoffeeMachine, client: SeafileClient) -> Dict[s
                 continue
             insert_color = insert_entry.get("name")
             insert_path = insert_entry.get("path") or f"{color_path}/{insert_color}"
-            file_path = pick_file_for_insert(insert_path, client, machine)
-            if not file_path:
+            file_result = pick_file_for_insert(insert_path, client, machine)
+            if not file_result:
                 print(f"[{machine.id}] Нет подходящего файла в {insert_path}")
                 continue
+            file_path, gallery_folder = file_result
             result.setdefault(frame_color, {})[insert_color] = {
                 "main_image_path": file_path,
                 "main_image": file_path,
+                "gallery_folder": gallery_folder,
             }
 
     if not result:
@@ -364,13 +423,21 @@ def build_design_images(machine: CoffeeMachine, client: SeafileClient) -> Dict[s
     return result
 
 
+# Глобальная переменная для verbose режима
+VERBOSE = False
+
+
 def main() -> None:
+    global VERBOSE
+
     parser = argparse.ArgumentParser(description="Автоподбор main_image_path для design_images из Seafile")
     parser.add_argument("--dry-run", action="store_true", help="Только вывод, без записи в БД")
     parser.add_argument("--verbose", "-v", action="store_true", help="Подробный вывод")
     parser.add_argument("--with-frame", action="store_true", help="Только записи С каркасом")
     parser.add_argument("--without-frame", action="store_true", help="Только записи БЕЗ каркаса")
     args = parser.parse_args()
+
+    VERBOSE = args.verbose
 
     settings = Settings()
     client = SeafileClient(settings.seafile_server, settings.seafile_repo_id, settings.seafile_token)
@@ -401,7 +468,9 @@ def main() -> None:
             print(f"[DRY] id={m.id} model={m.model or m.name} frame={frame_info}")
             for fc, inserts in design_images.items():
                 for ic, cfg in inserts.items():
-                    print(f"   {fc}/{ic} -> {cfg.get('main_image_path')}")
+                    print(f"   {fc}/{ic}:")
+                    print(f"      main_image_path: {cfg.get('main_image_path')}")
+                    print(f"      gallery_folder:  {cfg.get('gallery_folder')}")
             updated += 1
             continue
 
@@ -414,7 +483,8 @@ def main() -> None:
         m.design_images = merged
         db.add(m)
         updated += 1
-        print(f"[OK] id={m.id} model={m.model or m.name} frame={frame_info}: обновлены design_images ({len(design_images)} цветов)")
+        total_combos = sum(len(inserts) for inserts in design_images.values())
+        print(f"[OK] id={m.id} model={m.model or m.name} frame={frame_info}: обновлены design_images ({len(design_images)} цветов каркаса, {total_combos} комбинаций)")
 
     if not args.dry_run:
         db.commit()
