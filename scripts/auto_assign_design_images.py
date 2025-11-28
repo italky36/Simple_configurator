@@ -485,9 +485,22 @@ def build_design_images(machine: CoffeeMachine, client: SeafileClient) -> Dict[s
                 continue
             file_path, gallery_folder = file_result
             # Нормализуем цвета к нижнему регистру для совместимости с фронтендом
-            # Также заменяем ё на е для совместимости с JS константами
-            frame_color_key = frame_color.lower().replace('ё', 'е')
-            insert_color_key = insert_color.lower().replace('ё', 'е')
+            # Заменяем е на ё в определенных словах для совместимости с JS константами
+            # Фронтенд использует: "чёрный", "жёлтый", "зелёный", "фиолетовый" (с ё)
+            def normalize_color_key(color_name: str) -> str:
+                """Нормализует название цвета к формату, ожидаемому фронтендом (с буквой ё)."""
+                normalized = color_name.lower()
+                # Маппинг цветов: е -> ё для определенных слов
+                color_map = {
+                    "черный": "чёрный",
+                    "желтый": "жёлтый",
+                    "зеленый": "зелёный",
+                    "фиолетовый": "фиолетовый",
+                }
+                return color_map.get(normalized, normalized)
+
+            frame_color_key = normalize_color_key(frame_color)
+            insert_color_key = normalize_color_key(insert_color)
             result.setdefault(frame_color_key, {})[insert_color_key] = {
                 "main_image_path": file_path,
                 "main_image": file_path,
