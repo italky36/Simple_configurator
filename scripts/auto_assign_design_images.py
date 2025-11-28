@@ -26,6 +26,7 @@ from app.config import Settings  # noqa: E402
 from app.database import SessionLocal  # noqa: E402
 from app.models import CoffeeMachine  # noqa: E402
 from app.seafile_client import SeafileClient  # noqa: E402
+from app.services import media_cache  # noqa: E402
 
 
 BASE_DIR = "/Конфигуратор/Графика"
@@ -485,6 +486,7 @@ def main() -> None:
     parser.add_argument("--verbose", "-v", action="store_true", help="Подробный вывод")
     parser.add_argument("--with-frame", action="store_true", help="Только записи С каркасом")
     parser.add_argument("--without-frame", action="store_true", help="Только записи БЕЗ каркаса")
+    parser.add_argument("--no-cache", action="store_true", help="Не кешировать изображения на сервер")
     args = parser.parse_args()
 
     VERBOSE = args.verbose
@@ -535,6 +537,12 @@ def main() -> None:
         updated += 1
         total_combos = sum(len(inserts) for inserts in design_images.values())
         print(f"[OK] id={m.id} model={m.model or m.name} frame={frame_info}: обновлены design_images ({len(design_images)} цветов каркаса, {total_combos} комбинаций)")
+
+        # Кешируем изображения на сервер
+        if not args.no_cache:
+            print(f"[CACHE] Кеширование изображений для машины {m.id}...")
+            media_cache.cache_machine_media(m, client)
+            print(f"[CACHE] Готово для машины {m.id}")
 
     if not args.dry_run:
         db.commit()
