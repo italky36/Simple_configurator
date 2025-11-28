@@ -422,10 +422,26 @@ def build_design_images(machine: CoffeeMachine, client: SeafileClient) -> Dict[s
         print(f"[{machine.id}] Не удалось открыть {frame_path}")
         return {}
 
+    # Определяем, нужно ли фильтровать по цвету каркаса
+    target_frame_color = machine.frame_color if machine.frame_color and not is_empty_value(machine.frame_color) else None
+
+    if target_frame_color:
+        print(f"[{machine.id}] Фильтруем по цвету каркаса: '{target_frame_color}'")
+    else:
+        print(f"[{machine.id}] Цвет каркаса не указан, обрабатываем все цвета")
+
     for color_entry in color_entries:
         if color_entry.get("type") != "dir":
             continue
         frame_color = color_entry.get("name")
+
+        # Если указан конкретный цвет каркаса в БД, обрабатываем только его
+        if target_frame_color:
+            if not fuzzy_match(target_frame_color, frame_color):
+                if VERBOSE:
+                    print(f"  [build] Пропускаем цвет каркаса '{frame_color}' (нужен '{target_frame_color}')")
+                continue
+
         color_path = color_entry.get("path") or f"{frame_path}/{frame_color}"
         try:
             insert_entries = client.list_directory(color_path)
