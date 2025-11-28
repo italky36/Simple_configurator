@@ -10,6 +10,7 @@
 """
 
 import argparse
+import re
 import sys
 from pathlib import Path
 from typing import Dict, List, Optional, Tuple
@@ -103,6 +104,36 @@ def norm_key(val: str) -> str:
         .replace("-", "")
     )
     return s
+
+
+def fuzzy_match(db_value: str, seafile_value: str) -> bool:
+    """
+    Гибкое сопоставление названий с учетом версий и вариаций написания.
+    Например: 'Vendista v2.5' совпадает с 'vendista'
+              'MC16DAST' совпадает с 'MC16DAST'
+    """
+    if not db_value or not seafile_value:
+        return False
+
+    db_norm = norm_key(db_value)
+    sf_norm = norm_key(seafile_value)
+
+    # Точное совпадение
+    if db_norm == sf_norm:
+        return True
+
+    # Убираем версии из БД (v2.5, v3.0, etc.) для сравнения
+    db_no_version = re.sub(r'v\d+(\.\d+)?', '', db_norm)
+
+    # Проверяем совпадение без версии
+    if db_no_version == sf_norm:
+        return True
+
+    # Частичное совпадение (seafile содержится в db или наоборот)
+    if len(sf_norm) >= 3 and (sf_norm in db_norm or db_norm in sf_norm):
+        return True
+
+    return False
 
 
 def is_empty_value(val: Optional[str]) -> bool:
@@ -286,9 +317,9 @@ def pick_file_for_insert(path: str, client: SeafileClient, machine: CoffeeMachin
 
         # Холодильник
         if has_fridge:
-            if sig_fridge and norm_key(sig_fridge) != norm_key(machine.refrigerator):
+            if sig_fridge and not fuzzy_match(machine.refrigerator, sig_fridge):
                 if VERBOSE:
-                    print(f"    [pick_file]   ✗ Холодильник не совпадает")
+                    print(f"    [pick_file]   ✗ Холодильник не совпадает (БД: {machine.refrigerator}, Seafile: {sig_fridge})")
                 continue
             if not sig_fridge:
                 if VERBOSE:
@@ -302,9 +333,9 @@ def pick_file_for_insert(path: str, client: SeafileClient, machine: CoffeeMachin
 
         # Терминал
         if has_terminal:
-            if sig_terminal and norm_key(sig_terminal) != norm_key(machine.terminal):
+            if sig_terminal and not fuzzy_match(machine.terminal, sig_terminal):
                 if VERBOSE:
-                    print(f"    [pick_file]   ✗ Терминал не совпадает")
+                    print(f"    [pick_file]   ✗ Терминал не совпадает (БД: {machine.terminal}, Seafile: {sig_terminal})")
                 continue
         else:
             if sig_terminal:
@@ -316,9 +347,9 @@ def pick_file_for_insert(path: str, client: SeafileClient, machine: CoffeeMachin
         score = 0
         if machine.model and norm_key(sig_model) == norm_key(machine.model):
             score += 3
-        if has_fridge and sig_fridge and norm_key(sig_fridge) == norm_key(machine.refrigerator):
+        if has_fridge and sig_fridge and fuzzy_match(machine.refrigerator, sig_fridge):
             score += 2
-        if has_terminal and sig_terminal and norm_key(sig_terminal) == norm_key(machine.terminal):
+        if has_terminal and sig_terminal and fuzzy_match(machine.terminal, sig_terminal):
             score += 1
 
         inner_path = it.get("path") or f"{path.rstrip('/')}/{folder_name}"
