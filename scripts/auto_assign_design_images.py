@@ -379,6 +379,18 @@ def pick_file_for_insert(path: str, client: SeafileClient, machine: CoffeeMachin
 
 def build_design_images(machine: CoffeeMachine, client: SeafileClient) -> Dict[str, Dict[str, Dict[str, str]]]:
     """Возвращает найденные design_images для машины, или пустой словарь."""
+
+    # Проверяем, что у машины указан каркас и цвет каркаса
+    if is_empty_value(machine.frame):
+        if VERBOSE:
+            print(f"[{machine.id}] Пропускаем: каркас не указан")
+        return {}
+
+    if is_empty_value(machine.frame_color):
+        if VERBOSE:
+            print(f"[{machine.id}] Пропускаем: цвет каркаса не указан")
+        return {}
+
     try:
         model_entries = client.list_directory(BASE_DIR)
     except Exception as exc:
@@ -423,25 +435,20 @@ def build_design_images(machine: CoffeeMachine, client: SeafileClient) -> Dict[s
         print(f"[{machine.id}] Не удалось открыть {frame_path}")
         return {}
 
-    # Определяем, нужно ли фильтровать по цвету каркаса
-    target_frame_color = machine.frame_color if machine.frame_color and not is_empty_value(machine.frame_color) else None
-
-    if target_frame_color:
-        print(f"[{machine.id}] Фильтруем по цвету каркаса: '{target_frame_color}'")
-    else:
-        print(f"[{machine.id}] Цвет каркаса не указан, обрабатываем все цвета")
+    # Обрабатываем только цвет каркаса, указанный в БД
+    target_frame_color = machine.frame_color
+    print(f"[{machine.id}] Ищем цвет каркаса: '{target_frame_color}'")
 
     for color_entry in color_entries:
         if color_entry.get("type") != "dir":
             continue
         frame_color = color_entry.get("name")
 
-        # Если указан конкретный цвет каркаса в БД, обрабатываем только его
-        if target_frame_color:
-            if not fuzzy_match(target_frame_color, frame_color):
-                if VERBOSE:
-                    print(f"  [build] Пропускаем цвет каркаса '{frame_color}' (нужен '{target_frame_color}')")
-                continue
+        # Обрабатываем ТОЛЬКО тот цвет каркаса, который указан в БД
+        if not fuzzy_match(target_frame_color, frame_color):
+            if VERBOSE:
+                print(f"  [build] Пропускаем цвет каркаса '{frame_color}' (нужен '{target_frame_color}')")
+            continue
 
         color_path = color_entry.get("path") or f"{frame_path}/{frame_color}"
         try:
@@ -559,7 +566,13 @@ def main() -> None:
 
 
 if __name__ == "__main__":
-    main()
+    try:
+        main()
+    except BrokenPipeError:
+        # Игнорируем BrokenPipeError при использовании с pipe (например, | head)
+        import sys
+        sys.stderr.close()
+        sys.exit(0)
 
 
 
