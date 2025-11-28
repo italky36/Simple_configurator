@@ -412,7 +412,10 @@ def build_design_images(machine: CoffeeMachine, client: SeafileClient) -> Dict[s
                 print(f"[{machine.id}] Нет подходящего файла в {insert_path}")
                 continue
             file_path, gallery_folder = file_result
-            result.setdefault(frame_color, {})[insert_color] = {
+            # Нормализуем цвета к нижнему регистру для совместимости с фронтендом
+            frame_color_key = frame_color.lower()
+            insert_color_key = insert_color.lower()
+            result.setdefault(frame_color_key, {})[insert_color_key] = {
                 "main_image_path": file_path,
                 "main_image": file_path,
                 "gallery_folder": gallery_folder,
