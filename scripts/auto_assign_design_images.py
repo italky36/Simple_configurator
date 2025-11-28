@@ -455,9 +455,13 @@ def build_design_images(machine: CoffeeMachine, client: SeafileClient) -> Dict[s
                 continue
             insert_color = insert_entry.get("name")
             insert_path = insert_entry.get("path") or f"{color_path}/{insert_color}"
+
+            if VERBOSE:
+                print(f"  [build] Обрабатываем {frame_color}/{insert_color}")
+
             file_result = pick_file_for_insert(insert_path, client, machine)
             if not file_result:
-                print(f"[{machine.id}] Нет подходящего файла в {insert_path}")
+                print(f"[{machine.id}] ⚠️  Нет подходящего файла в {insert_path}")
                 continue
             file_path, gallery_folder = file_result
             # Нормализуем цвета к нижнему регистру для совместимости с фронтендом
@@ -468,6 +472,7 @@ def build_design_images(machine: CoffeeMachine, client: SeafileClient) -> Dict[s
                 "main_image": file_path,
                 "gallery_folder": gallery_folder,
             }
+            print(f"[{machine.id}] ✓ {frame_color}/{insert_color} -> {file_path[:80]}...")
 
     if not result:
         print(f"[{machine.id}] Не удалось найти design_images в {frame_path}")
