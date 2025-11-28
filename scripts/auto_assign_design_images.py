@@ -206,6 +206,8 @@ def match_frame(db_frame: str, folder_name: str) -> bool:
 def pick_entry(items: List[dict], target: str) -> Optional[str]:
     """Выбирает имя из items по нормализованному соответствию target (регистронезависимо)."""
     t_norm = norm_key(target)
+    # Также нормализуем без транслитерации (для случая с кириллицей в названии)
+    t_simple = target.lower().replace(" ", "").replace("_", "").replace("-", "")
     candidates = []
 
     if VERBOSE:
@@ -216,22 +218,33 @@ def pick_entry(items: List[dict], target: str) -> Optional[str]:
         if it.get("type") != "dir":
             continue
         name_norm = norm_key(name)
+        name_simple = name.lower().replace(" ", "").replace("_", "").replace("-", "")
 
-        # Точное совпадение
+        # Точное совпадение после нормализации
         if name_norm == t_norm:
             if VERBOSE:
                 print(f"  [pick_entry] ✓ Точное совпадение: '{name}'")
             return name
 
+        # Точное совпадение без транслитерации (для кириллицы)
+        if name_simple == t_simple:
+            if VERBOSE:
+                print(f"  [pick_entry] ✓ Совпадение (кириллица): '{name}'")
+            return name
+
         # Частичное совпадение (для случаев вроде "JL15_VIVA-ST-MW-PRO" vs "JL15_VIVA-ST-MW PRO")
         if t_norm in name_norm or name_norm in t_norm:
-            candidates.append(name)
+            candidates.append((name, 2))  # приоритет 2
+        elif t_simple in name_simple or name_simple in t_simple:
+            candidates.append((name, 1))  # приоритет 1 (кириллица)
             if VERBOSE:
-                print(f"  [pick_entry] ~ Частичное совпадение: '{name}' (norm: '{name_norm}')")
+                print(f"  [pick_entry] ~ Частичное совпадение (кириллица): '{name}' (simple: '{name_simple}')")
 
-    # Если есть кандидаты с частичным совпадением, выбираем самый длинный
+    # Если есть кандидаты с частичным совпадением, выбираем с наивысшим приоритетом
     if candidates:
-        result = max(candidates, key=lambda x: len(norm_key(x)))
+        # Сортируем по приоритету (выше лучше), затем по длине
+        candidates.sort(key=lambda x: (x[1], len(x[0])), reverse=True)
+        result = candidates[0][0]
         if VERBOSE:
             print(f"  [pick_entry] → Выбран из кандидатов: '{result}'")
         return result
