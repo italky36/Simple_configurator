@@ -485,8 +485,9 @@ def build_design_images(machine: CoffeeMachine, client: SeafileClient) -> Dict[s
                 continue
             file_path, gallery_folder = file_result
             # Нормализуем цвета к нижнему регистру для совместимости с фронтендом
-            frame_color_key = frame_color.lower()
-            insert_color_key = insert_color.lower()
+            # Также заменяем ё на е для совместимости с JS константами
+            frame_color_key = frame_color.lower().replace('ё', 'е')
+            insert_color_key = insert_color.lower().replace('ё', 'е')
             result.setdefault(frame_color_key, {})[insert_color_key] = {
                 "main_image_path": file_path,
                 "main_image": file_path,
