@@ -94,11 +94,21 @@ def _build_machine_payload(
     main_image_path: Optional[str],
     gallery_folder: Optional[str],
     description: Optional[str],
+    design_images: Optional[str] = None,
     clear_main_image: Optional[str] = None,
     clear_main_image_path: Optional[str] = None,
     clear_gallery_folder: Optional[str] = None,
     is_update: bool = False,
 ) -> dict:
+    # Parse design_images JSON
+    design_images_data = None
+    if design_images:
+        try:
+            import json
+            design_images_data = json.loads(design_images)
+        except Exception:
+            design_images_data = None
+
     data = {
         "name": name,
         "model": model,
@@ -112,6 +122,7 @@ def _build_machine_payload(
         "main_image_path": None if clear_main_image or clear_main_image_path else main_image_path,
         "gallery_folder": None if clear_gallery_folder else gallery_folder,
         "description": description,
+        "design_images": design_images_data,
     }
 
     # При обновлении пустые строки означают "не менять", при создании - "оставить None"
@@ -158,6 +169,7 @@ def create_machine(
     main_image_path: Optional[str] = Form(None),
     gallery_folder: Optional[str] = Form(None),
     description: Optional[str] = Form(None),
+    design_images: Optional[str] = Form(None),
     clear_main_image: Optional[str] = Form(None),
     clear_main_image_path: Optional[str] = Form(None),
     clear_gallery_folder: Optional[str] = Form(None),
@@ -177,6 +189,7 @@ def create_machine(
         main_image_path,
         gallery_folder,
         description,
+        design_images,
         clear_main_image,
         clear_main_image_path,
         clear_gallery_folder,
@@ -203,6 +216,7 @@ def update_machine(
     main_image_path: Optional[str] = Form(None),
     gallery_folder: Optional[str] = Form(None),
     description: Optional[str] = Form(None),
+    design_images: Optional[str] = Form(None),
     clear_main_image: Optional[str] = Form(None),
     clear_main_image_path: Optional[str] = Form(None),
     clear_gallery_folder: Optional[str] = Form(None),
@@ -225,6 +239,7 @@ def update_machine(
         main_image_path,
         gallery_folder,
         description,
+        design_images,
         clear_main_image,
         clear_main_image_path,
         clear_gallery_folder,

@@ -105,8 +105,30 @@ document.addEventListener("DOMContentLoaded", () => {
         });
     }
     async function selectSeafileFile(file) {
-        if (!hasSeafile || seafileMode !== "file" || !seafileTargetInput) return;
+        if (!hasSeafile || !seafileTargetInput) return;
         const filePath = file.path || `${seafilePath.replace(/\/$/, "")}/${file.name}`;
+
+        // Design images field
+        if (seafileTargetInput.designKey) {
+            const key = seafileTargetInput.designKey;
+            const field = seafileTargetInput.field;
+            if (seafileMode === "file") {
+                try {
+                    const resp = await fetch(`/admin/seafile-file?path=${encodeURIComponent(filePath)}`);
+                    if (!resp.ok) throw new Error(await resp.text());
+                    const data = await resp.json();
+                    const input = form?.querySelector(`[data-design-field="${key}-${field}"]`);
+                    if (input) input.value = data.path || filePath;
+                    seafileModal?.hide();
+                } catch (err) {
+                    alert("Не удалось получить ссылку на файл из Seafile");
+                }
+            }
+            return;
+        }
+
+        // Regular field
+        if (seafileMode !== "file") return;
         try {
             const resp = await fetch(`/admin/seafile-file?path=${encodeURIComponent(filePath)}`);
             if (!resp.ok) throw new Error(await resp.text());
@@ -143,6 +165,16 @@ document.addEventListener("DOMContentLoaded", () => {
         });
         seafileSelectFolderBtn?.addEventListener("click", () => {
             if (seafileMode !== "folder" || !seafileTargetInput) return;
+            // Design images field
+            if (seafileTargetInput.designKey) {
+                const key = seafileTargetInput.designKey;
+                const field = seafileTargetInput.field;
+                const input = form?.querySelector(`[data-design-field="${key}-${field}"]`);
+                if (input) input.value = seafilePath;
+                seafileModal?.hide();
+                return;
+            }
+            // Regular field
             seafileTargetInput.value = seafilePath;
             seafileModal?.hide();
         });
@@ -178,6 +210,139 @@ document.addEventListener("DOMContentLoaded", () => {
             }
         });
     });
+    // Design images state
+    const FRAME_COLORS = ["белый", "чёрный"];
+    const INSERT_COLORS = ["жёлтый", "зелёный", "красный", "серый", "синий", "фиолетовый"];
+    let designImagesData = {};
+
+    function initDesignImagesUI() {
+        const whiteContainer = document.getElementById("white-inserts");
+        const blackContainer = document.getElementById("black-inserts");
+        if (!whiteContainer || !blackContainer) return;
+
+        function createInsertFields(frameColor, insertColor) {
+            const key = `${frameColor}-${insertColor}`;
+            const div = document.createElement("div");
+            div.className = "col-12";
+            div.innerHTML = `
+                <div class="card mb-2">
+                    <div class="card-body">
+                        <h6 class="card-title text-capitalize">${insertColor}</h6>
+                        <div class="mb-2">
+                            <label class="form-label small">Главное фото</label>
+                            <div class="input-group input-group-sm">
+                                <input type="text" class="form-control" data-design-field="${key}-main_image" placeholder="URL или путь">
+                                <button type="button" class="btn btn-outline-secondary btn-design-seafile"
+                                    data-frame="${frameColor}" data-insert="${insertColor}" data-field="main_image">
+                                    Seafile
+                                </button>
+                            </div>
+                        </div>
+                        <div class="mb-0">
+                            <label class="form-label small">Папка галереи</label>
+                            <div class="input-group input-group-sm">
+                                <input type="text" class="form-control" data-design-field="${key}-gallery_folder" placeholder="Путь к папке">
+                                <button type="button" class="btn btn-outline-secondary btn-design-seafile"
+                                    data-frame="${frameColor}" data-insert="${insertColor}" data-field="gallery_folder">
+                                    Seafile
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+            return div;
+        }
+
+        whiteContainer.innerHTML = "";
+        blackContainer.innerHTML = "";
+
+        INSERT_COLORS.forEach((insertColor) => {
+            whiteContainer.appendChild(createInsertFields("белый", insertColor));
+            blackContainer.appendChild(createInsertFields("чёрный", insertColor));
+        });
+
+        // Bind Seafile buttons
+        document.querySelectorAll(".btn-design-seafile").forEach((btn) => {
+            btn.addEventListener("click", () => {
+                const frame = btn.dataset.frame;
+                const insert = btn.dataset.insert;
+                const field = btn.dataset.field;
+                const key = `${frame}-${insert}`;
+                seafileTargetInput = { designKey: key, field: field };
+                seafileMode = field === "gallery_folder" ? "folder" : "file";
+                seafileModal?.show();
+                const startPath = readRememberedPath();
+                loadSeafile(startPath || "/");
+            });
+        });
+    }
+
+    function loadDesignImages(data) {
+        designImagesData = data || {};
+        FRAME_COLORS.forEach((frame) => {
+            INSERT_COLORS.forEach((insert) => {
+                const key = `${frame}-${insert}`;
+                const config = designImagesData[frame]?.[insert] || {};
+                const mainInput = form?.querySelector(`[data-design-field="${key}-main_image"]`);
+                const galleryInput = form?.querySelector(`[data-design-field="${key}-gallery_folder"]`);
+                if (mainInput) mainInput.value = config.main_image_path || config.main_image || "";
+                if (galleryInput) galleryInput.value = config.gallery_folder || "";
+            });
+        });
+    }
+
+    function collectDesignImages() {
+        const result = {};
+        FRAME_COLORS.forEach((frame) => {
+            result[frame] = {};
+            INSERT_COLORS.forEach((insert) => {
+                const key = `${frame}-${insert}`;
+                const mainInput = form?.querySelector(`[data-design-field="${key}-main_image"]`);
+                const galleryInput = form?.querySelector(`[data-design-field="${key}-gallery_folder"]`);
+                const main = mainInput?.value || "";
+                const gallery = galleryInput?.value || "";
+                if (main || gallery) {
+                    result[frame][insert] = {
+                        main_image: main,
+                        main_image_path: main,
+                        gallery_folder: gallery,
+                    };
+                }
+            });
+        });
+        return result;
+    }
+
+    function updateDesignSectionVisibility() {
+        if (!form) return;
+        const frameValue = (form.querySelector('[name="frame"]')?.value || "").toLowerCase();
+        const designSection = document.getElementById("design-images-section");
+        const mainImageInput = form.querySelector('[name="main_image"]');
+        const mainImagePathInput = form.querySelector('[name="main_image_path"]');
+        const galleryFolderInput = form.querySelector('[name="gallery_folder"]');
+
+        // Если каркас = "нет" или пустой, показываем обычные поля
+        if (!frameValue || frameValue === "нет" || frameValue === "no") {
+            if (designSection) designSection.style.display = "none";
+            if (mainImageInput) mainImageInput.disabled = false;
+            if (galleryFolderInput) galleryFolderInput.disabled = false;
+            // Включаем кнопки Seafile для обычных полей
+            document.querySelectorAll('.btn-seafile[data-target="main_image"], .btn-seafile[data-target="gallery_folder"]').forEach(btn => {
+                btn.disabled = false;
+            });
+        } else {
+            // Если выбран каркас, показываем секцию дизайна
+            if (designSection) designSection.style.display = "block";
+            if (mainImageInput) mainImageInput.disabled = true;
+            if (galleryFolderInput) galleryFolderInput.disabled = true;
+            // Отключаем кнопки Seafile для обычных полей
+            document.querySelectorAll('.btn-seafile[data-target="main_image"], .btn-seafile[data-target="gallery_folder"]').forEach(btn => {
+                btn.disabled = true;
+            });
+        }
+    }
+
     function fillForm(data) {
         if (!form) return;
         form.reset();
@@ -201,6 +366,8 @@ document.addEventListener("DOMContentLoaded", () => {
             const el = form.querySelector(`[name="${f}"]`);
             if (el) el.value = data?.[f] ?? "";
         });
+        loadDesignImages(data?.design_images);
+        updateDesignSectionVisibility();
     }
     function showEdit(btn) {
         const row = btn.closest("tr");
@@ -219,6 +386,11 @@ document.addEventListener("DOMContentLoaded", () => {
         if (!form) return;
         const id = form.querySelector("#machine-id").value;
         const formData = new FormData(form);
+
+        // Collect and add design_images data
+        const designData = collectDesignImages();
+        formData.set("design_images", JSON.stringify(designData));
+
         const url = id ? `/admin/machine/${id}` : "/admin/machine";
         try {
             const resp = await fetch(url, { method: "POST", body: formData });
@@ -308,6 +480,20 @@ document.addEventListener("DOMContentLoaded", () => {
         syncBulkButtons();
     });
     bulkDeleteBtn?.addEventListener("click", bulkDelete);
+
+    // Initialize design images UI
+    initDesignImagesUI();
+
+    // Watch for frame field changes to show/hide design section
+    const frameInput = form?.querySelector('[name="frame"]');
+    if (frameInput) {
+        frameInput.addEventListener('change', updateDesignSectionVisibility);
+        frameInput.addEventListener('input', updateDesignSectionVisibility);
+    }
+
+    // Initial visibility update
+    updateDesignSectionVisibility();
+
     // Колонка ресайз
     const table = document.getElementById("machines-table");
     let isResizing = false;
