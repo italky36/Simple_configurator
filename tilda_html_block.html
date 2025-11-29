@@ -1049,6 +1049,7 @@
     // Проверяем, нужно ли использовать design_images
     let mainSrc = "";
     let galleryFolder = v.gallery_folder;
+    let usingDesignImages = false; // Флаг для отслеживания использования design_images
     const frameValue = ($el(".cfg-select-frame").val() || "").toLowerCase();
     const frameColor = $el(".cfg-select-frame-color").val();
     const insertColor = $el(".cfg-select-insert-color").val();
@@ -1106,6 +1107,7 @@
 
       if (designConfig) {
         mainSrc = normSrc(designConfig.main_image || designConfig.main_image_path || "");
+        usingDesignImages = true; // Устанавливаем флаг
         console.log("✓ Using design_images URL:", {
           rawMainImage: designConfig.main_image,
           rawMainImagePath: designConfig.main_image_path,
@@ -1137,7 +1139,15 @@
     const vWithGallery = { ...v, gallery_folder: galleryFolder };
 
     ensureImageNav();
-    updateMainImage(vWithGallery);
+
+    // Для design_images не вызываем updateMainImage, т.к. это одиночное изображение,
+    // а не галерея. updateMainImage может перезаписать src пустым значением.
+    if (!usingDesignImages) {
+      updateMainImage(vWithGallery);
+    } else {
+      // Скрываем навигацию по галерее для design_images
+      $(".cfg-image-nav").hide();
+    }
     // Предзагружаем все изображения для быстрой смены цветов (в фоне, не блокирует)
     preloadVariantImages(v);
     setText($el(".cfg-price-right"), fmtPrice(v.price));
