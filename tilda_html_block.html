@@ -56,6 +56,11 @@
     height: 100%;
     display: block;
     object-fit: contain;
+    transition: opacity 0.15s ease-in-out;
+  }
+
+  .cz-conf .product-image img.cfg-main-image.loading {
+    opacity: 0.5;
   }
 
   /* Превью-галерею скрываем: только основное изображение + стрелки */
@@ -670,6 +675,83 @@
   const STORAGE_KEY = "cz-conf-selection";
   const INSERT_COLORS = ["жёлтый", "зелёный", "красный", "серый", "синий", "фиолетовый"];
 
+  // Маппинг русских названий цветов на английские ключи для design_images
+  const COLOR_MAP = {
+    "белый": "white",
+    "чёрный": "black",
+    "черный": "black",
+    "жёлтый": "yellow",
+    "желтый": "yellow",
+    "зелёный": "green",
+    "зеленый": "green",
+    "красный": "red",
+    "серый": "gray",
+    "синий": "blue",
+    "фиолетовый": "purple"
+  };
+
+  // Функция преобразования русского названия цвета в английский ключ
+  function colorToKey(colorName) {
+    if (!colorName) return "";
+    const normalized = colorName.toLowerCase().trim();
+    return COLOR_MAP[normalized] || normalized;
+  }
+
+  // Кеш предзагруженных изображений для быстрой смены
+  const imageCache = new Map();
+
+  // Debounce функция для оптимизации частых вызовов
+  function debounce(func, wait) {
+    let timeout;
+    return function executedFunction(...args) {
+      const later = () => {
+        clearTimeout(timeout);
+        func(...args);
+      };
+      clearTimeout(timeout);
+      timeout = setTimeout(later, wait);
+    };
+  }
+
+  // Предзагрузка изображения в кеш
+  function preloadImage(src) {
+    if (!src || imageCache.has(src)) return Promise.resolve();
+    return new Promise((resolve, reject) => {
+      const img = new Image();
+      img.onload = () => {
+        imageCache.set(src, img);
+        resolve(img);
+      };
+      img.onerror = reject;
+      img.src = src;
+    });
+  }
+
+  // Предзагрузка всех изображений для варианта
+  function preloadVariantImages(v) {
+    if (!v) return;
+    const imagesToPreload = [];
+
+    // Предзагружаем основное изображение
+    if (v.main_image) {
+      imagesToPreload.push(normSrc(v.main_image));
+    }
+
+    // Предзагружаем все design_images для текущего варианта
+    if (v.design_images) {
+      Object.values(v.design_images).forEach(frameColors => {
+        Object.values(frameColors).forEach(config => {
+          if (config.main_image || config.main_image_path) {
+            imagesToPreload.push(normSrc(config.main_image || config.main_image_path));
+          }
+        });
+      });
+    }
+
+    // Запускаем предзагрузку всех изображений
+    imagesToPreload.forEach(src => preloadImage(src));
+  }
+
   const $el = (cls) => $(cls).first();
   const setText = (jq, txt) => jq.length && jq.text(txt || "—");
   const fmtPrice = (v) => (v || v === 0 ? Number(v).toLocaleString("ru-RU") + " ₽" : "—");
@@ -891,21 +973,6 @@
     $(".cfg-gallery").remove();
   });
 
-  function ensureGallery(v) {
-    if (!v || (v.gallery_files && v.gallery_files.length) || v._galleryLoading || !v.id) return $.Deferred().resolve().promise();
-    v._galleryLoading = true;
-    renderGallery(v);
-    return $.getJSON(API_BASE + "/coffee-machines/" + v.id + "?include_gallery=true")
-      .done((full) => {
-        Object.assign(v, full || {});
-      })
-      .always(() => {
-        v._galleryLoading = false;
-        renderGallery(v);
-        updateMainImage(v);
-      });
-  }
-
   function fillSelects() {
     const m = state.machines;
     populateSelect($el(".cfg-select-machine"), m.map((x) => x.model || x.name), "Выберите кофемашину");
@@ -1008,10 +1075,15 @@
     // Если выбраны цвета и есть design_images, используем их
     if (frameValue && frameValue !== "нет" && frameValue !== "no" &&
         frameColor && insertColor && v.design_images) {
-      const designConfig = v.design_images[frameColor]?.[insertColor];
+      // Преобразуем русские названия в английские ключи
+      const frameColorKey = colorToKey(frameColor);
+      const insertColorKey = colorToKey(insertColor);
+      const designConfig = v.design_images[frameColorKey]?.[insertColorKey];
       console.log("✓ Checking design_images:", {
         frameColor,
         insertColor,
+        frameColorKey,
+        insertColorKey,
         availableFrameColors: Object.keys(v.design_images),
         designConfig: designConfig,
         foundConfig: !!designConfig
@@ -1042,8 +1114,21 @@
     }
 
     const $mainImg = $el(".cfg-main-image");
-    if ($mainImg.length) {
-      $mainImg.attr("src", mainSrc || "");
+    if ($mainImg.length && mainSrc) {
+      // Если изображение в кеше - мгновенная смена, иначе показываем загрузку
+      if (imageCache.has(mainSrc)) {
+        $mainImg.attr("src", mainSrc);
+      } else {
+        $mainImg.addClass("loading");
+        preloadImage(mainSrc).then(() => {
+          $mainImg.attr("src", mainSrc);
+          $mainImg.removeClass("loading");
+        }).catch(() => {
+          $mainImg.removeClass("loading");
+        });
+      }
+    } else if ($mainImg.length) {
+      $mainImg.attr("src", "");
     }
 
     // Обновляем gallery_folder для текущего варианта
@@ -1051,7 +1136,8 @@
 
     ensureImageNav();
     updateMainImage(vWithGallery);
-    ensureGallery(vWithGallery);
+    // Предзагружаем все изображения для быстрой смены цветов
+    preloadVariantImages(v);
     setText($el(".cfg-price-right"), fmtPrice(v.price));
 
     const $priceLeft = $el(".cfg-price-left");
@@ -1221,6 +1307,13 @@
         }
         renderVariant(initialVariant, syncSelects);
         bindEvents();
+
+        // Фоновая предзагрузка изображений для первых машин (не блокирует UI)
+        setTimeout(() => {
+          state.machines.slice(0, 5).forEach(machine => {
+            preloadVariantImages(machine);
+          });
+        }, 500);
       })
       .fail(() => console.error("Не удалось загрузить конфигуратор"));
   });
