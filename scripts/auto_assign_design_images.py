@@ -531,6 +531,7 @@ def main() -> None:
     parser.add_argument("--with-frame", action="store_true", help="Только записи С каркасом")
     parser.add_argument("--without-frame", action="store_true", help="Только записи БЕЗ каркаса")
     parser.add_argument("--no-cache", action="store_true", help="Не кешировать изображения на сервер")
+    parser.add_argument("--machine-id", type=int, help="Обработать только конкретную машину по ID")
     args = parser.parse_args()
 
     VERBOSE = args.verbose
@@ -539,7 +540,16 @@ def main() -> None:
     client = SeafileClient(settings.seafile_server, settings.seafile_repo_id, settings.seafile_token)
     db = SessionLocal()
 
-    machines: List[CoffeeMachine] = db.query(CoffeeMachine).all()
+    # Если указан --machine-id, обрабатываем только эту машину
+    if args.machine_id:
+        machines: List[CoffeeMachine] = db.query(CoffeeMachine).filter(CoffeeMachine.id == args.machine_id).all()
+        if not machines:
+            print(f"❌ Машина с ID {args.machine_id} не найдена в базе данных")
+            return
+        print(f"🎯 Обработка только машины ID {args.machine_id}")
+    else:
+        machines: List[CoffeeMachine] = db.query(CoffeeMachine).all()
+
     updated = 0
     skipped = 0
 
