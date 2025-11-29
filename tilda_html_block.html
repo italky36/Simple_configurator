@@ -668,45 +668,25 @@
   const state = { machines: [], specs: {}, current: null };
   const skipValues = new Set(["нет", "не", "-", "none", "", null, undefined]);
   const STORAGE_KEY = "cz-conf-selection";
-  const INSERT_COLORS = ["жёлтый", "зелёный", "красный", "серый", "синий", "фиолетовый"];
 
-  // Маппинг русских названий цветов на английские ключи для design_images
-  const COLOR_MAP = {
-    "белый": "white",
-    "чёрный": "black",
-    "черный": "black",
-    "жёлтый": "yellow",
-    "желтый": "yellow",
-    "зелёный": "green",
-    "зеленый": "green",
-    "красный": "red",
-    "серый": "gray",
-    "синий": "blue",
-    "фиолетовый": "purple"
+  // Цвета: английские ключи для данных (используются как value в select)
+  const FRAME_COLORS = ["white", "black"];
+  const INSERT_COLORS = ["yellow", "green", "red", "gray", "blue", "purple"];
+
+  // Маппинг английских ключей на русские названия для отображения
+  const COLOR_LABELS = {
+    "white": "Белый",
+    "black": "Чёрный",
+    "yellow": "Жёлтый",
+    "green": "Зелёный",
+    "red": "Красный",
+    "gray": "Серый",
+    "blue": "Синий",
+    "purple": "Фиолетовый"
   };
-
-  // Функция преобразования русского названия цвета в английский ключ
-  function colorToKey(colorName) {
-    if (!colorName) return "";
-    const normalized = colorName.toLowerCase().trim();
-    return COLOR_MAP[normalized] || normalized;
-  }
 
   // Кеш предзагруженных изображений для быстрой смены
   const imageCache = new Map();
-
-  // Debounce функция для оптимизации частых вызовов
-  function debounce(func, wait) {
-    let timeout;
-    return function executedFunction(...args) {
-      const later = () => {
-        clearTimeout(timeout);
-        func(...args);
-      };
-      clearTimeout(timeout);
-      timeout = setTimeout(later, wait);
-    };
-  }
 
   // Предзагрузка изображения в кеш
   function preloadImage(src) {
@@ -815,6 +795,17 @@
     $sel.html(opts.join(""));
   }
 
+  // Заполнение селекта цветов: value = английский ключ, text = русское название
+  function populateColorSelect($sel, colorKeys, placeholder) {
+    if (!$sel.length) return;
+    const opts = placeholder ? ['<option value="">' + placeholder + '</option>'] : [];
+    colorKeys.forEach((key) => {
+      const label = COLOR_LABELS[key] || key;
+      opts.push('<option value="' + key + '">' + label + '</option>');
+    });
+    $sel.html(opts.join(""));
+  }
+
   function updateTerminalState() {
     const mv = $el(".cfg-select-machine").val();
     const $t = $el(".cfg-select-terminal");
@@ -839,7 +830,7 @@
       if (insertColorSelect.length) {
         insertColorSelect.prop("disabled", false);
         if (!insertColorSelect.val()) {
-          insertColorSelect.val("синий");
+          insertColorSelect.val("blue");  // Английский ключ вместо русского
         }
       }
     }
@@ -972,10 +963,16 @@
     const m = state.machines;
     populateSelect($el(".cfg-select-machine"), m.map((x) => x.model || x.name), "Выберите кофемашину");
     populateSelect($el(".cfg-select-frame"), m.map((x) => x.frame), "Выберите каркас");
-    populateSelect($el(".cfg-select-frame-color"), m.map((x) => x.frame_color), "Выберите цвет");
+
+    // Селект цвета каркаса: используем английские ключи
+    populateColorSelect($el(".cfg-select-frame-color"), FRAME_COLORS, "Выберите цвет");
+
     populateSelect($el(".cfg-select-fridge"), m.map((x) => x.refrigerator), "Выберите холодильник");
     populateSelect($el(".cfg-select-terminal"), m.map((x) => x.terminal), "Выберите терминал");
-    populateSelect($el(".cfg-select-insert-color"), INSERT_COLORS, "—");
+
+    // Селект цвета вставки: используем английские ключи
+    populateColorSelect($el(".cfg-select-insert-color"), INSERT_COLORS, "—");
+
     updateFrameColorState();
     updateInsertColorState();
   }
@@ -1072,38 +1069,14 @@
     if (frameValue && frameValue !== "нет" && frameValue !== "no" &&
         frameColor && insertColor && v.design_images) {
 
-      let designConfig = null;
-
-      // Варианты ключей для поиска (от новых к старым)
-      const frameColorVariants = [
-        colorToKey(frameColor),              // Английский: "white", "black"
-        frameColor.toLowerCase(),             // Русский lowercase: "белый", "черный"
-        frameColor,                           // Оригинальный: "Белый", "Чёрный"
-      ];
-
-      const insertColorVariants = [
-        colorToKey(insertColor),              // Английский: "yellow", "red"
-        insertColor.toLowerCase(),            // Русский lowercase: "жёлтый", "красный"
-        insertColor.toLowerCase().replace('ё', 'е'),  // Русский с е: "желтый", "зеленый"
-        insertColor,                          // Оригинальный: "Жёлтый", "Красный"
-      ];
-
-      // Пробуем все комбинации
-      outerLoop:
-      for (const fKey of frameColorVariants) {
-        for (const iKey of insertColorVariants) {
-          if (v.design_images[fKey]?.[iKey]) {
-            designConfig = v.design_images[fKey][iKey];
-            break outerLoop;
-          }
-        }
-      }
+      // Селекты теперь возвращают английские ключи напрямую
+      const designConfig = v.design_images[frameColor]?.[insertColor];
 
       console.log("✓ Checking design_images:", {
         frameColor,
         insertColor,
-        frameColorVariants,
-        insertColorVariants,
+        frameColorLabel: COLOR_LABELS[frameColor],
+        insertColorLabel: COLOR_LABELS[insertColor],
         availableFrameColors: Object.keys(v.design_images),
         designConfig: designConfig,
         foundConfig: !!designConfig
