@@ -669,20 +669,21 @@
   const skipValues = new Set(["нет", "не", "-", "none", "", null, undefined]);
   const STORAGE_KEY = "cz-conf-selection";
 
-  // Цвета: английские ключи для данных (используются как value в select)
-  const FRAME_COLORS = ["white", "black"];
-  const INSERT_COLORS = ["yellow", "green", "red", "gray", "blue", "purple"];
+  // Цвета: русские ключи (совпадают с БД и с тем, что используется в select value)
+  // ВАЖНО: используем ё в определенных цветах для совместимости с БД
+  const FRAME_COLORS = ["белый", "чёрный"];
+  const INSERT_COLORS = ["жёлтый", "зелёный", "красный", "серый", "синий", "фиолетовый"];
 
-  // Маппинг английских ключей на русские названия для отображения
+  // Маппинг ключей на отображаемые названия (для читаемости, можно расширить)
   const COLOR_LABELS = {
-    "white": "Белый",
-    "black": "Чёрный",
-    "yellow": "Жёлтый",
-    "green": "Зелёный",
-    "red": "Красный",
-    "gray": "Серый",
-    "blue": "Синий",
-    "purple": "Фиолетовый"
+    "белый": "Белый",
+    "чёрный": "Чёрный",
+    "жёлтый": "Жёлтый",
+    "зелёный": "Зелёный",
+    "красный": "Красный",
+    "серый": "Серый",
+    "синий": "Синий",
+    "фиолетовый": "Фиолетовый"
   };
 
   // Кеш предзагруженных изображений для быстрой смены
@@ -1070,30 +1071,8 @@
     if (frameValue && frameValue !== "нет" && frameValue !== "no" &&
         frameColor && insertColor && v.design_images) {
 
-      // Селекты возвращают английские ключи, но в БД могут быть русские (старые данные)
+      // Селекты возвращают русские ключи, ищем напрямую в БД
       let designConfig = v.design_images[frameColor]?.[insertColor];
-
-      // Fallback на русские ключи для обратной совместимости
-      if (!designConfig) {
-        // Маппинг английских ключей обратно на русские для старых данных
-        const russianFrameColors = {
-          "white": "белый",
-          "black": "черный"
-        };
-        const russianInsertColors = {
-          "yellow": "желтый",
-          "green": "зеленый",
-          "red": "красный",
-          "gray": "серый",
-          "blue": "синий",
-          "purple": "фиолетовый"
-        };
-        const russianFrame = russianFrameColors[frameColor];
-        const russianInsert = russianInsertColors[insertColor];
-        if (russianFrame && russianInsert) {
-          designConfig = v.design_images[russianFrame]?.[russianInsert];
-        }
-      }
 
       console.log("✓ Checking design_images:", {
         frameColor,
