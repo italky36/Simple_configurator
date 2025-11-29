@@ -1074,7 +1074,17 @@
       // Преобразуем русские названия в английские ключи
       const frameColorKey = colorToKey(frameColor);
       const insertColorKey = colorToKey(insertColor);
-      const designConfig = v.design_images[frameColorKey]?.[insertColorKey];
+
+      // Пытаемся найти по английским ключам (новый формат)
+      let designConfig = v.design_images[frameColorKey]?.[insertColorKey];
+
+      // Если не нашли, пытаемся найти по оригинальным русским ключам (старый формат)
+      if (!designConfig) {
+        const frameColorLower = frameColor.toLowerCase();
+        const insertColorLower = insertColor.toLowerCase();
+        designConfig = v.design_images[frameColorLower]?.[insertColorLower];
+      }
+
       console.log("✓ Checking design_images:", {
         frameColor,
         insertColor,
