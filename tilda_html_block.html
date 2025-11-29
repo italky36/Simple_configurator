@@ -1070,8 +1070,24 @@
     if (frameValue && frameValue !== "нет" && frameValue !== "no" &&
         frameColor && insertColor && v.design_images) {
 
+      console.log("🔎 DETAILED SEARCH:", {
+        step: "1. Initial lookup with English keys",
+        frameColor,
+        insertColor,
+        lookupPath: `design_images["${frameColor}"]["${insertColor}"]`,
+        frameColorExists: frameColor in v.design_images,
+        frameColorValue: v.design_images[frameColor],
+        allFrameColors: Object.keys(v.design_images)
+      });
+
       // Селекты возвращают английские ключи, но в БД могут быть русские (старые данные)
       let designConfig = v.design_images[frameColor]?.[insertColor];
+
+      console.log("🔎 DETAILED SEARCH:", {
+        step: "2. After English lookup",
+        foundConfig: !!designConfig,
+        configValue: designConfig
+      });
 
       // Fallback на русские ключи для обратной совместимости
       if (!designConfig) {
@@ -1090,8 +1106,23 @@
         };
         const russianFrame = russianFrameColors[frameColor];
         const russianInsert = russianInsertColors[insertColor];
+
+        console.log("🔎 DETAILED SEARCH:", {
+          step: "3. Trying Russian fallback",
+          russianFrame,
+          russianInsert,
+          lookupPath: `design_images["${russianFrame}"]["${russianInsert}"]`,
+          frameExists: russianFrame && (russianFrame in v.design_images),
+          frameValue: russianFrame ? v.design_images[russianFrame] : 'N/A'
+        });
+
         if (russianFrame && russianInsert) {
           designConfig = v.design_images[russianFrame]?.[russianInsert];
+          console.log("🔎 DETAILED SEARCH:", {
+            step: "4. After Russian fallback",
+            foundConfig: !!designConfig,
+            configValue: designConfig
+          });
         }
       }
 
