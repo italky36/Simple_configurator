@@ -1069,8 +1069,30 @@
     if (frameValue && frameValue !== "нет" && frameValue !== "no" &&
         frameColor && insertColor && v.design_images) {
 
-      // Селекты теперь возвращают английские ключи напрямую
-      const designConfig = v.design_images[frameColor]?.[insertColor];
+      // Селекты возвращают английские ключи, но в БД могут быть русские (старые данные)
+      let designConfig = v.design_images[frameColor]?.[insertColor];
+
+      // Fallback на русские ключи для обратной совместимости
+      if (!designConfig) {
+        // Маппинг английских ключей обратно на русские для старых данных
+        const russianFrameColors = {
+          "white": "белый",
+          "black": "черный"
+        };
+        const russianInsertColors = {
+          "yellow": "желтый",
+          "green": "зеленый",
+          "red": "красный",
+          "gray": "серый",
+          "blue": "синий",
+          "purple": "фиолетовый"
+        };
+        const russianFrame = russianFrameColors[frameColor];
+        const russianInsert = russianInsertColors[insertColor];
+        if (russianFrame && russianInsert) {
+          designConfig = v.design_images[russianFrame]?.[russianInsert];
+        }
+      }
 
       console.log("✓ Checking design_images:", {
         frameColor,
