@@ -1101,6 +1101,8 @@
         frameColorLabel: COLOR_LABELS[frameColor],
         insertColorLabel: COLOR_LABELS[insertColor],
         availableFrameColors: Object.keys(v.design_images),
+        fullDesignImagesStructure: v.design_images, // Выводим полную структуру
+        insertColorsForFrame: v.design_images[frameColor] ? Object.keys(v.design_images[frameColor]) : 'N/A',
         designConfig: designConfig,
         foundConfig: !!designConfig
       });
@@ -1118,6 +1120,11 @@
         }
       } else {
         console.warn("⚠️  No design config found for", frameColor, "/", insertColor);
+        console.warn("Available combinations:");
+        Object.keys(v.design_images).forEach(fc => {
+          const insertColors = Object.keys(v.design_images[fc]);
+          console.warn(`  ${fc}: [${insertColors.join(', ')}]`);
+        });
       }
     }
 
