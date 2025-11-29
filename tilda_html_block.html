@@ -1071,25 +1071,39 @@
     // Если выбраны цвета и есть design_images, используем их
     if (frameValue && frameValue !== "нет" && frameValue !== "no" &&
         frameColor && insertColor && v.design_images) {
-      // Преобразуем русские названия в английские ключи
-      const frameColorKey = colorToKey(frameColor);
-      const insertColorKey = colorToKey(insertColor);
 
-      // Пытаемся найти по английским ключам (новый формат)
-      let designConfig = v.design_images[frameColorKey]?.[insertColorKey];
+      let designConfig = null;
 
-      // Если не нашли, пытаемся найти по оригинальным русским ключам (старый формат)
-      if (!designConfig) {
-        const frameColorLower = frameColor.toLowerCase();
-        const insertColorLower = insertColor.toLowerCase();
-        designConfig = v.design_images[frameColorLower]?.[insertColorLower];
+      // Варианты ключей для поиска (от новых к старым)
+      const frameColorVariants = [
+        colorToKey(frameColor),              // Английский: "white", "black"
+        frameColor.toLowerCase(),             // Русский lowercase: "белый", "черный"
+        frameColor,                           // Оригинальный: "Белый", "Чёрный"
+      ];
+
+      const insertColorVariants = [
+        colorToKey(insertColor),              // Английский: "yellow", "red"
+        insertColor.toLowerCase(),            // Русский lowercase: "жёлтый", "красный"
+        insertColor.toLowerCase().replace('ё', 'е'),  // Русский с е: "желтый", "зеленый"
+        insertColor,                          // Оригинальный: "Жёлтый", "Красный"
+      ];
+
+      // Пробуем все комбинации
+      outerLoop:
+      for (const fKey of frameColorVariants) {
+        for (const iKey of insertColorVariants) {
+          if (v.design_images[fKey]?.[iKey]) {
+            designConfig = v.design_images[fKey][iKey];
+            break outerLoop;
+          }
+        }
       }
 
       console.log("✓ Checking design_images:", {
         frameColor,
         insertColor,
-        frameColorKey,
-        insertColorKey,
+        frameColorVariants,
+        insertColorVariants,
         availableFrameColors: Object.keys(v.design_images),
         designConfig: designConfig,
         foundConfig: !!designConfig
