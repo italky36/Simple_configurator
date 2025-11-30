@@ -1074,6 +1074,20 @@
       mainImage: v.main_image
     });
 
+    // Детальная проверка условия
+    console.log("🔍 Condition check:", {
+      "frameValue": frameValue,
+      "frameValue truthy": !!frameValue,
+      "frameValue !== 'нет'": frameValue !== "нет",
+      "frameValue !== 'no'": frameValue !== "no",
+      "frameColor": frameColor,
+      "frameColor truthy": !!frameColor,
+      "insertColor": insertColor,
+      "insertColor truthy": !!insertColor,
+      "v.design_images exists": !!v.design_images,
+      "FULL CONDITION RESULT": !!(frameValue && frameValue !== "нет" && frameValue !== "no" && frameColor && insertColor && v.design_images)
+    });
+
     // Если выбраны цвета и есть design_images, используем их
     if (frameValue && frameValue !== "нет" && frameValue !== "no" &&
         frameColor && insertColor && v.design_images) {
