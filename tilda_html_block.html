@@ -992,41 +992,6 @@
     }
   }
 
-  // Обновление доступных цветов каркаса на основе design_images текущей машины
-  function updateAvailableFrameColors(v) {
-    const $frameColor = $el(".cfg-select-frame-color");
-    if (!$frameColor.length) return;
-
-    // Если нет design_images, показываем все цвета
-    if (!v || !v.design_images) {
-      populateColorSelect($frameColor, FRAME_COLORS, "Выберите цвет");
-      return;
-    }
-
-    // Получаем доступные цвета из design_images
-    const availableColors = Object.keys(v.design_images).filter(key =>
-      FRAME_COLORS.includes(key)
-    );
-
-    // Если нет доступных цветов, показываем все
-    if (availableColors.length === 0) {
-      populateColorSelect($frameColor, FRAME_COLORS, "Выберите цвет");
-      return;
-    }
-
-    // Заполняем селект только доступными цветами
-    const currentValue = $frameColor.val();
-    populateColorSelect($frameColor, availableColors, "Выберите цвет");
-
-    // Восстанавливаем значение если оно всё ещё доступно
-    if (currentValue && availableColors.includes(currentValue)) {
-      $frameColor.val(currentValue);
-    } else if (availableColors.length === 1) {
-      // Если доступен только один цвет, выбираем его автоматически
-      $frameColor.val(availableColors[0]);
-    }
-  }
-
   function findVariant(allowEmpty = true) {
     const mv = $el(".cfg-select-machine").val();
     const fv = $el(".cfg-select-frame").val();
@@ -1092,9 +1057,6 @@
       setSelVal(".cfg-select-fridge", v.refrigerator || "");
       setSelVal(".cfg-select-terminal", v.terminal || "");
     }
-
-    // Обновляем доступные цвета каркаса на основе design_images
-    updateAvailableFrameColors(v);
 
     updateFrameColorState();
     updateTerminalState();
