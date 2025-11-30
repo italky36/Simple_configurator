@@ -34,28 +34,80 @@
     gap: 30px;
     margin-bottom: 0;
     background: #F7F7F7;
-    padding: 20px 20px 0 20px;
+    padding: 0 20px 0 20px; /* убрали верхний отступ, чтобы картинка прилегала к серой области */
     border-radius: 8px;
   }
 
   .cz-conf .product-image {
     background: transparent;
     border-radius: 0;
-    padding: 20px;
+    padding: 0;
     display: flex;
     flex-direction: column;
     align-items: center;
-    justify-content: center;
+    justify-content: flex-end; /* дефолт: прилегаем изображением к нижней границе области */
     position: relative;
     min-height: 520px;
+    height: 520px; /* фиксированная область, чтобы высота не прыгала */
     overflow: hidden;
   }
 
   .cz-conf .product-image img.cfg-main-image {
-    width: 100%;
-    height: 100%;
+    width: auto;
+    height: 100%;       /* растягиваем по высоте области */
+    max-width: 100%;    /* не выходим за границы по ширине */
+    max-height: 100%;
     display: block;
     object-fit: contain;
+    margin: 0 auto;
+    transition: transform 0.25s ease, opacity 0.2s ease;
+  }
+
+  /* Когда каркас не выбран — центрируем и чуть увеличиваем изображение */
+  .cz-conf .product-image.without-frame {
+    justify-content: center;
+  }
+
+  .cz-conf .product-image.without-frame img.cfg-main-image {
+    max-width: 110%;
+    max-height: 100%;
+    transform: scale(1.03);
+  }
+
+  /* Спиннер загрузки */
+  .cz-conf .cfg-loader {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(255, 255, 255, 0.12);
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 0.2s ease;
+    z-index: 2;
+  }
+
+  .cz-conf .cfg-loader:after {
+    content: "";
+    width: 34px;
+    height: 34px;
+    border: 4px solid rgba(0, 0, 0, 0.08);
+    border-top-color: #0064fc;
+    border-radius: 50%;
+    animation: cfg-spin 0.9s linear infinite;
+  }
+
+  .cz-conf .product-image.is-loading .cfg-loader {
+    opacity: 1;
+  }
+
+  .cz-conf .product-image.is-loading img.cfg-main-image {
+    opacity: 0.15;
+  }
+
+  @keyframes cfg-spin {
+    to { transform: rotate(360deg); }
   }
 
   /* Превью-галерею скрываем: только основное изображение + стрелки */
@@ -108,6 +160,7 @@
     display: grid;
     grid-template-columns: 1fr 1fr;
     gap: 20px;
+    padding-top: 18px; /* отступ сверху, чтобы характеристики не прилипали к краю */
   }
 
   .cz-conf .spec-block {
@@ -346,6 +399,11 @@
   @media (max-width: 968px) {
     .cz-conf .main-content {
       grid-template-columns: 1fr;
+    }
+
+    .cz-conf .product-image {
+      min-height: 400px;
+      height: 400px; /* сохраняем стабильную область для мобильных */
     }
 
     .cz-conf .configurator-wrapper {
@@ -891,7 +949,6 @@
 
   function updateMainImage(v, forceIndex) {
     const imgs = getImages(v);
-    const $mainImg = $el(".cfg-main-image");
     if (!$mainImg.length) return;
 
     const $nav = $(".cfg-image-nav");
@@ -908,7 +965,7 @@
     const maxIdx = imgs.length - 1;
     const idx = Math.min(Math.max(forceIndex !== undefined ? forceIndex : (v._imgIdx || 0), 0), maxIdx);
     v._imgIdx = idx;
-    $mainImg.attr("src", imgs[idx]);
+    setMainImageSrc(imgs[idx]);
 
     if ($nav.length) {
       $nav.show();
@@ -926,6 +983,11 @@
   function ensureImageNav() {
     const $container = $el(".product-image");
     if (!$container.length || $container.find(".cfg-image-nav").length) return;
+
+    // Добавляем спиннер при первой инициализации
+    if (!$container.find(".cfg-loader").length) {
+      $container.append('<div class="cfg-loader"></div>');
+    }
 
     const nav = $(`
       <div class="cfg-image-nav">
@@ -959,6 +1021,72 @@
   $(document).on("DOMContentLoaded", () => {
     $(".cfg-gallery").remove();
   });
+
+  // Перестановка характеристик под ценой на мобильных
+  const $specs = $el(".specs");
+  const specsOriginalParent = $specs.parent();
+  const specsOriginalNext = $specs.next();
+  const $productImage = $el(".product-image");
+  const $mainImg = $el(".cfg-main-image");
+  let imageLoadId = 0;
+
+  function repositionSpecs() {
+    if (!$specs.length) return;
+    const isMobile = window.innerWidth <= 968;
+
+    if (isMobile) {
+      if (!$specs.data("moved")) {
+        $(".configurator-wrapper").after($specs);
+        $specs.data("moved", true);
+      }
+    } else if ($specs.data("moved")) {
+      if (specsOriginalNext && specsOriginalNext.length) {
+        $specs.insertBefore(specsOriginalNext);
+      } else {
+        specsOriginalParent.append($specs);
+      }
+      $specs.data("moved", false);
+    }
+  }
+
+  // Управление положением/масштабом фото в зависимости от наличия каркаса
+  function updateImageLayout() {
+    if (!$productImage.length) return;
+    const frameValue = ($el(".cfg-select-frame").val() || "").toLowerCase();
+    const hasFrame = !!frameValue && frameValue !== "нет";
+
+    $productImage.toggleClass("with-frame", hasFrame);
+    $productImage.toggleClass("without-frame", !hasFrame);
+  }
+
+  // Установка картинки с отображением спиннера на время загрузки
+  function setMainImageSrc(src) {
+    if (!$mainImg.length || !$productImage.length) return;
+    imageLoadId += 1;
+    const localId = imageLoadId;
+
+    // Если src пустой — просто очистим и уберем спиннер
+    if (!src) {
+      $mainImg.attr("src", "");
+      $productImage.removeClass("is-loading");
+      return;
+    }
+
+    $productImage.addClass("is-loading");
+
+    // Снимаем старые обработчики, чтобы избежать гонок
+    $mainImg.off("load.cfg error.cfg");
+
+    $mainImg.on("load.cfg error.cfg", () => {
+      // Убеждаемся, что это актуальная загрузка
+      if (localId === imageLoadId) {
+        $productImage.removeClass("is-loading");
+      }
+    });
+
+    // Триггерим загрузку
+    $mainImg.attr("src", src);
+  }
 
   function fillSelects() {
     const m = state.machines;
@@ -1031,12 +1159,14 @@
       setText($el(".cfg-price-right"), "—");
       setText($el(".cfg-price-left"), "—");
       $el(".cfg-gallery").empty();
-      $el(".cfg-main-image").attr("src", "");
+      setMainImageSrc("");
       renderSpecs($el(".cfg-spec-machine"), null);
       renderSpecs($el(".cfg-spec-frame"), null);
       renderSpecs($el(".cfg-spec-fridge"), null);
       renderSpecs($el(".cfg-spec-terminal"), null);
       updateFrameColorState();
+      updateInsertColorState();
+      updateImageLayout();
       updateTerminalState();
       return;
     }
@@ -1066,6 +1196,8 @@
     }
 
     updateFrameColorState();
+    updateInsertColorState();
+    updateImageLayout();
     updateTerminalState();
 
     // Проверяем, нужно ли использовать design_images
@@ -1167,7 +1299,7 @@
 
     const $mainImg = $el(".cfg-main-image");
     if ($mainImg.length) {
-      $mainImg.attr("src", mainSrc || "");
+      setMainImageSrc(mainSrc || "");
     }
 
     const vWithGallery = { ...v, gallery_folder: galleryFolder };
@@ -1276,9 +1408,12 @@
       () => {
         updateFrameColorState();
         updateInsertColorState();
+        updateImageLayout();
         renderVariant(findVariant(true));
       }
     );
+
+    $(window).on("resize", repositionSpecs);
 
     $el(".cfg-btn-quote").on("click", (e) => {
       e.preventDefault();
@@ -1346,6 +1481,8 @@
         }
         renderVariant(initialVariant, syncSelects);
         bindEvents();
+        repositionSpecs();
+        updateImageLayout();
 
         setTimeout(() => {
           state.machines.slice(0, 5).forEach(machine => {
