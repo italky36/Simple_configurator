@@ -1037,8 +1037,14 @@
     const cands = state.machines.filter((v) => {
       if (mv && (v.model || v.name) !== mv) return false;
       if (fv && v.frame !== fv) return false;
-      // НЕ фильтруем по frame_color! Это виртуальный выбор для design_images
-      // if (fcv && v.frame_color !== fcv) return false;
+
+      // ИСПРАВЛЕНИЕ: Если выбран цвет каркаса, проверяем что он есть в design_images
+      // Это нужно потому что разные машины с одинаковым названием и каркасом
+      // могут иметь разные цвета в design_images
+      if (fcv && v.design_images && !(fcv in v.design_images)) {
+        return false;
+      }
+
       if (rv && v.refrigerator !== rv) return false;
       if (tv && v.terminal !== tv) return false;
       return true;
