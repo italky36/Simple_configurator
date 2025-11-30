@@ -964,14 +964,14 @@
     populateSelect($el(".cfg-select-machine"), m.map((x) => x.model || x.name), "Выберите кофемашину");
     populateSelect($el(".cfg-select-frame"), m.map((x) => x.frame), "Выберите каркас");
 
-    // Селект цвета каркаса: используем английские ключи
-    populateColorSelect($el(".cfg-select-frame-color"), FRAME_COLORS, "Выберите цвет");
+    // Селект цвета каркаса: английские ключи, без placeholder (черный по умолчанию)
+    populateColorSelect($el(".cfg-select-frame-color"), FRAME_COLORS, null);
 
     populateSelect($el(".cfg-select-fridge"), m.map((x) => x.refrigerator), "Выберите холодильник");
     populateSelect($el(".cfg-select-terminal"), m.map((x) => x.terminal), "Выберите терминал");
 
-    // Селект цвета вставки: используем английские ключи
-    populateColorSelect($el(".cfg-select-insert-color"), INSERT_COLORS, "—");
+    // Селект цвета вставки: английские ключи, без placeholder (синий по умолчанию)
+    populateColorSelect($el(".cfg-select-insert-color"), INSERT_COLORS, null);
 
     updateFrameColorState();
     updateInsertColorState();
@@ -986,9 +986,15 @@
     if (!frameValue || frameValue === "" || frameValue.toLowerCase() === "нет") {
       $frameColor.prop("disabled", true);
       $frameColorLabel.addClass('disabled-label');
+      $frameColor.val("");
     } else {
       $frameColor.prop("disabled", false);
       $frameColorLabel.removeClass('disabled-label');
+
+      // Автоматически выбираем черный цвет, если не выбран другой
+      if (!$frameColor.val()) {
+        $frameColor.val("black");  // Английский ключ
+      }
     }
   }
 
