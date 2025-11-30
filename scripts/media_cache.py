@@ -10,6 +10,11 @@ import requests
 CACHE_ROOT = Path("app/static/cache/machines")
 STATIC_PREFIX = "/static/cache/machines"
 
+# Конвертировать SVG в WebP для уменьшения размера
+# Установите True если хотите автоматически конвертировать SVG в WebP
+# Требует: pip install pillow cairosvg
+CONVERT_SVG_TO_WEBP = False
+
 # Минимальная транслитерация русского -> латиница для имён файлов
 _RU_MAP = str.maketrans(
     {
@@ -138,6 +143,64 @@ def _optimize_svg(path: Path) -> None:
         print(f"  ⚠️  SVG optimization error: {e}")
 
 
+def _convert_svg_to_webp(svg_path: Path, width: int = 2000, quality: int = 85) -> Optional[Path]:
+    """
+    Конвертирует SVG файл в WebP для уменьшения размера.
+
+    Args:
+        svg_path: Путь к SVG файлу
+        width: Ширина изображения в пикселях
+        quality: Качество WebP (0-100)
+
+    Returns:
+        Путь к созданному WebP файлу или None при ошибке
+    """
+    try:
+        import cairosvg
+        from PIL import Image
+        import io
+
+        webp_path = svg_path.with_suffix('.webp')
+
+        # Читаем SVG
+        svg_data = svg_path.read_bytes()
+
+        # Конвертируем SVG в PNG в памяти
+        png_data = cairosvg.svg2png(
+            bytestring=svg_data,
+            output_width=width
+        )
+
+        # Загружаем PNG и сохраняем как WebP
+        image = Image.open(io.BytesIO(png_data))
+        image.save(
+            webp_path,
+            'WEBP',
+            quality=quality,
+            method=6  # Лучшее сжатие
+        )
+
+        # Статистика
+        original_size = svg_path.stat().st_size
+        webp_size = webp_path.stat().st_size
+        reduction = (1 - webp_size / original_size) * 100
+
+        print(f"  ✓ SVG→WebP: {original_size:,} → {webp_size:,} bytes ({reduction:.1f}% reduction)")
+
+        # Удаляем оригинальный SVG если конвертация успешна
+        svg_path.unlink()
+
+        return webp_path
+
+    except ImportError:
+        print(f"  ⚠️  cairosvg or Pillow not installed, keeping SVG")
+        return svg_path
+    except Exception as e:
+        print(f"  ⚠️  SVG→WebP conversion error: {e}")
+        # Если ошибка, возвращаем оригинальный SVG
+        return svg_path
+
+
 def _download_to(path: Path, url: str) -> Optional[Path]:
     try:
         resp = requests.get(url, stream=True, timeout=20, verify=False)
@@ -150,9 +213,15 @@ def _download_to(path: Path, url: str) -> Optional[Path]:
                 if chunk:
                     f.write(chunk)
 
-        # Оптимизируем SVG файлы
+        # Обрабатываем SVG файлы
         if path.suffix.lower() == '.svg':
-            _optimize_svg(path)
+            if CONVERT_SVG_TO_WEBP:
+                # Конвертируем в WebP (файл будет переименован)
+                converted_path = _convert_svg_to_webp(path)
+                return converted_path
+            else:
+                # Просто оптимизируем SVG
+                _optimize_svg(path)
 
         return path
     except Exception:
