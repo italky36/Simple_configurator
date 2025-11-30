@@ -211,8 +211,21 @@ document.addEventListener("DOMContentLoaded", () => {
         });
     });
     // Design images state
-    const FRAME_COLORS = ["белый", "чёрный"];
-    const INSERT_COLORS = ["жёлтый", "зелёный", "красный", "серый", "синий", "фиолетовый"];
+    const FRAME_COLORS = ["white", "black"];
+    const INSERT_COLORS = ["yellow", "green", "red", "gray", "blue", "purple"];
+
+    // Маппинг английских ключей на русские названия для отображения
+    const COLOR_NAMES = {
+        "white": "Белый",
+        "black": "Чёрный",
+        "yellow": "Жёлтый",
+        "green": "Зелёный",
+        "red": "Красный",
+        "gray": "Серый",
+        "blue": "Синий",
+        "purple": "Фиолетовый"
+    };
+
     let designImagesData = {};
 
     function initDesignImagesUI() {
@@ -227,7 +240,7 @@ document.addEventListener("DOMContentLoaded", () => {
             div.innerHTML = `
                 <div class="card mb-2">
                     <div class="card-body">
-                        <h6 class="card-title text-capitalize">${insertColor}</h6>
+                        <h6 class="card-title">${COLOR_NAMES[insertColor]}</h6>
                         <div class="mb-2">
                             <label class="form-label small">Главное фото</label>
                             <div class="input-group input-group-sm">
@@ -258,8 +271,8 @@ document.addEventListener("DOMContentLoaded", () => {
         blackContainer.innerHTML = "";
 
         INSERT_COLORS.forEach((insertColor) => {
-            whiteContainer.appendChild(createInsertFields("белый", insertColor));
-            blackContainer.appendChild(createInsertFields("чёрный", insertColor));
+            whiteContainer.appendChild(createInsertFields("white", insertColor));
+            blackContainer.appendChild(createInsertFields("black", insertColor));
         });
 
         // Bind Seafile buttons

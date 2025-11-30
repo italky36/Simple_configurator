@@ -2,12 +2,18 @@ import shutil
 from pathlib import Path
 from typing import Iterable, List, Optional, Tuple
 from urllib.parse import urlparse
+import subprocess
 
 import requests
 
 # Все файлы кеша складываются в /app/static/cache/machines/{id}/...
 CACHE_ROOT = Path("app/static/cache/machines")
 STATIC_PREFIX = "/static/cache/machines"
+
+# Конвертировать SVG в WebP для уменьшения размера
+# Установите True если хотите автоматически конвертировать SVG в WebP
+# Требует: pip install pillow cairosvg
+CONVERT_SVG_TO_WEBP = False
 
 # Минимальная транслитерация русского -> латиница для имён файлов
 _RU_MAP = str.maketrans(
@@ -86,6 +92,115 @@ def clear_machine_cache(machine_id: int) -> None:
     shutil.rmtree(CACHE_ROOT / str(machine_id), ignore_errors=True)
 
 
+def _optimize_svg(path: Path) -> None:
+    """Оптимизирует SVG файл с помощью scour для уменьшения размера."""
+    try:
+        # Проверяем что установлен scour
+        result = subprocess.run(
+            ["scour", "--version"],
+            capture_output=True,
+            timeout=5
+        )
+        if result.returncode != 0:
+            print(f"⚠️  scour not installed, skipping SVG optimization")
+            return
+
+        # Оптимизируем SVG
+        temp_path = path.with_suffix('.svg.tmp')
+        result = subprocess.run(
+            [
+                "scour",
+                "--enable-id-stripping",
+                "--enable-comment-stripping",
+                "--shorten-ids",
+                "--indent=none",
+                "-i", str(path),
+                "-o", str(temp_path)
+            ],
+            capture_output=True,
+            timeout=30
+        )
+
+        if result.returncode == 0 and temp_path.exists():
+            # Проверяем что оптимизированный файл меньше
+            original_size = path.stat().st_size
+            optimized_size = temp_path.stat().st_size
+
+            if optimized_size < original_size:
+                temp_path.replace(path)
+                reduction = (1 - optimized_size / original_size) * 100
+                print(f"  ✓ SVG optimized: {original_size:,} → {optimized_size:,} bytes ({reduction:.1f}% reduction)")
+            else:
+                temp_path.unlink()
+                print(f"  ℹ️  Optimization didn't reduce size, keeping original")
+        else:
+            if temp_path.exists():
+                temp_path.unlink()
+            print(f"  ⚠️  SVG optimization failed: {result.stderr.decode()[:100]}")
+    except FileNotFoundError:
+        print(f"  ⚠️  scour not found, skipping SVG optimization")
+    except Exception as e:
+        print(f"  ⚠️  SVG optimization error: {e}")
+
+
+def _convert_svg_to_webp(svg_path: Path, width: int = 2000, quality: int = 85) -> Optional[Path]:
+    """
+    Конвертирует SVG файл в WebP для уменьшения размера.
+
+    Args:
+        svg_path: Путь к SVG файлу
+        width: Ширина изображения в пикселях
+        quality: Качество WebP (0-100)
+
+    Returns:
+        Путь к созданному WebP файлу или None при ошибке
+    """
+    try:
+        import cairosvg
+        from PIL import Image
+        import io
+
+        webp_path = svg_path.with_suffix('.webp')
+
+        # Читаем SVG
+        svg_data = svg_path.read_bytes()
+
+        # Конвертируем SVG в PNG в памяти
+        png_data = cairosvg.svg2png(
+            bytestring=svg_data,
+            output_width=width
+        )
+
+        # Загружаем PNG и сохраняем как WebP
+        image = Image.open(io.BytesIO(png_data))
+        image.save(
+            webp_path,
+            'WEBP',
+            quality=quality,
+            method=6  # Лучшее сжатие
+        )
+
+        # Статистика
+        original_size = svg_path.stat().st_size
+        webp_size = webp_path.stat().st_size
+        reduction = (1 - webp_size / original_size) * 100
+
+        print(f"  ✓ SVG→WebP: {original_size:,} → {webp_size:,} bytes ({reduction:.1f}% reduction)")
+
+        # Удаляем оригинальный SVG если конвертация успешна
+        svg_path.unlink()
+
+        return webp_path
+
+    except ImportError:
+        print(f"  ⚠️  cairosvg or Pillow not installed, keeping SVG")
+        return svg_path
+    except Exception as e:
+        print(f"  ⚠️  SVG→WebP conversion error: {e}")
+        # Если ошибка, возвращаем оригинальный SVG
+        return svg_path
+
+
 def _download_to(path: Path, url: str) -> Optional[Path]:
     try:
         resp = requests.get(url, stream=True, timeout=20, verify=False)
@@ -97,6 +212,17 @@ def _download_to(path: Path, url: str) -> Optional[Path]:
             for chunk in resp.iter_content(chunk_size=8192):
                 if chunk:
                     f.write(chunk)
+
+        # Обрабатываем SVG файлы
+        if path.suffix.lower() == '.svg':
+            if CONVERT_SVG_TO_WEBP:
+                # Конвертируем в WebP (файл будет переименован)
+                converted_path = _convert_svg_to_webp(path)
+                return converted_path
+            else:
+                # Просто оптимизируем SVG
+                _optimize_svg(path)
+
         return path
     except Exception:
         return None
