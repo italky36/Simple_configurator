@@ -743,6 +743,7 @@
       machine: $el(".cfg-select-machine").val() || "",
       frame: $el(".cfg-select-frame").val() || "",
       frame_color: $el(".cfg-select-frame-color").val() || "",
+      insert_color: $el(".cfg-select-insert-color").val() || "",
       fridge: $el(".cfg-select-fridge").val() || "",
       terminal: $el(".cfg-select-terminal").val() || "",
     };
@@ -1328,11 +1329,13 @@
           $el(".cfg-select-machine").val(saved.machine || "");
           $el(".cfg-select-frame").val(saved.frame || "");
           $el(".cfg-select-frame-color").val(saved.frame_color || "");
+          $el(".cfg-select-insert-color").val(saved.insert_color || "");
           $el(".cfg-select-fridge").val(saved.fridge || "");
           $el(".cfg-select-terminal").val(saved.terminal || "");
         }
 
         updateFrameColorState();
+        updateInsertColorState();
         updateTerminalState();
 
         let initialVariant = findVariant(true);
