@@ -2,6 +2,7 @@ import shutil
 from pathlib import Path
 from typing import Iterable, List, Optional, Tuple
 from urllib.parse import urlparse
+import subprocess
 
 import requests
 
@@ -86,6 +87,57 @@ def clear_machine_cache(machine_id: int) -> None:
     shutil.rmtree(CACHE_ROOT / str(machine_id), ignore_errors=True)
 
 
+def _optimize_svg(path: Path) -> None:
+    """Оптимизирует SVG файл с помощью scour для уменьшения размера."""
+    try:
+        # Проверяем что установлен scour
+        result = subprocess.run(
+            ["scour", "--version"],
+            capture_output=True,
+            timeout=5
+        )
+        if result.returncode != 0:
+            print(f"⚠️  scour not installed, skipping SVG optimization")
+            return
+
+        # Оптимизируем SVG
+        temp_path = path.with_suffix('.svg.tmp')
+        result = subprocess.run(
+            [
+                "scour",
+                "--enable-id-stripping",
+                "--enable-comment-stripping",
+                "--shorten-ids",
+                "--indent=none",
+                "-i", str(path),
+                "-o", str(temp_path)
+            ],
+            capture_output=True,
+            timeout=30
+        )
+
+        if result.returncode == 0 and temp_path.exists():
+            # Проверяем что оптимизированный файл меньше
+            original_size = path.stat().st_size
+            optimized_size = temp_path.stat().st_size
+
+            if optimized_size < original_size:
+                temp_path.replace(path)
+                reduction = (1 - optimized_size / original_size) * 100
+                print(f"  ✓ SVG optimized: {original_size:,} → {optimized_size:,} bytes ({reduction:.1f}% reduction)")
+            else:
+                temp_path.unlink()
+                print(f"  ℹ️  Optimization didn't reduce size, keeping original")
+        else:
+            if temp_path.exists():
+                temp_path.unlink()
+            print(f"  ⚠️  SVG optimization failed: {result.stderr.decode()[:100]}")
+    except FileNotFoundError:
+        print(f"  ⚠️  scour not found, skipping SVG optimization")
+    except Exception as e:
+        print(f"  ⚠️  SVG optimization error: {e}")
+
+
 def _download_to(path: Path, url: str) -> Optional[Path]:
     try:
         resp = requests.get(url, stream=True, timeout=20, verify=False)
@@ -97,6 +149,11 @@ def _download_to(path: Path, url: str) -> Optional[Path]:
             for chunk in resp.iter_content(chunk_size=8192):
                 if chunk:
                     f.write(chunk)
+
+        # Оптимизируем SVG файлы
+        if path.suffix.lower() == '.svg':
+            _optimize_svg(path)
+
         return path
     except Exception:
         return None
