@@ -68,6 +68,7 @@ def svg_to_webp(
         # Конвертируем SVG в PNG в памяти с заданной шириной
         png_data = cairosvg.svg2png(
             bytestring=svg_data,
+            url=svg_path.as_uri(),  # keep base path so embedded rasters referenced via <image> resolve correctly
             output_width=width
         )
 
