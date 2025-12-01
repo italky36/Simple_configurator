@@ -84,13 +84,15 @@ def import_file(db: Session, file: UploadFile, update_existing: bool = True) -> 
         data = _prepare_machine_data(raw)
         if not data.get("model") and not data.get("name"):
             continue
-        # Построение "сигнатуры" варианта: модель + каркас + цвет + холодильник + терминал
+        # Построение "сигнатуры" варианта: модель + каркас + цвет + холодильник + терминал + цена + ссылка на Озон
         signature = (
             data.get("model"),
             data.get("frame"),
             data.get("frame_color"),
             data.get("refrigerator"),
             data.get("terminal"),
+            data.get("price"),
+            data.get("ozon_link"),
         )
         if update_existing and signature[0]:
             existing = crud.get_coffee_machine_by_signature(db, *signature)

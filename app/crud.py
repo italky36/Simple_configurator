@@ -24,6 +24,8 @@ def get_coffee_machine_by_signature(
     frame_color: Optional[str],
     refrigerator: Optional[str],
     terminal: Optional[str],
+    price: Optional[float] = None,
+    ozon_link: Optional[str] = None,
 ) -> Optional[models.CoffeeMachine]:
     return (
         db.query(models.CoffeeMachine)
@@ -33,6 +35,8 @@ def get_coffee_machine_by_signature(
             models.CoffeeMachine.frame_color == frame_color,
             models.CoffeeMachine.refrigerator == refrigerator,
             models.CoffeeMachine.terminal == terminal,
+            models.CoffeeMachine.price == price,
+            models.CoffeeMachine.ozon_link == ozon_link,
         )
         .first()
     )
