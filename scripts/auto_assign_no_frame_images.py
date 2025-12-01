@@ -74,6 +74,12 @@ def pick_file_in_no_frame(path: str, client: SeafileClient, machine: CoffeeMachi
         folder_name = it.get("name") or ""
         sig_model, sig_fridge, sig_terminal = parse_signature_folder(folder_name)
 
+        # Частный случай: в названии есть только "+vendista" без холодильника.
+        # Тогда parse_signature_folder кладёт "vendista" в sig_fridge. Перекладываем в terminal.
+        if has_terminal and not has_fridge and sig_fridge and not sig_terminal:
+            sig_terminal = sig_fridge
+            sig_fridge = None
+
         # Модель должна совпасть
         if machine.model and norm_key(sig_model) != norm_key(machine.model):
             continue
@@ -90,9 +96,13 @@ def pick_file_in_no_frame(path: str, client: SeafileClient, machine: CoffeeMachi
 
         # Терминал
         if has_terminal:
-            if sig_terminal and not fuzzy_match(machine.terminal, sig_terminal):
+            # Машина с терминалом: требуется явное указание терминала в подпапке и совпадение
+            if not sig_terminal:
+                continue
+            if not fuzzy_match(machine.terminal, sig_terminal):
                 continue
         else:
+            # Машина без терминала: в подпапке терминал быть не должен
             if sig_terminal:
                 continue
 

@@ -973,6 +973,50 @@
     $sel.html(opts.join(""));
   }
 
+  // Выбирает первое доступное непустое значение в селекте
+  function selectFirstNonEmpty($sel) {
+    if (!$sel.length) return null;
+    const opt = $sel.find("option").filter(function () {
+      return (this.value || "").trim() !== "";
+    }).first();
+    if (opt.length) {
+      $sel.val(opt.val());
+      return opt.val();
+    }
+    return null;
+  }
+
+  function ensureMachineSelected() {
+    const $m = $el(".cfg-select-machine");
+    if ($m.length && !$m.val()) {
+      selectFirstNonEmpty($m);
+    }
+  }
+
+  function ensureFridgeSelectedIfFrame() {
+    const frameVal = ($el(".cfg-select-frame").val() || "").trim().toLowerCase();
+    const $fridge = $el(".cfg-select-fridge");
+    if (!$fridge.length) return;
+    if (frameVal && frameVal !== "нет" && frameVal !== "no" && !$fridge.val()) {
+      selectFirstNonEmpty($fridge);
+    }
+  }
+
+  // Перестраиваем список холодильников с/без плейсхолдера в зависимости от наличия каркаса
+  function refreshFridgeOptions() {
+    const $fridge = $el(".cfg-select-fridge");
+    if (!$fridge.length) return;
+    const frameVal = ($el(".cfg-select-frame").val() || "").trim().toLowerCase();
+    const includePlaceholder = !frameVal || frameVal === "нет" || frameVal === "no";
+    const prev = $fridge.val();
+    populateSelect($fridge, state.machines.map((x) => x.refrigerator), includePlaceholder ? "Выберите холодильник" : null);
+    // Вернём прежний выбор, если он ещё в списке
+    if (prev && $fridge.find(`option[value="${prev}"]`).length) {
+      $fridge.val(prev);
+    }
+    ensureFridgeSelectedIfFrame();
+  }
+
   function updateTerminalState() {
     const mv = $el(".cfg-select-machine").val();
     const $t = $el(".cfg-select-terminal");
@@ -1198,7 +1242,7 @@
 
   function fillSelects() {
     const m = state.machines;
-    populateSelect($el(".cfg-select-machine"), m.map((x) => x.model || x.name), "Выберите кофемашину");
+    populateSelect($el(".cfg-select-machine"), m.map((x) => x.model || x.name), null);
     populateSelect($el(".cfg-select-frame"), m.map((x) => x.frame), "Выберите каркас");
 
     // Селект цвета каркаса: английские ключи, без placeholder (черный по умолчанию)
@@ -1210,8 +1254,10 @@
     // Селект цвета вставки: английские ключи, без placeholder (синий по умолчанию)
     populateColorSelect($el(".cfg-select-insert-color"), INSERT_COLORS, null);
 
+    ensureMachineSelected();
     updateFrameColorState();
     updateInsertColorState();
+    refreshFridgeOptions();
   }
 
   function updateFrameColorState() {
@@ -1385,6 +1431,8 @@
     }
 
     updateFrameColorState();
+    ensureMachineSelected();
+    refreshFridgeOptions();
     updateInsertColorState();
     updateImageLayout();
     updateTerminalState();
@@ -1609,7 +1657,9 @@
     $(".cfg-select-machine, .cfg-select-frame, .cfg-select-frame-color, .cfg-select-fridge, .cfg-select-terminal, .cfg-select-insert-color").on(
       "change",
       () => {
+        ensureMachineSelected();
         updateFrameColorState();
+        refreshFridgeOptions();
         updateInsertColorState();
         updateImageLayout();
         renderVariant(findVariant(true));
@@ -1672,7 +1722,9 @@
           $el(".cfg-select-terminal").val(saved.terminal || "");
         }
 
+        ensureMachineSelected();
         updateFrameColorState();
+        refreshFridgeOptions();
         updateInsertColorState();
         updateTerminalState();
 
