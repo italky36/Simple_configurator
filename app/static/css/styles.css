@@ -80,3 +80,20 @@ body {
     object-fit: cover;
     border-radius: 4px;
 }
+.sortable {
+    cursor: pointer;
+    user-select: none;
+}
+.sort-indicator::after {
+    content: "";
+    display: inline-block;
+    margin-left: 4px;
+    font-size: 11px;
+    opacity: 0.7;
+}
+.sortable.is-sorted-asc .sort-indicator::after {
+    content: "^";
+}
+.sortable.is-sorted-desc .sort-indicator::after {
+    content: "v";
+}

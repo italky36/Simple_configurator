@@ -745,6 +745,40 @@
 
   // Кеш предзагруженных изображений для быстрой смены
   const imageCache = new Map();
+  const normalizeColorKey = (key) => {
+    if (!key) return "";
+    const k = String(key).trim().toLowerCase();
+    const map = {
+      "white": "white",
+      "белый": "white",
+      "белая": "white",
+      "бел": "white",
+      "black": "black",
+      "чёрный": "black",
+      "черный": "black",
+      "черная": "black",
+      "yellow": "yellow",
+      "желтый": "yellow",
+      "желтая": "yellow",
+      "green": "green",
+      "зеленый": "green",
+      "зеленая": "green",
+      "red": "red",
+      "красный": "red",
+      "красная": "red",
+      "gray": "gray",
+      "серый": "gray",
+      "серая": "gray",
+      "grey": "gray",
+      "blue": "blue",
+      "синий": "blue",
+      "синяя": "blue",
+      "purple": "purple",
+      "фиолетовый": "purple",
+      "фиолетовая": "purple",
+    };
+    return map[k] || k;
+  };
 
   // Предзагрузка изображения в кеш
   function preloadImage(src) {
@@ -795,6 +829,80 @@
     const path = src.startsWith("/") ? src : "/" + src;
     return base + path;
   };
+  const normVal = (v) => (v === null || v === undefined ? "" : String(v).trim().toLowerCase());
+
+  // Варианты, которые уже доказали, что по выбранному цвету каркаса у них пустой набор картинок
+  const excludedVariants = new Set();
+
+  // Ищем первый доступный набор картинок в design_images, чтобы не упасть на пустых ключах
+  function findFirstDesignImageConfig(designImages) {
+    if (!designImages) return null;
+    for (const [frameColorKey, inserts] of Object.entries(designImages)) {
+      const normFrame = normalizeColorKey(frameColorKey);
+      if (!inserts || typeof inserts !== "object" || !Object.keys(inserts).length) continue;
+      for (const [insertColorKey, cfg] of Object.entries(inserts)) {
+        const normInsert = normalizeColorKey(insertColorKey);
+        if (cfg && (cfg.main_image || cfg.main_image_path)) {
+          return {
+            frameColor: normFrame || frameColorKey,
+            insertColor: normInsert || insertColorKey,
+            config: cfg,
+          };
+        }
+      }
+    }
+    return null;
+  }
+
+  // Ищем первую доступную вставку в рамках выбранного цвета каркаса
+  function findDesignImageForFrame(designImages, frameColorKey) {
+    if (!designImages || !frameColorKey) return null;
+    const normFrame = normalizeColorKey(frameColorKey);
+    const inserts = Object.entries(designImages).find(
+      ([key]) => normalizeColorKey(key) === normFrame
+    )?.[1];
+    if (!inserts || typeof inserts !== "object" || !Object.keys(inserts).length) return null;
+    for (const [insertColorKey, cfg] of Object.entries(inserts)) {
+      const normInsert = normalizeColorKey(insertColorKey);
+      if (cfg && (cfg.main_image || cfg.main_image_path)) {
+        return { frameColor: normFrame || frameColorKey, insertColor: normInsert || insertColorKey, config: cfg };
+      }
+    }
+    return null;
+  }
+
+  function getDesignConfig(v, frameColor, insertColor) {
+    if (!v.design_images) return null;
+    const normFrame = normalizeColorKey(frameColor);
+    const normInsert = normalizeColorKey(insertColor);
+
+    const tryFrames = [frameColor, normFrame].filter(Boolean);
+    const tryInserts = [insertColor, normInsert].filter(Boolean);
+
+    for (const fKey of tryFrames) {
+      const frameEntry = Object.entries(v.design_images).find(
+        ([key]) => normalizeColorKey(key) === normalizeColorKey(fKey)
+      );
+      if (!frameEntry) continue;
+      const inserts = frameEntry[1];
+      for (const iKey of tryInserts) {
+        const insertEntry = Object.entries(inserts).find(
+          ([key]) => normalizeColorKey(key) === normalizeColorKey(iKey)
+        );
+        if (insertEntry) {
+          const cfg = insertEntry[1];
+          if (cfg && (cfg.main_image || cfg.main_image_path)) {
+            return {
+              frameColor: normalizeColorKey(frameEntry[0]) || frameEntry[0],
+              insertColor: normalizeColorKey(insertEntry[0]) || insertEntry[0],
+              config: cfg,
+            };
+          }
+        }
+      }
+    }
+    return null;
+  }
 
   function saveSelection() {
     const data = {
@@ -1127,6 +1235,29 @@
     }
   }
 
+  function hasDesignImageForSelection(v, frameColor, insertColor) {
+    if (!v.design_images || !frameColor || !insertColor) return false;
+    const found = getDesignConfig(v, frameColor, insertColor);
+    return !!(found && found.config && (found.config.main_image || found.config.main_image_path));
+  }
+
+  function hasAnyDesignForFrame(v, frameColor) {
+    if (!v.design_images || !frameColor) return false;
+    const res = findDesignImageForFrame(v.design_images, frameColor);
+    return !!(res && res.config && (res.config.main_image || res.config.main_image_path));
+  }
+
+  function variantScore(v, frameColor, insertColor) {
+    // Приоритет: точная пара с картинкой > есть картинка для каркаса > есть основное изображение > нет картинок
+    if (hasDesignImageForSelection(v, frameColor, insertColor)) return 3;
+    if (hasAnyDesignForFrame(v, frameColor)) return 2;
+    if (v.main_image || (v.gallery_files && v.gallery_files.length)) return 1;
+    return 0;
+  }
+
+  // Первая попытка — точное совпадение по всем селектам + картинка для выбранных цветов
+  // Вторая — совпадение по селектам + картинка для выбранного каркаса
+  // Третья — совпадение по селектам (как было)
   function findVariant(allowEmpty = true) {
     const mv = $el(".cfg-select-machine").val();
     const fv = $el(".cfg-select-frame").val();
@@ -1134,23 +1265,81 @@
     const rv = $el(".cfg-select-fridge").val();
     const tv = $el(".cfg-select-terminal").val();
     if (!mv && allowEmpty) return null;
-    const cands = state.machines.filter((v) => {
-      if (mv && (v.model || v.name) !== mv) return false;
-      if (fv && v.frame !== fv) return false;
+    const normFcv = normalizeColorKey(fcv);
+    const normInsert = normalizeColorKey($el(".cfg-select-insert-color").val());
 
-      // ИСПРАВЛЕНИЕ: Если выбран цвет каркаса, проверяем что он есть в design_images
-      // Это нужно потому что разные машины с одинаковым названием и каркасом
-      // могут иметь разные цвета в design_images
-      if (fcv && v.design_images && !(fcv in v.design_images)) {
+    const baseFilter = (v) => {
+      if (mv && normVal(v.model || v.name) !== normVal(mv)) return false;
+      if (fv && normVal(v.frame) !== normVal(fv)) return false;
+
+      // ИСПРАВЛЕНИЕ: Если выбран цвет каркаса, проверяем что он есть в design_images (с нормализацией ключей)
+      // и что для этого цвета реально есть хотя бы одна картинка (не пустой объект).
+      if (fcv && v.design_images) {
+        const target = normFcv;
+        const hasColorWithImage = Object.entries(v.design_images).some(([k, val]) => {
+          if (normalizeColorKey(k) !== target) return false;
+          if (!val || typeof val !== "object") return false;
+          return Object.values(val).some(cfg => cfg && (cfg.main_image || cfg.main_image_path));
+        });
+        if (!hasColorWithImage) return false;
+      } else if (fcv && !v.design_images) {
         return false;
       }
+      // Если у варианта явно указан frame_color — сравниваем его с выбором пользователя
+      if (fcv && v.frame_color && normalizeColorKey(v.frame_color) !== normFcv) return false;
 
-      if (rv && v.refrigerator !== rv) return false;
-      if (tv && v.terminal !== tv) return false;
+      if (rv && normVal(v.refrigerator) !== normVal(rv)) return false;
+      if (tv && normVal(v.terminal) !== normVal(tv)) return false;
       return true;
+    };
+
+    // Базовые совпадения (строгое сравнение frame)
+    const matchesAll = state.machines.filter((v) => !excludedVariants.has(v.id) && baseFilter(v));
+
+    const exactWithImage = matchesAll.filter((v) => hasDesignImageForSelection(v, normFcv, normInsert));
+    const exactWithFrameImage = matchesAll.filter((v) => hasAnyDesignForFrame(v, normFcv));
+
+    // Диагностика: какие варианты прошли фильтр
+    const describe = (v) => {
+      const di = v.design_images || {};
+      const frameEntries = Object.entries(di).map(([k, val]) => {
+        const inserts = val && typeof val === "object" ? Object.keys(val) : [];
+        return `${normalizeColorKey(k)}:${inserts.length}`;
+      });
+      return {
+        id: v.id,
+        frame: v.frame,
+        frame_color: v.frame_color,
+        refrigerator: v.refrigerator,
+        terminal: v.terminal,
+        design_images: frameEntries
+      };
+    };
+
+    console.log("🔎 Candidate variants", {
+      selection: { mv, fv, fcv, normFcv, normInsert, rv, tv },
+      matchesAll: matchesAll.map(describe),
+      withPairImage: exactWithImage.map(describe),
+      withFrameImage: exactWithFrameImage.map(describe),
     });
-    if (cands[0]) return cands[0];
-    return allowEmpty ? null : (state.machines[0] || null);
+
+    // 1) строго по селектам + есть картинка для выбранных цветов
+    if (exactWithImage.length) return exactWithImage[0];
+
+    // 2) строго по селектам + есть картинка для выбранного цвета каркаса
+    if (exactWithFrameImage.length) return exactWithFrameImage[0];
+
+    // 3) как было: все совпадения по селектам, отсортированные по score
+    let cands = matchesAll;
+
+    if (!cands.length) return allowEmpty ? null : (state.machines[0] || null);
+
+    // Отдаем предпочтение варианту, у которого реально есть картинка под выбранные цвета (или хотя бы под каркас)
+    cands = cands
+      .map((v) => ({ v, score: variantScore(v, normFcv, normInsert) }))
+      .sort((a, b) => b.score - a.score);
+
+    return cands[0]?.v || cands[0];
   }
 
   function renderVariant(v, syncSelects = false) {
@@ -1205,8 +1394,8 @@
     let galleryFolder = v.gallery_folder;
     let usingDesignImages = false;
     const frameValue = ($el(".cfg-select-frame").val() || "").toLowerCase();
-    const frameColor = $el(".cfg-select-frame-color").val();
-    const insertColor = $el(".cfg-select-insert-color").val();
+    let frameColor = normalizeColorKey($el(".cfg-select-frame-color").val());
+    let insertColor = normalizeColorKey($el(".cfg-select-insert-color").val());
 
     console.log("🔍 renderVariant Debug:", {
       machineId: v.id,
@@ -1214,6 +1403,9 @@
       frameValue,
       frameColor,
       insertColor,
+      frameColorRawSelect: $el(".cfg-select-frame-color").val(),
+      insertColorRawSelect: $el(".cfg-select-insert-color").val(),
+      frameColorFromVariant: v.frame_color,
       hasDesignImages: !!v.design_images,
       designImagesKeys: v.design_images ? Object.keys(v.design_images) : [],
       designImagesFullStructure: v.design_images,
@@ -1234,49 +1426,60 @@
       "FULL CONDITION RESULT": !!(frameValue && frameValue !== "нет" && frameValue !== "no" && frameColor && insertColor && v.design_images)
     });
 
-    // Если выбраны цвета и есть design_images, используем их
-    if (frameValue && frameValue !== "нет" && frameValue !== "no" &&
-        frameColor && insertColor && v.design_images) {
+      // Если выбраны цвета и есть design_images, используем их
+      if (frameValue && frameValue !== "нет" && frameValue !== "no" &&
+          frameColor && insertColor && v.design_images) {
 
-      // Селекты возвращают английские ключи, но в БД могут быть русские (старые данные)
-      let designConfig = v.design_images[frameColor]?.[insertColor];
-
-      // Fallback на русские ключи для обратной совместимости
-      if (!designConfig) {
-        const russianFrameColors = {
-          "white": "белый",
-          "black": "черный"
-        };
-        const russianInsertColors = {
-          "yellow": "желтый",
-          "green": "зеленый",
-          "red": "красный",
-          "gray": "серый",
-          "blue": "синий",
-          "purple": "фиолетовый"
-        };
-        const russianFrame = russianFrameColors[frameColor];
-        const russianInsert = russianInsertColors[insertColor];
-        if (russianFrame && russianInsert) {
-          designConfig = v.design_images[russianFrame]?.[russianInsert];
+        // Нормализованный поиск картинки по выбранным цветам
+        const designLookup = getDesignConfig(v, frameColor, insertColor);
+        let designConfig = designLookup?.config;
+        if (designLookup) {
+          frameColor = designLookup.frameColor;
+          insertColor = designLookup.insertColor;
         }
-      }
 
-      console.log("✓ Checking design_images:", {
-        frameColor,
-        insertColor,
-        frameColorLabel: COLOR_LABELS[frameColor],
-        insertColorLabel: COLOR_LABELS[insertColor],
-        availableFrameColors: Object.keys(v.design_images),
-        designConfig: designConfig,
-        foundConfig: !!designConfig
-      });
+        console.log("✓ Checking design_images:", {
+          frameColor,
+          insertColor,
+          frameColorLabel: COLOR_LABELS[frameColor],
+          insertColorLabel: COLOR_LABELS[insertColor],
+          availableFrameColors: Object.keys(v.design_images),
+          designConfig: designConfig,
+          foundConfig: !!designConfig,
+          variantId: v.id
+        });
 
-      if (designConfig) {
-        mainSrc = normSrc(designConfig.main_image || designConfig.main_image_path || "");
-        usingDesignImages = true;
-        console.log("✓ Using design_images URL:", {
-          rawMainImage: designConfig.main_image,
+        // Fallback: если для выбранной пары нет картинки, пробуем найти любую вставку в этом же цвете каркаса
+        if (!designConfig) {
+          const fallbackDesign = findDesignImageForFrame(v.design_images, frameColor);
+          if (fallbackDesign) {
+            designConfig = fallbackDesign.config;
+            console.log("ℹ️ Falling back to available design_images combo:", {
+              fallbackFrameColor: fallbackDesign.frameColor,
+              fallbackInsertColor: fallbackDesign.insertColor
+            });
+          }
+        }
+
+        // Если есть ключ каркаса, но в нём нет картинок — исключаем этот variant и пробуем следующий
+        if (!designConfig) {
+          const hasSelectedColorKey = Object.keys(v.design_images || {}).some(k => normalizeColorKey(k) === frameColor);
+          if (hasSelectedColorKey) {
+            excludedVariants.add(v.id);
+            console.warn("⛔ Skipping variant with empty design_images for selected frame color", { variantId: v.id, frameColor });
+            const alt = findVariant(true);
+            if (alt && alt.id !== v.id) {
+              renderVariant(alt, true);
+              return;
+            }
+          }
+        }
+
+        if (designConfig) {
+          mainSrc = normSrc(designConfig.main_image || designConfig.main_image_path || "");
+          usingDesignImages = true;
+          console.log("✓ Using design_images URL:", {
+            rawMainImage: designConfig.main_image,
           rawMainImagePath: designConfig.main_image_path,
           normalizedSrc: mainSrc
         });
@@ -1284,7 +1487,7 @@
           galleryFolder = designConfig.gallery_folder;
         }
       } else {
-        console.warn("⚠️  No design config found for", frameColor, "/", insertColor);
+        console.warn("⚠️  No design config found for", frameColor, "/", insertColor, "variant id:", v.id);
       }
     }
 

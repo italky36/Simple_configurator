@@ -538,10 +538,77 @@ document.addEventListener("DOMContentLoaded", () => {
         document.removeEventListener("mousemove", onResize);
         document.removeEventListener("mouseup", stopResize);
     }
+
+    // Клиентская сортировка таблицы
+    const sortState = { key: null, dir: "asc" };
+    const numericSortKeys = new Set(["id", "price"]);
+    function readRowData(row) {
+        try {
+            return JSON.parse(row.dataset.machine || "{}");
+        } catch (e) {
+            return {};
+        }
+    }
+    function normalizeValueForSort(data, key) {
+        if (!data) return "";
+        if (key === "model") return data.model || data.name || "";
+        return data[key] ?? "";
+    }
+    function updateSortIndicators(activeKey, dir) {
+        if (!table) return;
+        table.querySelectorAll("th[data-sort-key]").forEach((th) => {
+            const isActive = th.dataset.sortKey === activeKey;
+            th.classList.toggle("is-sorted-asc", isActive && dir === "asc");
+            th.classList.toggle("is-sorted-desc", isActive && dir === "desc");
+            if (!isActive) {
+                th.classList.remove("is-sorted-asc", "is-sorted-desc");
+            }
+        });
+    }
+    function sortTableBy(key) {
+        if (!table) return;
+        const tbody = table.querySelector("tbody");
+        if (!tbody) return;
+        const rows = Array.from(tbody.querySelectorAll("tr"));
+        if (!rows.length) return;
+
+        const nextDir = sortState.key === key && sortState.dir === "asc" ? "desc" : "asc";
+        sortState.key = key;
+        sortState.dir = nextDir;
+
+        rows.sort((a, b) => {
+            const da = readRowData(a);
+            const db = readRowData(b);
+            let av = normalizeValueForSort(da, key);
+            let bv = normalizeValueForSort(db, key);
+            if (numericSortKeys.has(key)) {
+                av = Number(av) || 0;
+                bv = Number(bv) || 0;
+            } else {
+                av = String(av).toLowerCase();
+                bv = String(bv).toLowerCase();
+            }
+            if (av === bv) return 0;
+            const cmp = av > bv ? 1 : -1;
+            return nextDir === "asc" ? cmp : -cmp;
+        });
+
+        rows.forEach((row) => tbody.appendChild(row));
+        updateSortIndicators(key, nextDir);
+    }
+
     if (table) {
         table.querySelectorAll("th").forEach((th) => {
             const handle = th.querySelector(".table-resize-handle");
             handle?.addEventListener("mousedown", (e) => startResize(e, th));
+        });
+        table.querySelectorAll("th[data-sort-key]").forEach((th) => {
+            th.addEventListener("click", (e) => {
+                if (e.target.closest(".table-resize-handle")) return;
+                const key = th.dataset.sortKey;
+                if (!key) return;
+                sortTableBy(key);
+            });
         });
     }
     // Specs page logic

@@ -14,6 +14,7 @@ import re
 import sys
 from pathlib import Path
 from typing import Dict, List, Optional, Tuple
+import copy
 
 # Добавляем корень и app в sys.path
 ROOT = Path(__file__).resolve().parent.parent
@@ -27,6 +28,7 @@ from app.database import SessionLocal  # noqa: E402
 from app.models import CoffeeMachine  # noqa: E402
 from app.seafile_client import SeafileClient  # noqa: E402
 from app.services import media_cache  # noqa: E402
+from sqlalchemy.orm.attributes import flag_modified  # noqa: E402
 
 
 BASE_DIR = "/Конфигуратор/Графика"
@@ -584,11 +586,13 @@ def main() -> None:
 
         # Сливаем с существующими
         existing = m.design_images if isinstance(m.design_images, dict) else {}
-        merged = existing.copy()
+        # deepcopy �ब�����, �⮡ࠦ����� �� ᮡᮡᮢ����� ��⮬���᪨ dict � ��६�� �ਨ���� SQLAlchemy
+        merged = copy.deepcopy(existing)
         for fc, inserts in design_images.items():
             merged.setdefault(fc, {})
             merged[fc].update(inserts)
         m.design_images = merged
+        flag_modified(m, "design_images")
         db.add(m)
         updated += 1
         total_combos = sum(len(inserts) for inserts in design_images.values())
