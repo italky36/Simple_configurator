@@ -6,8 +6,25 @@
   const state = { machines: [], specs: {}, current: null };
   const skipValues = new Set(["нет", "не", "-", "none", "", null, undefined]);
   const STORAGE_KEY = "cz-conf-selection";
-  const DATA_CACHE_KEY = "cz-conf-cache-v2";
+  const DATA_CACHE_KEY = "cz-conf-cache-v3"; // Обновлён для сброса старого кэша
   const CACHE_TTL_MS = 24 * 60 * 60 * 1000; // Увеличен до 24ч, т.к. теперь проверяем версию
+
+  // Маппинг старых названий каркасов на новые
+  const FRAME_ALIASES = {
+    "coffee zone mini": "MINI",
+    "coffee zone business": "BUSINESS",
+    "coffeezone mini": "MINI",
+    "coffeezone business": "BUSINESS",
+  };
+
+  /**
+   * Нормализует название каркаса (преобразует старые названия в новые).
+   */
+  function normalizeFrameName(frame) {
+    if (!frame) return frame;
+    const lower = frame.toLowerCase().trim();
+    return FRAME_ALIASES[lower] || frame;
+  }
 
   // Цвета: английские ключи для данных
   const FRAME_COLORS = ["white", "black"];
@@ -1583,7 +1600,8 @@
         const saved = loadSelection();
         if (saved) {
           $el(".cfg-select-machine").val(saved.machine || "");
-          $el(".cfg-select-frame").val(saved.frame || "");
+          // Нормализуем старые названия каркасов
+          $el(".cfg-select-frame").val(normalizeFrameName(saved.frame) || "");
           $el(".cfg-select-frame-color").val(saved.frame_color || "");
           $el(".cfg-select-insert-color").val(saved.insert_color || "");
           $el(".cfg-select-fridge").val(saved.fridge || "");
