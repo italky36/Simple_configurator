@@ -176,133 +176,144 @@
   }
 
   /**
+   * Фильтрует machines по указанным критериям и возвращает множество
+   * доступных значений для указанного поля.
+   */
+  function getAvailableValues(fieldGetter, filters) {
+    const available = new Set();
+
+    state.machines.forEach(m => {
+      let matches = true;
+
+      if (filters.machine && normVal(m.model || m.name) !== normVal(filters.machine)) {
+        matches = false;
+      }
+      if (filters.frame && normVal(m.frame) !== normVal(filters.frame)) {
+        matches = false;
+      }
+      if (filters.fridge && normVal(m.refrigerator) !== normVal(filters.fridge)) {
+        matches = false;
+      }
+      if (filters.terminal && normVal(m.terminal) !== normVal(filters.terminal)) {
+        matches = false;
+      }
+
+      if (matches) {
+        const value = fieldGetter(m);
+        if (value && !skipValues.has(normVal(value))) {
+          available.add(value);
+        }
+      }
+    });
+
+    return available;
+  }
+
+  /**
+   * Получает доступные цвета каркаса из design_images отфильтрованных машин.
+   */
+  function getAvailableFrameColors(filters) {
+    const available = new Set();
+
+    state.machines.forEach(m => {
+      let matches = true;
+
+      if (filters.machine && normVal(m.model || m.name) !== normVal(filters.machine)) {
+        matches = false;
+      }
+      if (filters.frame && normVal(m.frame) !== normVal(filters.frame)) {
+        matches = false;
+      }
+      if (filters.fridge && normVal(m.refrigerator) !== normVal(filters.fridge)) {
+        matches = false;
+      }
+      if (filters.terminal && normVal(m.terminal) !== normVal(filters.terminal)) {
+        matches = false;
+      }
+
+      if (matches && m.design_images && typeof m.design_images === 'object') {
+        Object.keys(m.design_images).forEach(colorKey => {
+          const normColor = normalizeColorKey(colorKey);
+          if (normColor) {
+            available.add(normColor);
+          }
+        });
+      }
+    });
+
+    return available;
+  }
+
+  /**
    * Обновляет доступные опции во всех селекторах на основе текущего выбора.
    * Фильтрует по реально существующим комбинациям в таблице machines.
+   * Использует цикл для каскадного сброса недоступных значений.
    */
   function updateAvailableOptions() {
     if (!state.machines || !state.machines.length) return;
 
-    // Получаем текущие значения селекторов
-    const selectedMachine = $el(".cfg-select-machine").val();
-    const selectedFrame = $el(".cfg-select-frame").val();
-    const selectedFridge = $el(".cfg-select-fridge").val();
-    const selectedTerminal = $el(".cfg-select-terminal").val();
-    const selectedFrameColor = normalizeColorKey($el(".cfg-select-frame-color").val());
+    // Защита от бесконечного цикла
+    const MAX_ITERATIONS = 5;
+    let iteration = 0;
+    let hasChanges = true;
 
-    /**
-     * Фильтрует machines по указанным критериям и возвращает множество
-     * доступных значений для указанного поля.
-     */
-    function getAvailableValues(fieldGetter, filters) {
-      const available = new Set();
+    while (hasChanges && iteration < MAX_ITERATIONS) {
+      hasChanges = false;
+      iteration++;
 
-      state.machines.forEach(m => {
-        // Проверяем все фильтры
-        let matches = true;
+      // Получаем текущие значения селекторов
+      const selectedMachine = $el(".cfg-select-machine").val();
+      const selectedFrame = $el(".cfg-select-frame").val();
+      const selectedFridge = $el(".cfg-select-fridge").val();
+      const selectedTerminal = $el(".cfg-select-terminal").val();
 
-        if (filters.machine && normVal(m.model || m.name) !== normVal(filters.machine)) {
-          matches = false;
-        }
-        if (filters.frame && normVal(m.frame) !== normVal(filters.frame)) {
-          matches = false;
-        }
-        if (filters.fridge && normVal(m.refrigerator) !== normVal(filters.fridge)) {
-          matches = false;
-        }
-        if (filters.terminal && normVal(m.terminal) !== normVal(filters.terminal)) {
-          matches = false;
-        }
+      // === Фильтрация каркасов ===
+      const availableFrames = getAvailableValues(
+        m => m.frame,
+        { machine: selectedMachine, fridge: selectedFridge, terminal: selectedTerminal }
+      );
+      filterSelectOptions($el(".cfg-select-frame"), availableFrames);
 
-        if (matches) {
-          const value = fieldGetter(m);
-          if (value && !skipValues.has(normVal(value))) {
-            available.add(value);
-          }
-        }
-      });
+      // === Фильтрация холодильников ===
+      const availableFridges = getAvailableValues(
+        m => m.refrigerator,
+        { machine: selectedMachine, frame: selectedFrame, terminal: selectedTerminal }
+      );
+      filterSelectOptions($el(".cfg-select-fridge"), availableFridges);
 
-      return available;
+      // === Фильтрация терминалов ===
+      const availableTerminals = getAvailableValues(
+        m => m.terminal,
+        { machine: selectedMachine, frame: selectedFrame, fridge: selectedFridge }
+      );
+      filterSelectOptions($el(".cfg-select-terminal"), availableTerminals);
+
+      // === Фильтрация цветов каркаса ===
+      const availableFrameColors = getAvailableFrameColors(
+        { machine: selectedMachine, frame: selectedFrame, fridge: selectedFridge, terminal: selectedTerminal }
+      );
+      if (availableFrameColors.size > 0) {
+        filterColorSelectOptions($el(".cfg-select-frame-color"), availableFrameColors);
+      } else {
+        $el(".cfg-select-frame-color").find('option').removeClass('cfg-option-hidden').prop('disabled', false);
+      }
+
+      // Сбрасываем скрытые значения и проверяем, были ли изменения
+      hasChanges = resetHiddenSelections();
     }
 
-    /**
-     * Получает доступные цвета каркаса из design_images отфильтрованных машин.
-     */
-    function getAvailableFrameColors(filters) {
-      const available = new Set();
-
-      state.machines.forEach(m => {
-        let matches = true;
-
-        if (filters.machine && normVal(m.model || m.name) !== normVal(filters.machine)) {
-          matches = false;
-        }
-        if (filters.frame && normVal(m.frame) !== normVal(filters.frame)) {
-          matches = false;
-        }
-        if (filters.fridge && normVal(m.refrigerator) !== normVal(filters.fridge)) {
-          matches = false;
-        }
-        if (filters.terminal && normVal(m.terminal) !== normVal(filters.terminal)) {
-          matches = false;
-        }
-
-        if (matches && m.design_images && typeof m.design_images === 'object') {
-          Object.keys(m.design_images).forEach(colorKey => {
-            const normColor = normalizeColorKey(colorKey);
-            if (normColor) {
-              available.add(normColor);
-            }
-          });
-        }
-      });
-
-      return available;
+    if (iteration >= MAX_ITERATIONS) {
+      console.warn("⚠️ updateAvailableOptions: max iterations reached");
     }
-
-    // === Фильтрация каркасов ===
-    // Показываем каркасы, доступные при текущем выборе машины, холодильника, терминала
-    const availableFrames = getAvailableValues(
-      m => m.frame,
-      { machine: selectedMachine, fridge: selectedFridge, terminal: selectedTerminal }
-    );
-    filterSelectOptions($el(".cfg-select-frame"), availableFrames);
-
-    // === Фильтрация холодильников ===
-    // Показываем холодильники, доступные при текущем выборе машины, каркаса, терминала
-    const availableFridges = getAvailableValues(
-      m => m.refrigerator,
-      { machine: selectedMachine, frame: selectedFrame, terminal: selectedTerminal }
-    );
-    filterSelectOptions($el(".cfg-select-fridge"), availableFridges);
-
-    // === Фильтрация терминалов ===
-    // Показываем терминалы, доступные при текущем выборе машины, каркаса, холодильника
-    const availableTerminals = getAvailableValues(
-      m => m.terminal,
-      { machine: selectedMachine, frame: selectedFrame, fridge: selectedFridge }
-    );
-    filterSelectOptions($el(".cfg-select-terminal"), availableTerminals);
-
-    // === Фильтрация цветов каркаса ===
-    // На основе design_images отфильтрованных машин
-    const availableFrameColors = getAvailableFrameColors(
-      { machine: selectedMachine, frame: selectedFrame, fridge: selectedFridge, terminal: selectedTerminal }
-    );
-    if (availableFrameColors.size > 0) {
-      filterColorSelectOptions($el(".cfg-select-frame-color"), availableFrameColors);
-    } else {
-      // Если нет design_images - показываем все цвета
-      $el(".cfg-select-frame-color").find('option').removeClass('cfg-option-hidden').prop('disabled', false);
-    }
-
-    // Если текущее выбранное значение скрыто - сбрасываем на первое доступное
-    resetHiddenSelections();
   }
 
   /**
    * Сбрасывает выбор если текущее значение скрыто.
+   * @returns {boolean} true если были изменения
    */
   function resetHiddenSelections() {
+    let changed = false;
+
     ['.cfg-select-frame', '.cfg-select-fridge', '.cfg-select-terminal', '.cfg-select-frame-color'].forEach(selector => {
       const $sel = $el(selector);
       if (!$sel.length) return;
@@ -311,16 +322,21 @@
       if (!currentVal) return;
 
       const $currentOpt = $sel.find(`option[value="${currentVal}"]`);
-      if ($currentOpt.hasClass('cfg-option-hidden')) {
+      if ($currentOpt.hasClass('cfg-option-hidden') || $currentOpt.prop('disabled')) {
         // Текущее значение скрыто - выбираем первое видимое
-        const $firstVisible = $sel.find('option:not(.cfg-option-hidden):not([value=""])').first();
+        const $firstVisible = $sel.find('option:not(.cfg-option-hidden):not([disabled]):not([value=""])').first();
         if ($firstVisible.length) {
           $sel.val($firstVisible.val());
+          console.log(`🔄 Reset ${selector} to: ${$firstVisible.val()}`);
         } else {
           $sel.val('');
+          console.log(`🔄 Reset ${selector} to empty`);
         }
+        changed = true;
       }
     });
+
+    return changed;
   }
 
   function loadCachedData() {
