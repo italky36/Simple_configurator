@@ -50,6 +50,23 @@ FRAME_MAPPING = {
     "business": "business",
 }
 
+# === СЛОВАРЬ СИНОНИМОВ МОДЕЛЕЙ: БД -> Seafile ===
+# Ключ: название модели в БД (в нижнем регистре)
+# Значение: название папки в Seafile
+MODEL_ALIASES = {
+    # JL15 серия
+    "jl15-st pro": "JL15_VIVA-ST-MW-PRO",
+    "jl15-bt pro": "JL15_VIVA-BT-MW",
+    "jl15 st pro": "JL15_VIVA-ST-MW-PRO",
+    "jl15 bt pro": "JL15_VIVA-BT-MW",
+    # JL36 серия
+    "jl36a-st": "JL36A-ST-MW",
+    "jl36a-bt": "JL36A-BT-MW",
+    "jl36a st": "JL36A-ST-MW",
+    "jl36a bt": "JL36A-BT-MW",
+    # Добавьте другие соответствия по мере необходимости
+}
+
 # Варианты написания "Без_каркаса" на Seafile (в нижнем регистре, без разделителей)
 NO_FRAME_FOLDER_VARIANTS = {"безкаркаса", "noframe"}
 
@@ -216,6 +233,32 @@ def pick_entry(items: List[dict], target: str) -> Optional[str]:
 
     if VERBOSE:
         print(f"  [pick_entry] Ищем '{target}' (norm: '{t_norm}')")
+
+    # === СНАЧАЛА проверяем словарь синонимов ===
+    target_lower = target.lower().strip()
+    if target_lower in MODEL_ALIASES:
+        alias = MODEL_ALIASES[target_lower]
+        if VERBOSE:
+            print(f"  [pick_entry] Найден синоним: '{target}' -> '{alias}'")
+        # Ищем точное совпадение с alias
+        for it in items:
+            name = it.get("name") or ""
+            if it.get("type") != "dir":
+                continue
+            if name == alias:
+                if VERBOSE:
+                    print(f"  [pick_entry] ✓ Найдено по синониму: '{name}'")
+                return name
+        # Если точного нет, пробуем нормализованное
+        alias_norm = norm_key(alias)
+        for it in items:
+            name = it.get("name") or ""
+            if it.get("type") != "dir":
+                continue
+            if norm_key(name) == alias_norm:
+                if VERBOSE:
+                    print(f"  [pick_entry] ✓ Найдено по нормализованному синониму: '{name}'")
+                return name
 
     for it in items:
         name = it.get("name") or ""
