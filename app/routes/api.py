@@ -1,7 +1,9 @@
 from typing import Any, Dict, List, Optional
+import hashlib
 import requests
 import json
 from sqlalchemy.orm import Session
+from sqlalchemy import func
 
 from fastapi import APIRouter, Depends, HTTPException
 
@@ -11,9 +13,37 @@ from ..database import get_db
 from ..seafile_client import SeafileClient
 from ..ozon_client import OzonClient
 from ..services import media_cache
-from ..models import Lead
+from ..models import Lead, CoffeeMachine, DeviceSpec
 
 router = APIRouter(prefix="/api")
+
+
+def compute_data_version(db: Session) -> str:
+    """
+    Вычисляет версию данных на основе количества и id записей в БД.
+    Версия изменится при любом добавлении/удалении записей.
+    """
+    # Получаем статистику по машинам
+    machine_stats = db.query(
+        func.count(CoffeeMachine.id),
+        func.max(CoffeeMachine.id),
+        func.min(CoffeeMachine.id)
+    ).first()
+
+    # Получаем статистику по спецификациям
+    spec_stats = db.query(
+        func.count(DeviceSpec.id),
+        func.max(DeviceSpec.id),
+        func.min(DeviceSpec.id)
+    ).first()
+
+    # Формируем строку для хеширования
+    version_string = f"m:{machine_stats[0]}:{machine_stats[1]}:{machine_stats[2]}-s:{spec_stats[0]}:{spec_stats[1]}:{spec_stats[2]}"
+
+    # Возвращаем короткий хеш
+    return hashlib.md5(version_string.encode()).hexdigest()[:12]
+
+
 settings = Settings()
 seafile_client = SeafileClient(settings.seafile_server, settings.seafile_repo_id, settings.seafile_token)
 ozon_client = OzonClient(settings.ozon_client_id or "", settings.ozon_api_key or "") if settings.ozon_client_id and settings.ozon_api_key else None
@@ -256,12 +286,22 @@ def get_spec_by_name(category: str, name: str, db=Depends(get_db)):
     return spec_to_dict(spec)
 
 
+@router.get("/config-version")
+def get_config_version(db=Depends(get_db)):
+    """
+    Легкий endpoint для проверки актуальности кэша на фронтенде.
+    Возвращает только версию данных.
+    """
+    return {"version": compute_data_version(db)}
+
+
 @router.get("/config-data")
 def get_config_data(db=Depends(get_db)):
     # Легкий агрегированный ответ: машины без галерей и без ozon_price + specs
     machines = crud.get_coffee_machines(db)
     specs = crud.get_specs(db)
     return {
+        "version": compute_data_version(db),
         "machines": [machine_to_dict(m, include_gallery=False, include_ozon_price=False) for m in machines],
         "specs": [spec_to_dict(s) for s in specs],
     }

@@ -883,3 +883,8 @@ body {
   color: #721c24;
   border: 1px solid #f5c6cb;
 }
+
+/* Скрытие недоступных опций в селекторах */
+select option.cfg-option-hidden {
+  display: none;
+}

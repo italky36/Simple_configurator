@@ -6,8 +6,11 @@
   const state = { machines: [], specs: {}, current: null };
   const skipValues = new Set(["нет", "не", "-", "none", "", null, undefined]);
   const STORAGE_KEY = "cz-conf-selection";
-  const DATA_CACHE_KEY = "cz-conf-cache-v1";
-  const CACHE_TTL_MS = 12 * 60 * 60 * 1000;
+  const DATA_CACHE_KEY = "cz-conf-cache-v2";
+  const CACHE_TTL_MS = 24 * 60 * 60 * 1000; // Увеличен до 24ч, т.к. теперь проверяем версию
+
+  // Матрица совместимости для фильтрации селекторов
+  let compatibility = null;
 
   // Цвета: английские ключи для данных
   const FRAME_COLORS = ["white", "black"];
@@ -127,6 +130,260 @@
     state.machines.forEach(m => {
       if (m.design_images) {
         console.log(`  Machine ${m.id} (${m.name}) has design_images:`, Object.keys(m.design_images));
+      }
+    });
+
+    // Строим матрицу совместимости после загрузки данных
+    buildCompatibilityMatrix();
+  }
+
+  /**
+   * Строит матрицу совместимости для фильтрации селекторов.
+   * Показывает какие комбинации компонентов реально существуют в базе.
+   */
+  function buildCompatibilityMatrix() {
+    const matrix = {
+      // machine → { frames, fridges, terminals }
+      byMachine: {},
+      // frame → { machines, fridges, frameColors }
+      byFrame: {},
+      // fridge → { machines, frames }
+      byFridge: {},
+      // terminal → { machines }
+      byTerminal: {},
+      // Все существующие комбинации для точной проверки
+      combinations: new Set()
+    };
+
+    state.machines.forEach(m => {
+      const machine = m.model || m.name;
+      const frame = m.frame;
+      const fridge = m.refrigerator;
+      const terminal = m.terminal;
+
+      // Пропускаем пустые значения
+      if (!machine) return;
+
+      // byMachine
+      if (!matrix.byMachine[machine]) {
+        matrix.byMachine[machine] = { frames: new Set(), fridges: new Set(), terminals: new Set(), frameColors: new Set() };
+      }
+      if (frame && !skipValues.has(normVal(frame))) {
+        matrix.byMachine[machine].frames.add(frame);
+      }
+      if (fridge && !skipValues.has(normVal(fridge))) {
+        matrix.byMachine[machine].fridges.add(fridge);
+      }
+      if (terminal && !skipValues.has(normVal(terminal))) {
+        matrix.byMachine[machine].terminals.add(terminal);
+      }
+
+      // Собираем доступные цвета каркаса из design_images
+      if (m.design_images && typeof m.design_images === 'object') {
+        Object.keys(m.design_images).forEach(colorKey => {
+          const normColor = normalizeColorKey(colorKey);
+          if (normColor) {
+            matrix.byMachine[machine].frameColors.add(normColor);
+          }
+        });
+      }
+
+      // byFrame
+      if (frame && !skipValues.has(normVal(frame))) {
+        if (!matrix.byFrame[frame]) {
+          matrix.byFrame[frame] = { machines: new Set(), fridges: new Set(), frameColors: new Set() };
+        }
+        matrix.byFrame[frame].machines.add(machine);
+        if (fridge && !skipValues.has(normVal(fridge))) {
+          matrix.byFrame[frame].fridges.add(fridge);
+        }
+        // Цвета каркаса для этого frame
+        if (m.design_images && typeof m.design_images === 'object') {
+          Object.keys(m.design_images).forEach(colorKey => {
+            const normColor = normalizeColorKey(colorKey);
+            if (normColor) {
+              matrix.byFrame[frame].frameColors.add(normColor);
+            }
+          });
+        }
+      }
+
+      // byFridge
+      if (fridge && !skipValues.has(normVal(fridge))) {
+        if (!matrix.byFridge[fridge]) {
+          matrix.byFridge[fridge] = { machines: new Set(), frames: new Set() };
+        }
+        matrix.byFridge[fridge].machines.add(machine);
+        if (frame && !skipValues.has(normVal(frame))) {
+          matrix.byFridge[fridge].frames.add(frame);
+        }
+      }
+
+      // byTerminal
+      if (terminal && !skipValues.has(normVal(terminal))) {
+        if (!matrix.byTerminal[terminal]) {
+          matrix.byTerminal[terminal] = { machines: new Set() };
+        }
+        matrix.byTerminal[terminal].machines.add(machine);
+      }
+
+      // Сохраняем комбинацию для точной проверки
+      const combo = `${machine}|${frame || ''}|${fridge || ''}|${terminal || ''}`;
+      matrix.combinations.add(combo);
+    });
+
+    compatibility = matrix;
+    console.log("🔗 Compatibility matrix built:", {
+      machines: Object.keys(matrix.byMachine).length,
+      frames: Object.keys(matrix.byFrame).length,
+      fridges: Object.keys(matrix.byFridge).length,
+      terminals: Object.keys(matrix.byTerminal).length,
+      combinations: matrix.combinations.size
+    });
+  }
+
+  /**
+   * Фильтрует опции в селекторе, скрывая недоступные.
+   * @param {jQuery} $select - jQuery объект селектора
+   * @param {Set} availableValues - Set доступных значений
+   */
+  function filterSelectOptions($select, availableValues) {
+    if (!$select.length || !availableValues) return;
+
+    $select.find('option').each(function() {
+      const $opt = $(this);
+      const val = $opt.val();
+
+      // Не трогаем placeholder (пустое значение)
+      if (!val || val === '') return;
+
+      if (availableValues.has(val)) {
+        $opt.removeClass('cfg-option-hidden').prop('disabled', false);
+      } else {
+        $opt.addClass('cfg-option-hidden').prop('disabled', true);
+      }
+    });
+  }
+
+  /**
+   * Фильтрует цветовые опции по Set нормализованных ключей.
+   */
+  function filterColorSelectOptions($select, availableColorKeys) {
+    if (!$select.length || !availableColorKeys) return;
+
+    $select.find('option').each(function() {
+      const $opt = $(this);
+      const val = $opt.val();
+      if (!val || val === '') return;
+
+      const normVal = normalizeColorKey(val);
+      if (availableColorKeys.has(normVal)) {
+        $opt.removeClass('cfg-option-hidden').prop('disabled', false);
+      } else {
+        $opt.addClass('cfg-option-hidden').prop('disabled', true);
+      }
+    });
+  }
+
+  /**
+   * Обновляет доступные опции во всех селекторах на основе текущего выбора.
+   * Вызывается при изменении любого селектора.
+   */
+  function updateAvailableOptions() {
+    if (!compatibility) return;
+
+    const selectedMachine = $el(".cfg-select-machine").val();
+    const selectedFrame = $el(".cfg-select-frame").val();
+    const selectedFridge = $el(".cfg-select-fridge").val();
+    const selectedTerminal = $el(".cfg-select-terminal").val();
+
+    // === Фильтрация каркасов ===
+    // Если выбрана кофемашина - показываем только её каркасы
+    if (selectedMachine && compatibility.byMachine[selectedMachine]) {
+      filterSelectOptions(
+        $el(".cfg-select-frame"),
+        compatibility.byMachine[selectedMachine].frames
+      );
+    } else {
+      // Показываем все каркасы
+      $el(".cfg-select-frame").find('option').removeClass('cfg-option-hidden').prop('disabled', false);
+    }
+
+    // === Фильтрация холодильников ===
+    // На основе выбранной машины и каркаса
+    let availableFridges = null;
+    if (selectedMachine && compatibility.byMachine[selectedMachine]) {
+      availableFridges = compatibility.byMachine[selectedMachine].fridges;
+    }
+    if (selectedFrame && compatibility.byFrame[selectedFrame]) {
+      const frameFridges = compatibility.byFrame[selectedFrame].fridges;
+      if (availableFridges) {
+        // Пересечение множеств
+        availableFridges = new Set([...availableFridges].filter(x => frameFridges.has(x)));
+      } else {
+        availableFridges = frameFridges;
+      }
+    }
+    if (availableFridges) {
+      filterSelectOptions($el(".cfg-select-fridge"), availableFridges);
+    } else {
+      $el(".cfg-select-fridge").find('option').removeClass('cfg-option-hidden').prop('disabled', false);
+    }
+
+    // === Фильтрация терминалов ===
+    if (selectedMachine && compatibility.byMachine[selectedMachine]) {
+      filterSelectOptions(
+        $el(".cfg-select-terminal"),
+        compatibility.byMachine[selectedMachine].terminals
+      );
+    } else {
+      $el(".cfg-select-terminal").find('option').removeClass('cfg-option-hidden').prop('disabled', false);
+    }
+
+    // === Фильтрация цветов каркаса ===
+    // На основе выбранной машины и каркаса
+    let availableFrameColors = null;
+    if (selectedMachine && compatibility.byMachine[selectedMachine]) {
+      availableFrameColors = compatibility.byMachine[selectedMachine].frameColors;
+    }
+    if (selectedFrame && compatibility.byFrame[selectedFrame]) {
+      const frameColors = compatibility.byFrame[selectedFrame].frameColors;
+      if (availableFrameColors) {
+        availableFrameColors = new Set([...availableFrameColors].filter(x => frameColors.has(x)));
+      } else {
+        availableFrameColors = frameColors;
+      }
+    }
+    if (availableFrameColors && availableFrameColors.size > 0) {
+      filterColorSelectOptions($el(".cfg-select-frame-color"), availableFrameColors);
+    } else {
+      $el(".cfg-select-frame-color").find('option').removeClass('cfg-option-hidden').prop('disabled', false);
+    }
+
+    // Если текущее выбранное значение скрыто - сбрасываем на первое доступное
+    resetHiddenSelections();
+  }
+
+  /**
+   * Сбрасывает выбор если текущее значение скрыто.
+   */
+  function resetHiddenSelections() {
+    ['.cfg-select-frame', '.cfg-select-fridge', '.cfg-select-terminal', '.cfg-select-frame-color'].forEach(selector => {
+      const $sel = $el(selector);
+      if (!$sel.length) return;
+
+      const currentVal = $sel.val();
+      if (!currentVal) return;
+
+      const $currentOpt = $sel.find(`option[value="${currentVal}"]`);
+      if ($currentOpt.hasClass('cfg-option-hidden')) {
+        // Текущее значение скрыто - выбираем первое видимое
+        const $firstVisible = $sel.find('option:not(.cfg-option-hidden):not([value=""])').first();
+        if ($firstVisible.length) {
+          $sel.val($firstVisible.val());
+        } else {
+          $sel.val('');
+        }
       }
     });
   }
@@ -367,14 +624,51 @@
       });
   }
 
+  /**
+   * Проверяет актуальность версии кэша через лёгкий запрос к серверу.
+   * Возвращает true если кэш актуален, false если нужно обновить.
+   */
+  function checkCacheVersion(cachedVersion) {
+    return $.getJSON(API_BASE + "/config-version")
+      .then((res) => {
+        const serverVersion = res?.version;
+        if (!serverVersion || !cachedVersion) return false;
+        return serverVersion === cachedVersion;
+      })
+      .catch(() => {
+        // Если не удалось проверить версию - считаем кэш актуальным
+        console.warn("⚠️ Failed to check cache version, using cached data");
+        return true;
+      });
+  }
+
   function loadData() {
     const cached = loadCachedData();
+
     if (cached) {
-      console.log("💾 Using cached configurator data");
+      console.log("💾 Found cached data, checking version...");
       applyLoadedData(cached);
-      fetchAndCacheData().catch(() => console.warn("⚠️ Background refresh failed"));
+
+      // Проверяем версию асинхронно
+      checkCacheVersion(cached.version).then((isValid) => {
+        if (!isValid) {
+          console.log("🔄 Cache outdated, refreshing data...");
+          fetchAndCacheData()
+            .then(() => {
+              // Перезаполняем селекторы с новыми данными
+              fillSelects();
+              updateAvailableOptions();
+              renderVariant(findVariant(true));
+            })
+            .catch(() => console.warn("⚠️ Background refresh failed"));
+        } else {
+          console.log("✓ Cache is up to date");
+        }
+      });
+
       return Promise.resolve(cached);
     }
+
     return fetchAndCacheData();
   }
 
@@ -1272,6 +1566,7 @@
     $(".cfg-select-machine, .cfg-select-frame, .cfg-select-frame-color, .cfg-select-fridge, .cfg-select-terminal, .cfg-select-insert-color").on(
       "change",
       () => {
+        updateAvailableOptions(); // Фильтруем доступные опции
         ensureMachineSelection();
         ensureFridgeSelection();
         updateFrameColorState();
@@ -1345,6 +1640,7 @@
         }
 
         ensureMachineSelection();
+        updateAvailableOptions(); // Фильтруем опции после загрузки
         ensureFridgeSelection();
         updateFrameColorState();
         updateInsertColorState();
