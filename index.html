@@ -1,0 +1,2138 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <title>Конфигуратор кофемашин</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  <!-- Шрифт Montserrat -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+  <style>
+    /* Фон всей страницы */
+    body {
+      margin: 0;
+      padding: 40px 15px;
+      min-height: 100vh;
+      display: flex;
+      align-items: flex-start;
+      justify-content: center;
+      background:
+        radial-gradient(circle at 0% 0%, rgba(0, 102, 255, 0.08), transparent 55%),
+        radial-gradient(circle at 100% 100%, rgba(0, 0, 0, 0.06), transparent 55%),
+        linear-gradient(135deg, #f3f4f7 0%, #f9fafb 100%);
+      box-sizing: border-box;
+      font-family: 'Montserrat', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    }
+
+    /* Лёгкая "карточка" вокруг конфигуратора */
+    .page-wrapper {
+      max-width: 1600px;
+      width: 100%;
+    }
+
+    .cz-conf {
+      font-family: 'Montserrat', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: #FFFFFF;
+      color: #000;
+      padding: 40px 20px;
+      margin: 0 auto;
+      width: 100%;
+      position: relative;
+      overflow: hidden;
+      box-sizing: border-box;
+      border-radius: 18px;
+      box-shadow:
+        0 18px 45px rgba(15, 26, 43, 0.14),
+        0 0 0 1px rgba(15, 26, 43, 0.03);
+    }
+
+    /* Декоративный фон внутри блока */
+    .cz-conf::before,
+    .cz-conf::after {
+      content: "";
+      position: absolute;
+      border-radius: 999px;
+      filter: blur(30px);
+      z-index: 0;
+      pointer-events: none;
+      opacity: 0.35;
+    }
+
+    .cz-conf::before {
+      width: 320px;
+      height: 320px;
+      left: -120px;
+      top: -120px;
+      background: radial-gradient(circle, rgba(0, 102, 255, 0.32), transparent 60%);
+    }
+
+    .cz-conf::after {
+      width: 260px;
+      height: 260px;
+      right: -80px;
+      bottom: -80px;
+      background: radial-gradient(circle, rgba(0, 0, 0, 0.16), transparent 60%);
+    }
+
+    .cz-conf > .container {
+      position: relative;
+      z-index: 1;
+    }
+
+    .cz-conf *,
+    .cz-conf *::before,
+    .cz-conf *::after {
+      box-sizing: border-box;
+    }
+
+    .cz-conf .container {
+      max-width: 1520px;
+      margin: 0 auto;
+    }
+
+    .cz-conf h1 {
+      font-size: 30px;
+      font-weight: 600;
+      line-height: 36px;
+      margin: 0 0 20px 0;
+      color: #000000;
+    }
+
+    .cz-conf .main-content {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 30px;
+      margin-bottom: 0;
+      background: #F7F7F7;
+      padding: 0 20px 0 20px; /* убрали верхний отступ, чтобы картинка прилегала к серой области */
+      border-radius: 8px;
+    }
+
+    .cz-conf .product-image {
+      background: transparent;
+      border-radius: 0;
+      padding: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: flex-end; /* дефолт: прилегаем изображением к нижней границе области */
+      position: relative;
+      min-height: 520px;
+      height: 520px; /* фиксированная область, чтобы высота не прыгала */
+      overflow: hidden;
+    }
+
+    .cz-conf .product-image img.cfg-main-image {
+      width: auto;
+      height: 100%;       /* растягиваем по высоте области */
+      max-width: 100%;    /* не выходим за границы по ширине */
+      max-height: 100%;
+      display: block;
+      object-fit: contain;
+      margin: 0 auto;
+      transition: transform 0.25s ease, opacity 0.2s ease;
+    }
+
+    /* Когда каркас не выбран — центрируем и чуть увеличиваем изображение */
+    .cz-conf .product-image.without-frame {
+      justify-content: center;
+    }
+
+    .cz-conf .product-image.without-frame img.cfg-main-image {
+      max-width: 110%;
+      max-height: 100%;
+      transform: scale(1.03);
+    }
+
+    /* Спиннер загрузки */
+    .cz-conf .cfg-loader {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: rgba(255, 255, 255, 0.12);
+      pointer-events: none;
+      opacity: 0;
+      transition: opacity 0.2s ease;
+      z-index: 2;
+    }
+
+    .cz-conf .cfg-loader:after {
+      content: "";
+      width: 34px;
+      height: 34px;
+      border: 4px solid rgba(0, 0, 0, 0.08);
+      border-top-color: #0064fc;
+      border-radius: 50%;
+      animation: cfg-spin 0.9s linear infinite;
+    }
+
+    .cz-conf .product-image.is-loading .cfg-loader {
+      opacity: 1;
+    }
+
+    .cz-conf .product-image.is-loading img.cfg-main-image {
+      opacity: 0.15;
+    }
+
+    @keyframes cfg-spin {
+      to { transform: rotate(360deg); }
+    }
+
+    /* Первичный полноэкранный лоадер с "кирпичной" анимацией */
+    .cz-conf .cfg-initial-loader {
+      position: absolute;
+      inset: 0;
+      z-index: 30;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: rgba(255, 255, 255, 0.6);
+      backdrop-filter: blur(1px);
+      transition: opacity 0.45s ease, visibility 0.45s ease;
+    }
+
+    .cz-conf .cfg-initial-loader.is-hidden {
+      opacity: 0;
+      visibility: hidden;
+      pointer-events: none;
+    }
+
+    .cz-conf .cfg-loader-card {
+      position: relative;
+      z-index: 2;
+      background: rgba(255, 255, 255, 0.88);
+      border-radius: 12px;
+      padding: 18px 20px 14px;
+      box-shadow: 0 12px 30px rgba(15, 26, 43, 0.12);
+      display: grid;
+      gap: 10px;
+      min-width: 220px;
+      text-align: center;
+      align-items: center;
+    }
+
+    .cz-conf .cfg-loader-title {
+      font-weight: 700;
+      font-size: 16px;
+      color: #101828;
+      letter-spacing: 0.01em;
+    }
+
+    .cz-conf .cfg-loader-text {
+      font-size: 12px;
+      color: #4b5563;
+    }
+
+    .cz-conf .cfg-coffee-icon {
+      position: relative;
+      width: 96px;
+      height: 80px;
+      margin: 0 auto;
+    }
+
+    .cz-conf .cfg-coffee-steam {
+      position: absolute;
+      top: 0;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 70px;
+      height: 38px;
+      pointer-events: none;
+    }
+
+    .cz-conf .cfg-coffee-steam span {
+      position: absolute;
+      bottom: 0;
+      width: 8px;
+      height: 24px;
+      background: linear-gradient(180deg, rgba(0, 108, 255, 0.58) 0%, rgba(0, 108, 255, 0.0) 100%);
+      border-radius: 12px;
+      filter: blur(0.4px);
+      animation: cfg-steam 1.8s ease-in-out infinite;
+    }
+
+    .cz-conf .cfg-coffee-steam span:nth-child(1) { left: 16px; animation-delay: 0s; }
+    .cz-conf .cfg-coffee-steam span:nth-child(2) { left: 32px; animation-delay: 0.25s; }
+    .cz-conf .cfg-coffee-steам span:nth-child(3) { left: 48px; animation-delay: 0.5s; }
+
+    .cz-conf .cfg-coffee-cup {
+      position: absolute;
+      bottom: 12px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 78px;
+      height: 44px;
+      background: #ffffff;
+      border: 3px solid #006cff;
+      border-radius: 0 0 14px 14px;
+      box-shadow: inset 0 -6px 0 rgba(0, 108, 255, 0.12);
+    }
+
+    .cz-conf .cfg-coffee-cup::after {
+      content: "";
+      position: absolute;
+      right: -18px;
+      top: 8px;
+      width: 18px;
+      height: 22px;
+      border: 3px solid #006cff;
+      border-left: none;
+      border-radius: 0 14px 14px 0;
+    }
+
+    .cz-conf .cfg-coffee-saucer {
+      position: absolute;
+      bottom: 6px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 110px;
+      height: 12px;
+      background: rgba(0, 108, 255, 0.1);
+      border-radius: 999px;
+      filter: blur(0.4px);
+    }
+
+    @keyframes cfg-steam {
+      0%   { transform: translateY(6px) scale(0.9); opacity: 0; }
+      20%  { opacity: 1; }
+      70%  { transform: translateY(-20px) scale(1); opacity: 0.85; }
+      100% { transform: translateY(-32px) scale(1.05); opacity: 0; }
+    }
+
+    .cz-conf .cfg-bubbles {
+      position: absolute;
+      width: 260px;
+      height: 220px;
+      left: 50%;
+      top: 45%;
+      transform: translate(-50%, -80%);
+      overflow: hidden;
+      z-index: 1;
+      pointer-events: none;
+    }
+
+    .cz-conf .cfg-bubbles span {
+      position: absolute;
+      bottom: -20px;
+      display: block;
+      background: rgba(0, 108, 255, 0.28);
+      border: 1px solid rgba(0, 108, 255, 0.36);
+      border-radius: 50%;
+      animation: cfg-bubble-rise 2.4s ease-out infinite;
+      box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.16);
+    }
+
+    /* Крупнее и прямо под карточкой */
+    .cz-conf .cfg-bubbles span:nth-child(1) { left: 22%; width: 26px; height: 26px; animation-delay: 0s; }
+    .cz-conf .cfg-bubbles span:nth-child(2) { left: 36%; width: 36px; height: 36px; animation-delay: 0.25s; }
+    .cz-conf .cfg-bubbles span:nth-child(3) { left: 48%; width: 24px; height: 24px; animation-delay: 0.55s; }
+    .cz-conf .cfg-bubbles span:nth-child(4) { left: 60%; width: 34px; height: 34px; animation-delay: 0.1s; }
+    .cz-conf .cfg-bubbles span:nth-child(5) { left: 72%; width: 40px; height: 40px; animation-delay: 0.45s; }
+    .cz-conf .cfg-bubbles span:nth-child(6) { left: 30%; width: 22px; height: 22px; animation-delay: 0.9s; }
+    .cz-conf .cfg-bubbles span:nth-child(7) { left: 50%; width: 30px; height: 30px; animation-delay: 1.2s; }
+    .cz-conf .cfg-bubbles span:nth-child(8) { left: 66%; width: 24px; height: 24px; animation-delay: 1.45s; }
+
+    @keyframes cfg-bubble-rise {
+      0%   { transform: translateY(0) scale(0.85); opacity: 0; }
+      10%  { opacity: 1; }
+      60%  { transform: translateY(-90px) scale(1.05); opacity: 0.9; }
+      100% { transform: translateY(-130px) scale(1.2); opacity: 0; }
+    }
+
+    /* Превью-галерею скрываем: только основное изображение + стрелки */
+    .cz-conf .cfg-gallery {
+      display: none !important;
+    }
+
+    .cz-conf .cfg-image-nav {
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+    }
+
+    .cz-conf .cfg-zoom-lens {
+      position: absolute;
+      width: 160px;
+      height: 160px;
+      border: 2px solid #0064fc;
+      border-radius: 50%;
+      box-shadow: 0 10px 24px rgba(0, 0, 0, 0.16);
+      background-repeat: no-repeat;
+      background-position: center;
+      background-size: cover;
+      pointer-events: none;
+      display: none;
+      z-index: 4;
+    }
+
+    .cz-conf .cfg-arrow {
+      position: absolute;
+      top: 50%;
+      transform: translateY(-50%);
+      width: 44px;
+      height: 44px;
+      border-radius: 50%;
+      border: none;
+      background: rgba(255, 255, 255, 0.8);
+      box-shadow: 0 4px 10px rgba(0,0,0,0.12);
+      cursor: pointer;
+      pointer-events: auto;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 20px;
+      color: #000;
+      transition: background-color 0.15s ease, box-shadow 0.15s ease, opacity 0.15s ease;
+    }
+
+    .cz-conf .cfg-arrow:hover:not(:disabled):not(.disabled) {
+      background: rgba(255,255,255,0.95);
+      box-shadow: 0 6px 14px rgba(0,0,0,0.16);
+    }
+
+    .cz-conf .cfg-arrow:disabled,
+    .cz-conf .cfg-arrow.disabled {
+      opacity: 0.3;
+      cursor: default;
+      pointer-events: none;
+    }
+
+    .cz-conf .cfg-arrow-prev { left: 10px; }
+    .cz-conf .cfg-arrow-next { right: 10px; }
+
+    .cz-conf .specs {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 20px;
+      padding-top: 18px; /* отступ сверху, чтобы характеристики не прилипали к краю */
+    }
+
+    .cz-conf .spec-block {
+      padding-bottom: 0;
+    }
+
+    .cz-conf .spec-title {
+      color: #999;
+      font-size: 14px;
+      text-transform: capitalize;
+      margin-bottom: 8px;
+    }
+
+    .cz-conf .spec-name {
+      font-size: 18px;
+      font-weight: 700;
+      margin-bottom: 8px;
+      text-transform: uppercase;
+    }
+
+    .cz-conf .spec-list {
+      list-style: none;
+      margin: 0;
+      padding: 0;
+    }
+
+    .cz-conf .spec-list li {
+      font-size: 13px;
+      line-height: 1.5;
+      color: #333;
+    }
+
+    .cz-conf .spec-list li:before {
+      content: "• ";
+      font-weight: bold;
+      color: #000;
+    }
+
+    .cz-conf .configurator-wrapper {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 30px;
+      margin-top: 20px;
+      margin-bottom: 30px;
+      align-items: stretch;
+    }
+
+    .cz-conf .configurator {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      grid-template-rows: auto auto;
+      gap: 15px;
+    }
+
+    .cz-conf .config-item {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .cz-conf .config-label {
+      font-size: 14px;
+      font-weight: 600;
+      color: #000;
+      transition: color 0.2s ease;
+    }
+
+    .cz-conf .config-item:has(.config-select:disabled) .config-label,
+    .cz-conf .config-label.disabled-label {
+      color: #b3b3b3 !important;
+    }
+
+    .cz-conf .config-select {
+      appearance: none;
+      width: 100%;
+      height: 50px;
+      padding: 0 45px 0 20px;
+      cursor: pointer;
+      outline: none;
+      background-color: #f8f8f8;
+      border: 1px solid #e8e8e8;
+      border-radius: 5px;
+      font-family: "Montserrat", sans-serif;
+      font-size: 15px;
+      font-weight: 400;
+      color: #000;
+      background-image: url("data:image/svg+xml,%3Csvg width='10' height='6' viewBox='0 0 10 6' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%23999' stroke-width='1.2' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: right 16px center;
+      background-size: 10px 6px;
+      transition: border-color 0.2s ease, box-shadow 0.2s ease, transform 0.12s ease-out;
+    }
+
+    .cz-conf .config-select:hover:not(:disabled) {
+      border-color: #bdbdbd;
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.08);
+      transform: translateY(-1px);
+    }
+
+    .cz-conf .config-select:disabled {
+      background-color: #FFFFFF;
+      border-color: #e5e5e5;
+      color: #b3b3b3;
+      cursor: not-allowed;
+    }
+
+    .cz-conf .price-section {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 20px;
+      align-items: stretch;
+      align-self: start;
+      height: 100%;
+    }
+
+    .cz-conf .price-block {
+      display: grid;
+      grid-template-rows: 1fr auto;
+      text-align: center;
+    }
+
+    .cz-conf .price {
+      font-size: 44px;
+      font-weight: 700;
+      margin: 0;
+      min-height: 1em;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding-top: 26px;
+      padding-bottom: 10px;
+    }
+
+    .cz-conf .price.cfg-price-left {
+      color: #0066FF;
+    }
+
+    .cz-conf .price.cfg-price-right {
+      color: #000;
+    }
+
+    .cz-conf .price-small {
+      font-size: 16px !important;
+      font-weight: 400 !important;
+      color: #666 !important;
+    }
+
+    .cz-conf .btn {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 16px 32px;
+      font-size: 16px;
+      font-weight: 600;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+      transition: background-color 0.2s ease-in-out;
+      width: 100%;
+      text-decoration: none;
+      height: 50px;
+      align-self: end;
+    }
+
+    .cz-conf .btn-primary,
+    .cz-conf a.btn-primary {
+      background-color: #0064fc;
+      color: #ffffff !important;
+    }
+
+    .cz-conf .btn-primary:hover:not(:disabled):not(.disabled),
+    .cz-conf a.btn-primary:hover:not(:disabled):not(.disabled) {
+      background-color: #0052d4;
+      color: #ffffff !important;
+    }
+
+    .cz-conf .btn-primary:disabled,
+    .cz-conf .btn-primary[disabled],
+    .cz-conf .btn-primary.disabled,
+    .cz-conf a.btn-primary:disabled,
+    .cz-conf a.btn-primary[disabled],
+    .cz-conf a.btn-primary.disabled {
+      background-color: #d3d3d3 !important;
+      color: #ffffff !important;
+      cursor: not-allowed !important;
+      opacity: 0.7 !important;
+      pointer-events: none !important;
+      text-decoration: none !important;
+    }
+
+    .cz-conf a.btn-primary[disabled]:hover,
+    .cz-conf a.btn-primary[disabled]:focus,
+    .cz-conf a.btn-primary[disabled]:active,
+    .cz-conf a.btn-primary.disabled:hover,
+    .cz-conf a.btn-primary.disabled:focus,
+    .cz-conf a.btn-primary.disabled:active {
+      color: #ffffff !important;
+      background-color: #d3d3d3 !important;
+    }
+
+    .cz-conf .btn-secondary {
+      background-color: #fff;
+      color: #000;
+      border: 2px solid #000;
+    }
+
+    .cz-conf .btn-secondary:hover {
+      background-color: #000;
+      color: #fff;
+    }
+
+    @media (min-width: 969px) {
+      .cz-conf .configurator-wrapper {
+        align-items: start;
+      }
+
+      .cz-conf .price-section {
+        padding-top: 0;
+      }
+
+      .cz-conf .price-block {
+        grid-template-rows: minmax(50px, 1fr) 50px;
+        gap: 15px;
+      }
+
+      .cz-conf .price {
+        padding-top: 10px;
+        font-size: 32px;
+      }
+
+      .cz-conf .btn {
+        height: 50px;
+      }
+    }
+
+    @media (max-width: 968px) {
+      body {
+        padding: 20px 10px;
+      }
+
+      .cz-conf {
+        padding: 24px 16px;
+        border-radius: 14px;
+      }
+
+      .cz-conf .main-content {
+        grid-template-columns: 1fr;
+      }
+
+      .cz-conf .specs {
+        grid-template-columns: 1fr;
+      }
+
+      .cz-conf .product-image {
+        min-height: 400px;
+        height: 400px; /* сохраняем стабильную область для мобильных */
+      }
+
+      .cz-conf .configurator-wrapper {
+        grid-template-columns: 1fr;
+        gap: 20px;
+      }
+
+      .cz-conf .configurator {
+        grid-template-columns: repeat(2, 1fr);
+      }
+
+      .cz-conf .price-section {
+        display: flex;
+        gap: 20px;
+      }
+
+      .cz-conf .price-block {
+        flex: 1;
+      }
+
+      .cz-conf .price {
+        font-size: 36px;
+      }
+    }
+
+    /* Модальное окно */
+    .cfg-modal {
+      display: none;
+      position: fixed;
+      inset: 0;
+      z-index: 10000;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .cfg-modal.is-open {
+      display: flex;
+    }
+
+    .cfg-modal-overlay {
+      position: absolute;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.5);
+      backdrop-filter: blur(2px);
+    }
+
+    .cfg-modal-content {
+      position: relative;
+      background: #fff;
+      padding: 40px;
+      border-radius: 8px;
+      max-width: 500px;
+      width: 90%;
+      max-height: 90vh;
+      overflow-y: auto;
+      box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+      z-index: 1;
+    }
+
+    .cfg-modal-close {
+      position: absolute;
+      top: 15px;
+      right: 15px;
+      background: none;
+      border: none;
+      font-size: 32px;
+      line-height: 1;
+      cursor: pointer;
+      color: #999;
+      padding: 0;
+      width: 32px;
+      height: 32px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: color 0.2s ease;
+    }
+
+    .cfg-modal-close:hover {
+      color: #000;
+    }
+
+    .cfg-modal-title {
+      font-size: 24px;
+      font-weight: 600;
+      margin: 0 0 24px 0;
+      color: #000;
+    }
+
+    .cfg-form-group {
+      margin-bottom: 20px;
+    }
+
+    .cfg-form-group label {
+      display: block;
+      font-size: 14px;
+      font-weight: 600;
+      margin-bottom: 6px;
+      color: #000;
+    }
+
+    .cfg-required {
+      color: #ff0000;
+    }
+
+    .cfg-form-control {
+      width: 100%;
+      height: 50px;
+      padding: 0 20px;
+      border: 1px solid #e8e8e8;
+      border-radius: 5px;
+      font-family: "Montserrat", sans-serif;
+      font-size: 15px;
+      color: #000;
+      transition: border-color 0.2s ease;
+    }
+
+    .cfg-form-control:focus {
+      outline: none;
+      border-color: #0064fc;
+    }
+
+    .cfg-checkbox-group {
+      margin-bottom: 24px;
+    }
+
+    .cfg-checkbox-label {
+      display: flex;
+      align-items: flex-start;
+      cursor: pointer;
+      font-weight: 400;
+    }
+
+    .cfg-checkbox {
+      margin-right: 10px;
+      margin-top: 2px;
+      width: 18px;
+      height: 18px;
+      cursor: pointer;
+      flex-shrink: 0;
+    }
+
+    .cfg-link {
+      color: #0064fc;
+      text-decoration: none;
+    }
+
+    .cfg-link:hover {
+      text-decoration: underline;
+    }
+
+    .cfg-form-message {
+      margin-top: 15px;
+      padding: 12px;
+      border-radius: 5px;
+      font-size: 14px;
+      text-align: center;
+      display: none;
+    }
+
+    .cfg-form-message.success {
+      display: block;
+      background: #d4edda;
+      color: #155724;
+      border: 1px solid #c3e6cb;
+    }
+
+    .cfg-form-message.error {
+      display: block;
+      background: #f8d7da;
+      color: #721c24;
+      border: 1px solid #f5c6cb;
+    }
+  </style>
+</head>
+<body>
+  <div class="page-wrapper">
+    <div class="cz-conf">
+      <div class="cfg-initial-loader">
+        <div class="cfg-bubbles">
+          <span></span><span></span><span></span><span></span>
+          <span></span><span></span><span></span><span></span>
+        </div>
+        <div class="cfg-loader-card">
+          <div class="cfg-coffee-icon">
+            <div class="cfg-coffee-steam">
+              <span></span><span></span><span></span>
+            </div>
+            <div class="cfg-coffee-cup"></div>
+            <div class="cfg-coffee-saucer"></div>
+          </div>
+          <div class="cfg-loader-text">Готовим конфигуратор…</div>
+        </div>
+      </div>
+
+      <div class="container">
+        <h1>Конфигуратор</h1>
+
+        <div class="main-content">
+          <div class="product-image">
+            <img class="cfg-main-image" src="" alt="Конфигурация">
+            <div class="cfg-gallery"></div>
+          </div>
+
+          <div class="specs">
+            <div class="spec-block cfg-spec-machine">
+              <div class="spec-title">Кофемашина</div>
+              <div class="spec-name">—</div>
+              <ul class="spec-list"></ul>
+            </div>
+
+            <div class="spec-block cfg-spec-fridge">
+              <div class="spec-title">Холодильник</div>
+              <div class="spec-name">—</div>
+              <ul class="spec-list"></ul>
+            </div>
+
+            <div class="spec-block cfg-spec-frame">
+              <div class="spec-title">Каркас</div>
+              <div class="spec-name">—</div>
+              <ul class="spec-list"></ul>
+            </div>
+
+            <div class="spec-block cfg-spec-terminal">
+              <div class="spec-title">Терминал</div>
+              <div class="spec-name">—</div>
+              <ul class="spec-list"></ul>
+            </div>
+          </div>
+        </div>
+
+        <div class="configurator-wrapper">
+          <div class="configurator">
+            <div class="config-item">
+              <label class="config-label">Кофемашина</label>
+              <select class="config-select cfg-select-machine">
+                <option value="">Загрузка...</option>
+              </select>
+            </div>
+
+            <div class="config-item">
+              <label class="config-label">Холодильник</label>
+              <select class="config-select cfg-select-fridge">
+                <option value="">Загрузка...</option>
+              </select>
+            </div>
+
+            <div class="config-item">
+              <label class="config-label">Терминал</label>
+              <select class="config-select cfg-select-terminal">
+                <option value="">Загрузка...</option>
+              </select>
+            </div>
+
+            <div class="config-item">
+              <label class="config-label">Каркас</label>
+              <select class="config-select cfg-select-frame">
+                <option value="">Загрузка...</option>
+              </select>
+            </div>
+
+            <div class="config-item">
+              <label class="config-label">Цвет каркаса</label>
+              <select class="config-select cfg-select-frame-color">
+                <option value="">—</option>
+              </select>
+            </div>
+
+            <div class="config-item">
+              <label class="config-label">Цвета дизайна</label>
+              <select class="config-select cfg-select-insert-color" disabled>
+                <option value="">—</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="price-section">
+            <div class="price-block">
+              <div class="price cfg-price-left">—</div>
+              <a href="#" class="btn btn-primary cfg-btn-ozon" target="_blank" rel="noopener noreferrer">Купить на OZON</a>
+            </div>
+
+            <div class="price-block">
+              <div class="price cfg-price-right">—</div>
+              <button class="btn btn-secondary cfg-btn-quote">Запросить счёт</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Модальное окно формы запроса счёта -->
+    <div class="cfg-modal" id="cfg-quote-modal">
+      <div class="cfg-modal-overlay"></div>
+      <div class="cfg-modal-content">
+        <button class="cfg-modal-close" aria-label="Закрыть">&times;</button>
+        <h2 class="cfg-modal-title">Запросить счёт</h2>
+        <form class="cfg-quote-form" id="cfg-quote-form">
+          <div class="cfg-form-group">
+            <label for="cfg-lead-name">Имя <span class="cfg-required">*</span></label>
+            <input type="text" id="cfg-lead-name" class="cfg-form-control" required>
+          </div>
+
+          <div class="cfg-form-group">
+            <label for="cfg-lead-phone">Номер телефона <span class="cfg-required">*</span></label>
+            <input type="tel" id="cfg-lead-phone" class="cfg-form-control" required>
+          </div>
+
+          <div class="cfg-form-group">
+            <label for="cfg-lead-telegram">Telegram ID</label>
+            <input type="text" id="cfg-lead-telegram" class="cfg-form-control" placeholder="@username или ID">
+          </div>
+
+          <div class="cfg-form-group">
+            <label for="cfg-lead-email">Email</label>
+            <input type="email" id="cfg-lead-email" class="cfg-form-control">
+          </div>
+
+          <div class="cfg-form-group cfg-checkbox-group">
+            <label class="cfg-checkbox-label">
+              <input type="checkbox" id="cfg-lead-consent" class="cfg-checkbox">
+              <span>Я согласен(а) с <a href="https://93-170-123-229.nip.io/privacy-policy" target="_blank" class="cfg-link">обработкой персональных данных</a> <span class="cfg-required">*</span></span>
+            </label>
+          </div>
+
+          <button type="submit" class="btn btn-primary cfg-lead-submit" disabled>Отправить</button>
+          <div class="cfg-form-message"></div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- jQuery -->
+  <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+
+  <!-- Ваш скрипт конфигуратора как есть -->
+  <script>
+    (function ($) {
+      // Ходим в API через прокси на том же хосте (Caddy/Nginx: /api -> 127.0.0.1:8070).
+      const BACKEND_BASE = "";
+      const API_BASE = "/api";
+      const LEAD_ENDPOINT = "/api/lead";
+
+      const state = { machines: [], specs: {}, current: null };
+      const skipValues = new Set(["нет", "не", "-", "none", "", null, undefined]);
+      const STORAGE_KEY = "cz-conf-selection";
+      const DATA_CACHE_KEY = "cz-conf-cache-v1";
+      const CACHE_TTL_MS = 12 * 60 * 60 * 1000; // 12 часов
+
+      // Цвета: английские ключи для данных (используются как value в select)
+      const FRAME_COLORS = ["white", "black"];
+      const INSERT_COLORS = ["yellow", "green", "red", "gray", "blue", "purple"];
+
+      // Маппинг английских ключей на русские названия для отображения
+      const COLOR_LABELS = {
+        "white": "Белый",
+        "black": "Чёрный",
+        "yellow": "Жёлтый",
+        "green": "Зелёный",
+        "red": "Красный",
+        "gray": "Серый",
+        "blue": "Синий",
+        "purple": "Фиолетовый"
+      };
+
+      // Кеш предзагруженных изображений для быстрой смены
+      const imageCache = new Map();
+      const normalizeColorKey = (key) => {
+        if (!key) return "";
+        const k = String(key).trim().toLowerCase();
+        const map = {
+          "white": "white",
+          "белый": "white",
+          "белая": "white",
+          "бел": "white",
+          "black": "black",
+          "чёрный": "black",
+          "черный": "black",
+          "черная": "black",
+          "yellow": "yellow",
+          "желтый": "yellow",
+          "желтая": "yellow",
+          "green": "green",
+          "зеленый": "green",
+          "зеленая": "green",
+          "red": "red",
+          "красный": "red",
+          "красная": "red",
+          "gray": "gray",
+          "серый": "gray",
+          "серая": "gray",
+          "grey": "gray",
+          "blue": "blue",
+          "синий": "blue",
+          "синяя": "blue",
+          "purple": "purple",
+          "фиолетовый": "purple",
+          "фиолетовая": "purple",
+        };
+        return map[k] || k;
+      };
+
+      // Предзагрузка изображения в кеш
+      function preloadImage(src) {
+        if (!src || imageCache.has(src)) return Promise.resolve();
+        return new Promise((resolve, reject) => {
+          const img = new Image();
+          img.onload = () => {
+            imageCache.set(src, img);
+            resolve(img);
+          };
+          img.onerror = reject;
+          img.src = src;
+        });
+      }
+
+      // Предзагрузка всех изображений для варианта
+      function preloadVariantImages(v) {
+        if (!v) return;
+        const imagesToPreload = [];
+
+        // Предзагружаем основное изображение
+        if (v.main_image) {
+          imagesToPreload.push(normSrc(v.main_image));
+        }
+
+        // Предзагружаем все design_images для текущего варианта
+        if (v.design_images) {
+          Object.values(v.design_images).forEach(frameColors => {
+            Object.values(frameColors).forEach(config => {
+              if (config.main_image || config.main_image_path) {
+                imagesToPreload.push(normSrc(config.main_image || config.main_image_path));
+              }
+            });
+          });
+        }
+
+        // Запускаем предзагрузку всех изображений
+        imagesToPreload.forEach(src => preloadImage(src));
+      }
+
+      const $el = (cls) => $(cls).first();
+      const setText = (jq, txt) => jq.length && jq.text(txt || "—");
+      const fmtPrice = (v) => (v || v === 0 ? Number(v).toLocaleString("ru-RU") + " ₽" : "—");
+      const normSrc = (src) => {
+        if (!src) return "";
+        if (/^(https?:)?\/\//i.test(src) || src.startsWith("data:")) return src;
+        const base = BACKEND_BASE.replace(/\/+$/, "");
+        const path = src.startsWith("/") ? src : "/" + src;
+        return base + path;
+      };
+      const normVal = (v) => (v === null || v === undefined ? "" : String(v).trim().toLowerCase());
+      const showInitialLoader = () => $(".cfg-initial-loader").removeClass("is-hidden");
+      const hideInitialLoader = () => $(".cfg-initial-loader").addClass("is-hidden");
+
+      function applyLoadedData(res) {
+        state.machines = res?.machines || [];
+        state.specs = {};
+        (res?.specs || []).forEach((sp) => {
+          if (!state.specs[sp.category]) state.specs[sp.category] = {};
+          state.specs[sp.category][sp.name] = sp;
+        });
+        console.log("???? Loaded machines:", state.machines.length);
+        state.machines.forEach(m => {
+          if (m.design_images) {
+            console.log(`  Machine ${m.id} (${m.name}) has design_images:`, Object.keys(m.design_images));
+          }
+        });
+      }
+
+      function loadCachedData() {
+        try {
+          const raw = localStorage.getItem(DATA_CACHE_KEY);
+          if (!raw) return null;
+          const parsed = JSON.parse(raw);
+          if (!parsed || !parsed.timestamp || !parsed.data) return null;
+          if (Date.now() - parsed.timestamp > CACHE_TTL_MS) return null;
+          return parsed.data;
+        } catch (e) {
+          return null;
+        }
+      }
+
+      function saveCachedData(data) {
+        try {
+          localStorage.setItem(DATA_CACHE_KEY, JSON.stringify({ timestamp: Date.now(), data }));
+        } catch (e) {
+          // ignore quota errors
+        }
+      }
+
+      // Варианты, которые уже доказали, что по выбранному цвету каркаса у них пустой набор картинок
+      const excludedVariants = new Set();
+
+      // Ищем первый доступный набор картинок в design_images, чтобы не упасть на пустых ключах
+      function findFirstDesignImageConfig(designImages) {
+        if (!designImages) return null;
+        for (const [frameColorKey, inserts] of Object.entries(designImages)) {
+          const normFrame = normalizeColorKey(frameColorKey);
+          if (!inserts || typeof inserts !== "object" || !Object.keys(inserts).length) continue;
+          for (const [insertColorKey, cfg] of Object.entries(inserts)) {
+            const normInsert = normalizeColorKey(insertColorKey);
+            if (cfg && (cfg.main_image || cfg.main_image_path)) {
+              return {
+                frameColor: normFrame || frameColorKey,
+                insertColor: normInsert || insertColorKey,
+                config: cfg,
+              };
+            }
+          }
+        }
+        return null;
+      }
+
+      // Ищем первую доступную вставку в рамках выбранного цвета каркаса
+      function findDesignImageForFrame(designImages, frameColorKey) {
+        if (!designImages || !frameColorKey) return null;
+        const normFrame = normalizeColorKey(frameColorKey);
+        const inserts = Object.entries(designImages).find(
+          ([key]) => normalizeColorKey(key) === normFrame
+        )?.[1];
+        if (!inserts || typeof inserts !== "object" || !Object.keys(inserts).length) return null;
+        for (const [insertColorKey, cfg] of Object.entries(inserts)) {
+          const normInsert = normalizeColorKey(insertColorKey);
+          if (cfg && (cfg.main_image || cfg.main_image_path)) {
+            return { frameColor: normFrame || frameColorKey, insertColor: normInsert || insertColorKey, config: cfg };
+          }
+        }
+        return null;
+      }
+
+      function getDesignConfig(v, frameColor, insertColor) {
+        if (!v.design_images) return null;
+        const normFrame = normalizeColorKey(frameColor);
+        const normInsert = normalizeColorKey(insertColor);
+
+        const tryFrames = [frameColor, normFrame].filter(Boolean);
+        const tryInserts = [insertColor, normInsert].filter(Boolean);
+
+        for (const fKey of tryFrames) {
+          const frameEntry = Object.entries(v.design_images).find(
+            ([key]) => normalizeColorKey(key) === normalizeColorKey(fKey)
+          );
+          if (!frameEntry) continue;
+          const inserts = frameEntry[1];
+          for (const iKey of tryInserts) {
+            const insertEntry = Object.entries(inserts).find(
+              ([key]) => normalizeColorKey(key) === normalizeColorKey(iKey)
+            );
+            if (insertEntry) {
+              const cfg = insertEntry[1];
+              if (cfg && (cfg.main_image || cfg.main_image_path)) {
+                return {
+                  frameColor: normalizeColorKey(frameEntry[0]) || frameEntry[0],
+                  insertColor: normalizeColorKey(insertEntry[0]) || insertEntry[0],
+                  config: cfg,
+                };
+              }
+            }
+          }
+        }
+        return null;
+      }
+
+      function saveSelection() {
+        const data = {
+          machine: $el(".cfg-select-machine").val() || "",
+          frame: $el(".cfg-select-frame").val() || "",
+          frame_color: $el(".cfg-select-frame-color").val() || "",
+          insert_color: $el(".cfg-select-insert-color").val() || "",
+          fridge: $el(".cfg-select-fridge").val() || "",
+          terminal: $el(".cfg-select-terminal").val() || "",
+        };
+        try {
+          localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+        } catch (e) {
+          // ignore quota / private mode errors
+        }
+      }
+
+      function loadSelection() {
+        try {
+          const raw = localStorage.getItem(STORAGE_KEY);
+          return raw ? JSON.parse(raw) : null;
+        } catch (e) {
+          return null;
+        }
+      }
+
+      function renderSpecs($block, spec) {
+        if (!$block.length) return;
+
+        const nameEl = $block.find('.spec-name');
+        const listEl = $block.find('.spec-list');
+
+        if (!spec || !spec.name) {
+          $block.hide();
+          nameEl.text('—');
+          listEl.empty();
+          return;
+        }
+
+        $block.show();
+        nameEl.text(spec.name);
+        listEl.empty();
+
+        const lines = spec.specs || [];
+        if (lines.length) {
+          lines.forEach(line => {
+            listEl.append('<li>' + line + '</li>');
+          });
+        }
+      }
+
+      function populateSelect($sel, values, placeholder, includePlaceholder = true) {
+        if (!$sel.length) return;
+        const uniq = Array.from(new Set(values.filter((v) => v && !skipValues.has(String(v).toLowerCase()))));
+        const opts = placeholder && includePlaceholder ? ['<option value="">' + placeholder + '</option>'] : [];
+        uniq.forEach((v) => opts.push('<option value="' + v + '">' + v + '</option>'));
+        $sel.html(opts.join(""));
+      }
+
+      // Заполнение селекта цветов: value = английский ключ, text = русское название
+      function populateColorSelect($sel, colorKeys, placeholder) {
+        if (!$sel.length) return;
+        const opts = placeholder ? ['<option value="">' + placeholder + '</option>'] : [];
+        colorKeys.forEach((key) => {
+          const label = COLOR_LABELS[key] || key;
+          opts.push('<option value="' + key + '">' + label + '</option>');
+        });
+        $sel.html(opts.join(""));
+      }
+
+      function updateTerminalState() {
+        const mv = $el(".cfg-select-machine").val();
+        const $t = $el(".cfg-select-terminal");
+        if (!$t.length) return;
+        if (!mv) {
+          $t.prop("disabled", true).val("");
+        } else {
+          $t.prop("disabled", false);
+        }
+      }
+
+      function updateInsertColorState() {
+        const frameValue = ($el(".cfg-select-frame").val() || "").toLowerCase();
+        const insertColorSelect = $el(".cfg-select-insert-color");
+
+        if (!frameValue || frameValue === "нет" || frameValue === "no") {
+          if (insertColorSelect.length) {
+            insertColorSelect.prop("disabled", true);
+            insertColorSelect.val("");
+          }
+        } else {
+          if (insertColorSelect.length) {
+            insertColorSelect.prop("disabled", false);
+            if (!insertColorSelect.val()) {
+              insertColorSelect.val("blue");  // Английский ключ вместо русского
+            }
+          }
+        }
+      }
+
+      function ensureMachineSelection() {
+        const $m = $el(".cfg-select-machine");
+        if (!$m.length) return;
+        if (!$m.val()) {
+          const firstVal = $m.find("option[value!='']").first().val();
+          if (firstVal) $m.val(firstVal);
+        }
+      }
+
+      function ensureFridgeSelection() {
+        const $f = $el(".cfg-select-fridge");
+        const frameVal = $el(".cfg-select-frame").val();
+        if (!$f.length) return;
+        const placeholder = "Выберите холодильник";
+
+        if (frameVal) {
+          // убираем placeholder и выставляем первый доступный, если не выбрано
+          $f.find("option[value='']").remove();
+          if (!$f.val()) {
+            const firstVal = $f.find("option").first().val();
+            if (firstVal) $f.val(firstVal);
+          }
+        } else {
+          // возвращаем placeholder, если его нет
+          const hasPlaceholder = $f.find(`option[value='']`).length > 0;
+          if (!hasPlaceholder) {
+            $f.prepend('<option value="">' + placeholder + '</option>');
+          }
+          if (!$f.val()) {
+            $f.val("");
+          }
+        }
+      }
+
+      function fetchAndCacheData() {
+        return $.getJSON(API_BASE + "/config-data")
+          .then((res) => {
+            applyLoadedData(res);
+            saveCachedData(res);
+            return res;
+          })
+          .catch(() => {
+            // Фолбэк: два лёгких запроса, без include_gallery
+            const mReq = $.getJSON(API_BASE + "/coffee-machines");
+            const sReq = $.getJSON(API_BASE + "/specs");
+            return $.when(mReq, sReq).then(([m], [s]) => {
+              const res = { machines: m || [], specs: s || [] };
+              applyLoadedData(res);
+              saveCachedData(res);
+              return res;
+            });
+          });
+      }
+
+      function loadData() {
+        const cached = loadCachedData();
+        if (cached) {
+          console.log("???? Using cached configurator data");
+          applyLoadedData(cached);
+          // Обновляем фоновой загрузкой, но не блокируем первичный рендер
+          fetchAndCacheData().catch(() => console.warn("⚠️ Background refresh failed"));
+          return Promise.resolve(cached);
+        }
+        return fetchAndCacheData();
+      }
+
+      // Галерея превью скрыта, поэтому функция просто очищает контейнер (для совместимости).
+      function renderGallery(v) {
+        const $g = $el(".cfg-gallery");
+        if (!$g.length) return;
+        $g.empty();
+      }
+
+      function getImages(v) {
+        const imgs = v.gallery_files ? v.gallery_files.map(normSrc) : [];
+        const mainSrc = normSrc(v.main_image || (v.gallery_files && v.gallery_files[0]) || "");
+        if (mainSrc && !imgs.includes(mainSrc)) imgs.unshift(mainSrc);
+        return imgs;
+      }
+
+      function updateMainImage(v, forceIndex) {
+        const imgs = getImages(v);
+        if (!$mainImg.length) return;
+
+        const $nav = $(".cfg-image-nav");
+        const $prevArrow = $nav.find(".cfg-arrow-prev");
+        const $nextArrow = $nav.find(".cfg-arrow-next");
+
+        if (!imgs.length) {
+          v._imgIdx = 0;
+          $mainImg.attr("src", "");
+          $nav.hide();
+          return;
+        }
+
+        const maxIdx = imgs.length - 1;
+        const idx = Math.min(Math.max(forceIndex !== undefined ? forceIndex : (v._imgIdx || 0), 0), maxIdx);
+        v._imgIdx = idx;
+        setMainImageSrc(imgs[idx]);
+
+        if ($nav.length) {
+          $nav.show();
+          // Если одно фото — стрелки неактивны
+          if (imgs.length <= 1) {
+            $prevArrow.addClass("disabled").prop("disabled", true);
+            $nextArrow.addClass("disabled").prop("disabled", true);
+          } else {
+            $prevArrow.removeClass("disabled").prop("disabled", false);
+            $nextArrow.removeClass("disabled").prop("disabled", false);
+          }
+        }
+      }
+
+      function ensureImageNav() {
+        const $container = $el(".product-image");
+        if (!$container.length || $container.find(".cfg-image-nav").length) return;
+
+        // Добавляем спиннер при первой инициализации
+        if (!$container.find(".cfg-loader").length) {
+          $container.append('<div class="cfg-loader"></div>');
+        }
+
+        const nav = $(
+          `<div class="cfg-image-nav">
+            <button type="button" class="cfg-arrow cfg-arrow-prev" aria-label="Предыдущее изображение">‹</button>
+            <button type="button" class="cfg-arrow cfg-arrow-next" aria-label="Следующее изображение">›</button>
+          </div>`
+        );
+
+        nav.on("click", ".cfg-arrow-prev", () => {
+          const v = state.current;
+          if (!v) return;
+          const imgs = getImages(v);
+          if (imgs.length <= 1) return;
+          const nextIdx = ((v._imgIdx || 0) - 1 + imgs.length) % imgs.length;
+          updateMainImage(v, nextIdx);
+        });
+
+        nav.on("click", ".cfg-arrow-next", () => {
+          const v = state.current;
+          if (!v) return;
+          const imgs = getImages(v);
+          if (imgs.length <= 1) return;
+          const nextIdx = ((v._imgIdx || 0) + 1) % imgs.length;
+          updateMainImage(v, nextIdx);
+        });
+
+        $container.append(nav);
+
+        // Лупа временно отключена
+      }
+
+      function ensureZoomLens() {
+        const $container = $el(".product-image");
+        if (!$container.length || $container.find(".cfg-zoom-lens").length) return;
+        $container.append('<div class="cfg-zoom-lens"></div>');
+      }
+
+      function hideZoomLens() {
+        $(".cfg-zoom-lens").hide();
+        zoomState.pressed = false;
+      }
+
+      function updateZoomMetrics() {
+        if (!$mainImg.length) return;
+        const img = $mainImg[0];
+        if (!img.naturalWidth || !img.naturalHeight) {
+          zoomState.enabled = false;
+          hideZoomLens();
+          return;
+        }
+        const rect = img.getBoundingClientRect();
+        zoomState.ratioX = img.naturalWidth / rect.width;
+        zoomState.ratioY = img.naturalHeight / rect.height;
+        zoomState.enabled = true;
+        const bgSize = \`\${img.naturalWidth}px \${img.naturalHeight}px\`;
+        $(".cfg-zoom-lens").css("background-size", bgSize);
+      }
+
+      function updateZoomImage(src) {
+        const $lens = $(".cfg-zoom-lens");
+        if (!$lens.length || !src) {
+          hideZoomLens();
+          return;
+        }
+        $lens.css("background-image", src ? \`url(\${src})\` : "none");
+      }
+
+      function triggerVibration() {
+        try {
+          if (navigator.vibrate) navigator.vibrate(12);
+        } catch (e) {
+          // ignore vibration errors
+        }
+      }
+
+      function getPointerCoords(evt) {
+        if (evt.touches && evt.touches.length) {
+          return { clientX: evt.touches[0].clientX, clientY: evt.touches[0].clientY };
+        }
+        if (evt.changedTouches && evt.changedTouches.length) {
+          return { clientX: evt.changedTouches[0].clientX, clientY: evt.changedTouches[0].clientY };
+        }
+        if (evt.clientX !== undefined && evt.clientY !== undefined) {
+          return { clientX: evt.clientX, clientY: evt.clientY };
+        }
+        return null;
+      }
+
+      function setupZoomHandlers() {
+        // Zoom / loupe is temporarily disabled
+        return;
+      }
+
+      // Полностью убираем превью-галерею из DOM (на случай старого кэша)
+      $(document).on("DOMContentLoaded", () => {
+        $(".cfg-gallery").remove();
+      });
+
+      // Перестановка характеристик под ценой на мобильных
+      const $specs = $el(".specs");
+      const specsOriginalParent = $specs.parent();
+      const specsOriginalNext = $specs.next();
+      const $productImage = $el(".product-image");
+      const $mainImg = $el(".cfg-main-image");
+      let imageLoadId = 0;
+      const zoomState = { ratioX: 1, ratioY: 1, enabled: false, pressed: false };
+      const ZOOM_LENS_SIZE = 160;
+
+      function repositionSpecs() {
+        if (!$specs.length) return;
+        const isMobile = window.innerWidth <= 968;
+
+        if (isMobile) {
+          if (!$specs.data("moved")) {
+            $(".configurator-wrapper").after($specs);
+            $specs.data("moved", true);
+          }
+        } else if ($specs.data("moved")) {
+          if (specsOriginalNext && specsOriginalNext.length) {
+            $specs.insertBefore(specsOriginalNext);
+          } else {
+            specsOriginalParent.append($specs);
+          }
+          $specs.data("moved", false);
+        }
+      }
+
+      // Управление положением/масштабом фото в зависимости от наличия каркаса
+      function updateImageLayout() {
+        if (!$productImage.length) return;
+        const frameValue = ($el(".cfg-select-frame").val() || "").toLowerCase();
+        const hasFrame = !!frameValue && frameValue !== "нет";
+
+        $productImage.toggleClass("with-frame", hasFrame);
+        $productImage.toggleClass("without-frame", !hasFrame);
+      }
+
+      // Установка картинки с отображением спиннера на время загрузки
+      function setMainImageSrc(src) {
+        if (!$mainImg.length || !$productImage.length) return;
+        imageLoadId += 1;
+        const localId = imageLoadId;
+
+        // Если src пустой — просто очистим и уберем спиннер
+        if (!src) {
+          $mainImg.attr("src", "");
+          $productImage.removeClass("is-loading");
+          hideZoomLens();
+          return;
+        }
+
+        $productImage.addClass("is-loading");
+
+        // Снимаем старые обработчики, чтобы избежать гонок
+        $mainImg.off("load.cfg error.cfg");
+
+        $mainImg.on("load.cfg error.cfg", () => {
+          // Убеждаемся, что это актуальная загрузка
+          if (localId === imageLoadId) {
+            $productImage.removeClass("is-loading");
+            updateZoomMetrics();
+            updateZoomImage(src);
+          }
+        });
+
+        // Триггерим загрузку
+        $mainImg.attr("src", src);
+      }
+
+      function fillSelects() {
+        const m = state.machines;
+        populateSelect($el(".cfg-select-machine"), m.map((x) => x.model || x.name), "Выберите кофемашину", false);
+        populateSelect($el(".cfg-select-frame"), m.map((x) => x.frame), "Выберите каркас");
+
+        // Селект цвета каркаса: английские ключи, без placeholder (черный по умолчанию)
+        populateColorSelect($el(".cfg-select-frame-color"), FRAME_COLORS, null);
+
+        populateSelect($el(".cfg-select-fridge"), m.map((x) => x.refrigerator), "Выберите холодильник");
+        populateSelect($el(".cfg-select-terminal"), m.map((x) => x.terminal), "Выберите терминал");
+
+        // Селект цвета вставки: английские ключи, без placeholder (синий по умолчанию)
+        populateColorSelect($el(".cfg-select-insert-color"), INSERT_COLORS, null);
+
+        ensureMachineSelection();
+        ensureFridgeSelection();
+        updateFrameColorState();
+        updateInsertColorState();
+      }
+
+      function updateFrameColorState() {
+        const frameValue = $el(".cfg-select-frame").val();
+        const $frameColor = $el(".cfg-select-frame-color");
+        const $frameColorLabel = $frameColor.closest('.config-item').find('.config-label');
+
+        // Если каркас не выбран или "Нет" - отключаем выбор цвета
+        if (!frameValue || frameValue === "" || frameValue.toLowerCase() === "нет") {
+          $frameColor.prop("disabled", true);
+          $frameColorLabel.addClass('disabled-label');
+          $frameColor.val("");
+        } else {
+          $frameColor.prop("disabled", false);
+          $frameColorLabel.removeClass('disabled-label');
+
+          // Автоматически выбираем черный цвет, если не выбран другой
+          if (!$frameColor.val()) {
+            $frameColor.val("black");  // Английский ключ
+          }
+        }
+      }
+
+      function hasDesignImageForSelection(v, frameColor, insertColor) {
+        if (!v.design_images || !frameColor || !insertColor) return false;
+        const found = getDesignConfig(v, frameColor, insertColor);
+        return !!(found && found.config && (found.config.main_image || found.config.main_image_path));
+      }
+
+      function hasAnyDesignForFrame(v, frameColor) {
+        if (!v.design_images || !frameColor) return false;
+        const res = findDesignImageForFrame(v.design_images, frameColor);
+        return !!(res && res.config && (res.config.main_image || res.config.main_image_path));
+      }
+
+      function variantScore(v, frameColor, insertColor) {
+        // Приоритет: точная пара с картинкой > есть картинка для каркаса > есть основное изображение > нет картинок
+        if (hasDesignImageForSelection(v, frameColor, insertColor)) return 3;
+        if (hasAnyDesignForFrame(v, frameColor)) return 2;
+        if (v.main_image || (v.gallery_files && v.gallery_files.length)) return 1;
+        return 0;
+      }
+
+      // Первая попытка — точное совпадение по всем селектам + картинка для выбранных цветов
+      // Вторая — совпадение по селектам + картинка для выбранного каркаса
+      // Третья — совпадение по селектам (как было)
+      function findVariant(allowEmpty = true) {
+        const mv = $el(".cfg-select-machine").val();
+        const fv = $el(".cfg-select-frame").val();
+        const fcv = $el(".cfg-select-frame-color").val();
+        const rv = $el(".cfg-select-fridge").val();
+        const tv = $el(".cfg-select-terminal").val();
+        if (!mv && allowEmpty) return null;
+        const normFcv = normalizeColorKey(fcv);
+        const normInsert = normalizeColorKey($el(".cfg-select-insert-color").val());
+
+        const baseFilter = (v) => {
+          if (mv && normVal(v.model || v.name) !== normVal(mv)) return false;
+          if (fv && normVal(v.frame) !== normVal(fv)) return false;
+
+          // ИСПРАВЛЕНИЕ: Если выбран цвет каркаса, проверяем что он есть в design_images (с нормализацией ключей)
+          // и что для этого цвета реально есть хотя бы одна картинка (не пустой объект).
+          if (fcv && v.design_images) {
+            const target = normFcv;
+            const hasColorWithImage = Object.entries(v.design_images).some(([k, val]) => {
+              if (normalizeColorKey(k) !== target) return false;
+              if (!val || typeof val !== "object") return false;
+              return Object.values(val).some(cfg => cfg && (cfg.main_image || cfg.main_image_path));
+            });
+            if (!hasColorWithImage) return false;
+          } else if (fcv && !v.design_images) {
+            return false;
+          }
+          // Если у варианта явно указан frame_color — сравниваем его с выбором пользователя
+          if (fcv && v.frame_color && normalizeColorKey(v.frame_color) !== normFcv) return false;
+
+          if (rv && normVal(v.refrigerator) !== normVal(rv)) return false;
+          if (tv && normVal(v.terminal) !== normVal(tv)) return false;
+          return true;
+        };
+
+        // Базовые совпадения (строгое сравнение frame)
+        const matchesAll = state.machines.filter((v) => !excludedVariants.has(v.id) && baseFilter(v));
+
+        const exactWithImage = matchesAll.filter((v) => hasDesignImageForSelection(v, normFcv, normInsert));
+        const exactWithFrameImage = matchesAll.filter((v) => hasAnyDesignForFrame(v, normFcv));
+
+        // Диагностика: какие варианты прошли фильтр
+        const describe = (v) => {
+          const di = v.design_images || {};
+          const frameEntries = Object.entries(di).map(([k, val]) => {
+            const inserts = val && typeof val === "object" ? Object.keys(val) : [];
+            return \`\${normalizeColorKey(k)}:\${inserts.length}\`;
+          });
+          return {
+            id: v.id,
+            frame: v.frame,
+            frame_color: v.frame_color,
+            refrigerator: v.refrigerator,
+            terminal: v.terminal,
+            design_images: frameEntries
+          };
+        };
+
+        console.log("???? Candidate variants", {
+          selection: { mv, fv, fcv, normFcv, normInsert, rv, tv },
+          matchesAll: matchesAll.map(describe),
+          withPairImage: exactWithImage.map(describe),
+          withFrameImage: exactWithFrameImage.map(describe),
+        });
+
+        // 1) строго по селектам + есть картинка для выбранных цветов
+        if (exactWithImage.length) return exactWithImage[0];
+
+        // 2) строго по селектам + есть картинка для выбранного цвета каркаса
+        if (exactWithFrameImage.length) return exactWithFrameImage[0];
+
+        // 3) как было: все совпадения по селектам, отсортированные по score
+        let cands = matchesAll;
+
+        if (!cands.length) return allowEmpty ? null : (state.machines[0] || null);
+
+        // Отдаем предпочтение варианту, у которого реально есть картинка под выбранные цвета (или хотя бы под каркас)
+        cands = cands
+          .map((v) => ({ v, score: variantScore(v, normFcv, normInsert) }))
+          .sort((a, b) => b.score - a.score);
+
+        return cands[0]?.v || cands[0];
+      }
+
+      function renderVariant(v, syncSelects = false) {
+        if (!v) {
+          state.current = null;
+          setText($el(".cfg-price-right"), "—");
+          setText($el(".cfg-price-left"), "—");
+          $el(".cfg-gallery").empty();
+          setMainImageSrc("");
+          renderSpecs($el(".cfg-spec-machine"), null);
+          renderSpecs($el(".cfg-spec-frame"), null);
+          renderSpecs($el(".cfg-spec-fridge"), null);
+          renderSpecs($el(".cfg-spec-terminal"), null);
+          updateFrameColorState();
+          updateInsertColorState();
+          updateImageLayout();
+          updateTerminalState();
+          return;
+        }
+        state.current = v;
+
+        if (syncSelects) {
+          const setSelVal = (selector, val) => {
+            const $s = $el(selector);
+            if ($s.length) {
+              $s.val(val || "");
+            }
+          };
+          setSelVal(".cfg-select-machine", v.model || v.name || "");
+          setSelVal(".cfg-select-frame", v.frame || "");
+
+          // ИСПРАВЛЕНИЕ: Маппинг русских значений frame_color из БД на английские ключи для селекта
+          const frameColorMapping = {
+            "белый": "white",
+            "чёрный": "black",
+            "черный": "black"  // и с е и с ё
+          };
+          const mappedFrameColor = frameColorMapping[v.frame_color] || v.frame_color;
+          setSelVal(".cfg-select-frame-color", mappedFrameColor || "");
+
+          setSelVal(".cfg-select-fridge", v.refrigerator || "");
+          setSelVal(".cfg-select-terminal", v.terminal || "");
+        }
+
+        updateFrameColorState();
+        updateInsertColorState();
+        updateImageLayout();
+        updateTerminalState();
+
+        // Проверяем, нужно ли использовать design_images
+        let mainSrc = "";
+        let galleryFolder = v.gallery_folder;
+        let usingDesignImages = false;
+        const frameValue = ($el(".cfg-select-frame").val() || "").toLowerCase();
+        let frameColor = normalizeColorKey($el(".cfg-select-frame-color").val());
+        let insertColor = normalizeColorKey($el(".cfg-select-insert-color").val());
+
+        console.log("???? renderVariant Debug:", {
+          machineId: v.id,
+          machineName: v.name,
+          frameValue,
+          frameColor,
+          insertColor,
+          frameColorRawSelect: $el(".cfg-select-frame-color").val(),
+          insertColorRawSelect: $el(".cfg-select-insert-color").val(),
+          frameColorFromVariant: v.frame_color,
+          hasDesignImages: !!v.design_images,
+          designImagesKeys: v.design_images ? Object.keys(v.design_images) : [],
+          designImagesFullStructure: v.design_images,
+          mainImage: v.main_image
+        });
+
+        // Детальная проверка условия
+        console.log("???? Condition check:", {
+          "frameValue": frameValue,
+          "frameValue truthy": !!frameValue,
+          "frameValue !== 'нет'": frameValue !== "нет",
+          "frameValue !== 'no'": frameValue !== "no",
+          "frameColor": frameColor,
+          "frameColor truthy": !!frameColor,
+          "insertColor": insertColor,
+          "insertColor truthy": !!insertColor,
+          "v.design_images exists": !!v.design_images,
+          "FULL CONDITION RESULT": !!(frameValue && frameValue !== "нет" && frameValue !== "no" && frameColor && insertColor && v.design_images)
+        });
+
+        // Если выбраны цвета и есть design_images, используем их
+        if (frameValue && frameValue !== "нет" && frameValue !== "no" &&
+            frameColor && insertColor && v.design_images) {
+
+          // Нормализованный поиск картинки по выбранным цветам
+          const designLookup = getDesignConfig(v, frameColor, insertColor);
+          let designConfig = designLookup?.config;
+          if (designLookup) {
+            frameColor = designLookup.frameColor;
+            insertColor = designLookup.insertColor;
+          }
+
+          console.log("✓ Checking design_images:", {
+            frameColor,
+            insertColor,
+            frameColorLabel: COLOR_LABELS[frameColor],
+            insertColorLabel: COLOR_LABELS[insertColor],
+            availableFrameColors: Object.keys(v.design_images),
+            designConfig: designConfig,
+            foundConfig: !!designConfig,
+            variantId: v.id
+          });
+
+          // Fallback: если для выбранной пары нет картинки, пробуем найти любую вставку в этом же цвете каркаса
+          if (!designConfig) {
+            const fallbackDesign = findDesignImageForFrame(v.design_images, frameColor);
+            if (fallbackDesign) {
+              designConfig = fallbackDesign.config;
+              console.log("ℹ️ Falling back to available design_images combo:", {
+                fallbackFrameColor: fallbackDesign.frameColor,
+                fallbackInsertColor: fallbackDesign.insertColor
+              });
+            }
+          }
+
+          // Если есть ключ каркаса, но в нём нет картинок — исключаем этот variant и пробуем следующий
+          if (!designConfig) {
+            const hasSelectedColorKey = Object.keys(v.design_images || {}).some(k => normalizeColorKey(k) === frameColor);
+            if (hasSelectedColorKey) {
+              excludedVariants.add(v.id);
+              console.warn("⛔ Skipping variant with empty design_images for selected frame color", { variantId: v.id, frameColor });
+              const alt = findVariant(true);
+              if (alt && alt.id !== v.id) {
+                renderVariant(alt, true);
+                return;
+              }
+            }
+          }
+
+          if (designConfig) {
+            mainSrc = normSrc(designConfig.main_image || designConfig.main_image_path || "");
+            usingDesignImages = true;
+            console.log("✓ Using design_images URL:", {
+              rawMainImage: designConfig.main_image,
+              rawMainImagePath: designConfig.main_image_path,
+              normalizedSrc: mainSrc
+            });
+            if (designConfig.gallery_folder) {
+              galleryFolder = designConfig.gallery_folder;
+            }
+          } else {
+            console.warn("⚠️  No design config found for", frameColor, "/", insertColor, "variant id:", v.id);
+          }
+        }
+
+        // Если не нашли в design_images, используем основное изображение
+        if (!mainSrc) {
+          mainSrc = normSrc(v.main_image || (v.gallery_files && v.gallery_files[0]) || "");
+          console.log("???? Using fallback main_image:", {
+            rawMainImage: v.main_image,
+            normalizedSrc: mainSrc
+          });
+        }
+
+        const $mainImg = $el(".cfg-main-image");
+        if ($mainImg.length) {
+          setMainImageSrc(mainSrc || "");
+          // сразу обновим фон лупы, чтобы не мигал старый src
+          if (mainSrc) {
+            updateZoomImage(mainSrc);
+          } else {
+            hideZoomLens();
+          }
+        }
+
+        const vWithGallery = { ...v, gallery_folder: galleryFolder };
+
+        ensureImageNav();
+
+        // Для design_images не вызываем updateMainImage, т.к. это одиночное изображение,
+        // а не галерея. updateMainImage может перезаписать src пустым значением.
+        if (!usingDesignImages) {
+          updateMainImage(vWithGallery);
+        } else {
+          // Скрываем навигацию по галерее для design_images
+          $(".cfg-image-nav").hide();
+        }
+
+        preloadVariantImages(v);
+        setText($el(".cfg-price-right"), fmtPrice(v.price));
+
+        const $priceLeft = $el(".cfg-price-left");
+        const ozonBtn = $el(".cfg-btn-ozon");
+        $priceLeft.empty();
+        if (ozonBtn.length) {
+          if (v.ozon_link) {
+            ozonBtn.removeClass("disabled").attr("href", v.ozon_link).text("Купить на OZON");
+          } else {
+            ozonBtn.addClass("disabled").attr("href", "#").text("Нет на OZON");
+          }
+        }
+
+        const specM = state.specs["coffee_machine"]?.[v.model || v.name] || null;
+        const specF = state.specs["frame"]?.[v.frame] || null;
+        const specR = state.specs["refrigerator"]?.[v.refrigerator] || null;
+        const selectedTerminal = $el(".cfg-select-terminal").val();
+        const specT = selectedTerminal
+          ? state.specs["terminal"]?.[selectedTerminal] || state.specs["terminal"]?.[v.terminal] || null
+          : null;
+
+        renderSpecs($el(".cfg-spec-machine"), specM);
+        renderSpecs($el(".cfg-spec-frame"), specF);
+        renderSpecs($el(".cfg-spec-fridge"), specR);
+        renderSpecs($el(".cfg-spec-terminal"), specT);
+
+        saveSelection();
+      }
+
+      function openModal() {
+        $("#cfg-quote-modal").addClass("is-open");
+        $("body").css("overflow", "hidden");
+      }
+
+      function closeModal() {
+        $("#cfg-quote-modal").removeClass("is-open");
+        $("body").css("overflow", "");
+        $("#cfg-quote-form")[0].reset();
+        $("#cfg-lead-consent").prop("checked", false);
+        $(".cfg-lead-submit").prop("disabled", true);
+        $(".cfg-form-message").removeClass("success error").hide();
+      }
+
+      function validateForm() {
+        const name = $("#cfg-lead-name").val().trim();
+        const phone = $("#cfg-lead-phone").val().trim();
+        const consent = $("#cfg-lead-consent").is(":checked");
+
+        const isValid = name && phone && consent;
+        $(".cfg-lead-submit").prop("disabled", !isValid);
+        return isValid;
+      }
+
+      function sendLead() {
+        const v = state.current;
+        const name = $("#cfg-lead-name").val().trim();
+        const phone = $("#cfg-lead-phone").val().trim();
+        const telegram = $("#cfg-lead-telegram").val().trim();
+        const email = $("#cfg-lead-email").val().trim();
+
+        const payload = {
+          name: name,
+          phone: phone,
+          telegram: telegram || "",
+          email: email || "",
+          selection: v ? {
+            id: v.id,
+            machine: v.model || v.name,
+            frame: v.frame,
+            frame_color: v.frame_color,
+            refrigerator: v.refrigerator,
+            terminal: v.terminal,
+            price: v.price,
+            ozon_link: v.ozon_link,
+            gallery_folder: v.gallery_folder,
+          } : null,
+        };
+
+        return $.ajax({
+          url: LEAD_ENDPOINT,
+          method: "POST",
+          contentType: "application/json",
+          data: JSON.stringify(payload),
+        });
+      }
+
+      function bindEvents() {
+        $(".cfg-select-machine, .cfg-select-frame, .cfg-select-frame-color, .cfg-select-fridge, .cfg-select-terminal, .cfg-select-insert-color").on(
+          "change",
+          () => {
+            ensureMachineSelection();
+            ensureFridgeSelection();
+            updateFrameColorState();
+            updateInsertColorState();
+            updateImageLayout();
+            renderVariant(findVariant(true));
+          }
+        );
+
+        $(window).on("resize", repositionSpecs);
+
+        $el(".cfg-btn-quote").on("click", (e) => {
+          e.preventDefault();
+          openModal();
+        });
+
+        $(".cfg-modal-close, .cfg-modal-overlay").on("click", (e) => {
+          e.preventDefault();
+          closeModal();
+        });
+
+        $("#cfg-lead-name, #cfg-lead-phone, #cfg-lead-consent").on("input change", validateForm);
+
+        $("#cfg-quote-form").on("submit", (e) => {
+          e.preventDefault();
+
+          if (!validateForm()) {
+            return;
+          }
+
+          const $submitBtn = $(".cfg-lead-submit");
+          const $message = $(".cfg-form-message");
+
+          $submitBtn.prop("disabled", true).text("Отправка...");
+          $message.removeClass("success error").hide();
+
+          sendLead()
+            .done(() => {
+              $message.addClass("success").text("Заявка успешно отправлена!").show();
+              setTimeout(() => {
+                closeModal();
+              }, 2000);
+            })
+            .fail(() => {
+              $message.addClass("error").text("Не удалось отправить заявку. Попробуйте ещё раз.").show();
+              $submitBtn.prop("disabled", false).text("Отправить");
+            });
+        });
+      }
+
+      $(document).ready(function () {
+        loadData()
+          .then(() => {
+            fillSelects();
+
+            const saved = loadSelection();
+            if (saved) {
+              $el(".cfg-select-machine").val(saved.machine || "");
+              $el(".cfg-select-frame").val(saved.frame || "");
+              $el(".cfg-select-frame-color").val(saved.frame_color || "");
+              $el(".cfg-select-insert-color").val(saved.insert_color || "");
+              $el(".cfg-select-fridge").val(saved.fridge || "");
+              $el(".cfg-select-terminal").val(saved.terminal || "");
+            }
+
+            ensureMachineSelection();
+            ensureFridgeSelection();
+            updateFrameColorState();
+            updateInsertColorState();
+            updateTerminalState();
+
+            let initialVariant = findVariant(true);
+            let syncSelects = false;
+            if (!initialVariant && state.machines.length) {
+              initialVariant = state.machines[0];
+              syncSelects = true;
+            }
+            renderVariant(initialVariant, syncSelects);
+            bindEvents();
+            repositionSpecs();
+            updateImageLayout();
+
+            setTimeout(() => {
+              state.machines.slice(0, 5).forEach(machine => {
+                preloadVariantImages(machine);
+              });
+            }, 500);
+            hideInitialLoader();
+          })
+          .fail(() => console.error("Не удалось загрузить конфигуратор"))
+          .always(() => hideInitialLoader());
+      });
+    })(jQuery);
+  </script>
+</body>
+</html>
