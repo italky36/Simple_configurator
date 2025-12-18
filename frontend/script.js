@@ -2,6 +2,11 @@
   const BACKEND_BASE = "https://93-170-123-229.nip.io";
   const API_BASE = BACKEND_BASE + "/api";
   const LEAD_ENDPOINT = API_BASE + "/lead";
+  // Базовый префикс для статики (шрифты/изображения). Для Tilda ставим явный домен.
+  const DEFAULT_ASSETS_BASE = "https://coffeezonefranchise.ru";
+  const ASSETS_BASE =
+    (typeof window !== "undefined" && window.CZ_ASSETS_BASE) ||
+    DEFAULT_ASSETS_BASE;
 
   const state = { machines: [], specs: {}, current: null };
   const skipValues = new Set(["нет", "не", "-", "none", "", null, undefined]);
@@ -9,20 +14,23 @@
   const DATA_CACHE_KEY = "cz-conf-cache-v1";
   const CACHE_TTL_MS = 12 * 60 * 60 * 1000;
 
+  // Флаг: была ли уже показана анимация shrug за сессию
+  let ozonShrugAnimationShown = false;
+
   // Цвета: английские ключи для данных
   const FRAME_COLORS = ["white", "black"];
   const INSERT_COLORS = ["yellow", "green", "red", "gray", "blue", "purple"];
 
   // Маппинг английских ключей на русские названия
   const COLOR_LABELS = {
-    "white": "Белый",
-    "black": "Чёрный",
-    "yellow": "Жёлтый",
-    "green": "Зелёный",
-    "red": "Красный",
-    "gray": "Серый",
-    "blue": "Синий",
-    "purple": "Фиолетовый"
+    white: "Белый",
+    black: "Чёрный",
+    yellow: "Жёлтый",
+    green: "Зелёный",
+    red: "Красный",
+    gray: "Серый",
+    blue: "Синий",
+    purple: "Фиолетовый",
   };
 
   // Кеш предзагруженных изображений
@@ -32,33 +40,33 @@
     if (!key) return "";
     const k = String(key).trim().toLowerCase();
     const map = {
-      "white": "white",
-      "белый": "white",
-      "белая": "white",
-      "бел": "white",
-      "black": "black",
-      "чёрный": "black",
-      "черный": "black",
-      "черная": "black",
-      "yellow": "yellow",
-      "желтый": "yellow",
-      "желтая": "yellow",
-      "green": "green",
-      "зеленый": "green",
-      "зеленая": "green",
-      "red": "red",
-      "красный": "red",
-      "красная": "red",
-      "gray": "gray",
-      "серый": "gray",
-      "серая": "gray",
-      "grey": "gray",
-      "blue": "blue",
-      "синий": "blue",
-      "синяя": "blue",
-      "purple": "purple",
-      "фиолетовый": "purple",
-      "фиолетовая": "purple",
+      white: "white",
+      белый: "white",
+      белая: "white",
+      бел: "white",
+      black: "black",
+      чёрный: "black",
+      черный: "black",
+      черная: "black",
+      yellow: "yellow",
+      желтый: "yellow",
+      желтая: "yellow",
+      green: "green",
+      зеленый: "green",
+      зеленая: "green",
+      red: "red",
+      красный: "red",
+      красная: "red",
+      gray: "gray",
+      серый: "gray",
+      серая: "gray",
+      grey: "gray",
+      blue: "blue",
+      синий: "blue",
+      синяя: "blue",
+      purple: "purple",
+      фиолетовый: "purple",
+      фиолетовая: "purple",
     };
     return map[k] || k;
   };
@@ -87,23 +95,26 @@
     }
 
     if (v.design_images) {
-      Object.values(v.design_images).forEach(frameColors => {
-        Object.values(frameColors).forEach(config => {
+      Object.values(v.design_images).forEach((frameColors) => {
+        Object.values(frameColors).forEach((config) => {
           if (config.main_image || config.main_image_path) {
-            imagesToPreload.push(normSrc(config.main_image || config.main_image_path));
+            imagesToPreload.push(
+              normSrc(config.main_image || config.main_image_path)
+            );
           }
         });
       });
     }
 
-    imagesToPreload.forEach(src => preloadImage(src));
+    imagesToPreload.forEach((src) => preloadImage(src));
   }
 
   // Утилиты
   const $el = (cls) => $(cls).first();
   const setText = (jq, txt) => jq.length && jq.text(txt || "—");
-  const fmtPrice = (v) => (v || v === 0 ? Number(v).toLocaleString("ru-RU") + " ₽" : "—");
-  
+  const fmtPrice = (v) =>
+    v || v === 0 ? Number(v).toLocaleString("ru-RU") + " ₽" : "—";
+
   const normSrc = (src) => {
     if (!src) return "";
     if (/^(https?:)?\/\//i.test(src) || src.startsWith("data:")) return src;
@@ -111,10 +122,28 @@
     const path = src.startsWith("/") ? src : "/" + src;
     return base + path;
   };
-  
-  const normVal = (v) => (v === null || v === undefined ? "" : String(v).trim().toLowerCase());
-  const showInitialLoader = () => $(".cfg-initial-loader").removeClass("is-hidden");
-  const hideInitialLoader = () => $(".cfg-initial-loader").addClass("is-hidden");
+
+  // Построение URL для статики (шрифты, изображения) с учётом кастомного домена
+  const assetUrl = (path) => {
+    if (!path) return "";
+    if (/^(https?:)?\/\//i.test(path) || path.startsWith("data:")) return path;
+    const rawBase =
+      (typeof window !== "undefined" && window.CZ_ASSETS_BASE) ||
+      ASSETS_BASE ||
+      DEFAULT_ASSETS_BASE;
+    const cleanBase = (
+      rawBase && rawBase.trim() ? rawBase : DEFAULT_ASSETS_BASE
+    ).replace(/\/+$/, "");
+    const cleanPath = path.replace(/^\/+/, "");
+    return `${cleanBase}/${cleanPath}`;
+  };
+
+  const normVal = (v) =>
+    v === null || v === undefined ? "" : String(v).trim().toLowerCase();
+  const showInitialLoader = () =>
+    $(".cfg-initial-loader").removeClass("is-hidden");
+  const hideInitialLoader = () =>
+    $(".cfg-initial-loader").addClass("is-hidden");
 
   function applyLoadedData(res) {
     state.machines = res?.machines || [];
@@ -124,9 +153,12 @@
       state.specs[sp.category][sp.name] = sp;
     });
     console.log("📦 Loaded machines:", state.machines.length);
-    state.machines.forEach(m => {
+    state.machines.forEach((m) => {
       if (m.design_images) {
-        console.log(`  Machine ${m.id} (${m.name}) has design_images:`, Object.keys(m.design_images));
+        console.log(
+          `  Machine ${m.id} (${m.name}) has design_images:`,
+          Object.keys(m.design_images)
+        );
       }
     });
   }
@@ -146,7 +178,10 @@
 
   function saveCachedData(data) {
     try {
-      localStorage.setItem(DATA_CACHE_KEY, JSON.stringify({ timestamp: Date.now(), data }));
+      localStorage.setItem(
+        DATA_CACHE_KEY,
+        JSON.stringify({ timestamp: Date.now(), data })
+      );
     } catch (e) {}
   }
 
@@ -156,7 +191,12 @@
     if (!designImages) return null;
     for (const [frameColorKey, inserts] of Object.entries(designImages)) {
       const normFrame = normalizeColorKey(frameColorKey);
-      if (!inserts || typeof inserts !== "object" || !Object.keys(inserts).length) continue;
+      if (
+        !inserts ||
+        typeof inserts !== "object" ||
+        !Object.keys(inserts).length
+      )
+        continue;
       for (const [insertColorKey, cfg] of Object.entries(inserts)) {
         const normInsert = normalizeColorKey(insertColorKey);
         if (cfg && (cfg.main_image || cfg.main_image_path)) {
@@ -177,11 +217,16 @@
     const inserts = Object.entries(designImages).find(
       ([key]) => normalizeColorKey(key) === normFrame
     )?.[1];
-    if (!inserts || typeof inserts !== "object" || !Object.keys(inserts).length) return null;
+    if (!inserts || typeof inserts !== "object" || !Object.keys(inserts).length)
+      return null;
     for (const [insertColorKey, cfg] of Object.entries(inserts)) {
       const normInsert = normalizeColorKey(insertColorKey);
       if (cfg && (cfg.main_image || cfg.main_image_path)) {
-        return { frameColor: normFrame || frameColorKey, insertColor: normInsert || insertColorKey, config: cfg };
+        return {
+          frameColor: normFrame || frameColorKey,
+          insertColor: normInsert || insertColorKey,
+          config: cfg,
+        };
       }
     }
     return null;
@@ -246,12 +291,12 @@
   function renderSpecs($block, spec) {
     if (!$block.length) return;
 
-    const nameEl = $block.find('.spec-name');
-    const listEl = $block.find('.spec-list');
+    const nameEl = $block.find(".spec-name");
+    const listEl = $block.find(".spec-list");
 
     if (!spec || !spec.name) {
       $block.hide();
-      nameEl.text('—');
+      nameEl.text("—");
       listEl.empty();
       return;
     }
@@ -262,26 +307,42 @@
 
     const lines = spec.specs || [];
     if (lines.length) {
-      lines.forEach(line => {
-        listEl.append('<li>' + line + '</li>');
+      lines.forEach((line) => {
+        listEl.append("<li>" + line + "</li>");
       });
     }
   }
 
-  function populateSelect($sel, values, placeholder, includePlaceholder = true) {
+  function populateSelect(
+    $sel,
+    values,
+    placeholder,
+    includePlaceholder = true
+  ) {
     if (!$sel.length) return;
-    const uniq = Array.from(new Set(values.filter((v) => v && !skipValues.has(String(v).toLowerCase()))));
-    const opts = placeholder && includePlaceholder ? ['<option value="">' + placeholder + '</option>'] : [];
-    uniq.forEach((v) => opts.push('<option value="' + v + '">' + v + '</option>'));
+    const uniq = Array.from(
+      new Set(
+        values.filter((v) => v && !skipValues.has(String(v).toLowerCase()))
+      )
+    );
+    const opts =
+      placeholder && includePlaceholder
+        ? ['<option value="">' + placeholder + "</option>"]
+        : [];
+    uniq.forEach((v) =>
+      opts.push('<option value="' + v + '">' + v + "</option>")
+    );
     $sel.html(opts.join(""));
   }
 
   function populateColorSelect($sel, colorKeys, placeholder) {
     if (!$sel.length) return;
-    const opts = placeholder ? ['<option value="">' + placeholder + '</option>'] : [];
+    const opts = placeholder
+      ? ['<option value="">' + placeholder + "</option>"]
+      : [];
     colorKeys.forEach((key) => {
       const label = COLOR_LABELS[key] || key;
-      opts.push('<option value="' + key + '">' + label + '</option>');
+      opts.push('<option value="' + key + '">' + label + "</option>");
     });
     $sel.html(opts.join(""));
   }
@@ -329,7 +390,7 @@
     const $f = $el(".cfg-select-fridge");
     const frameVal = $el(".cfg-select-frame").val();
     if (!$f.length) return;
-    const placeholder = "Выберите холодильник";
+    const placeholder = "Нет";
 
     if (frameVal) {
       $f.find("option[value='']").remove();
@@ -340,7 +401,7 @@
     } else {
       const hasPlaceholder = $f.find(`option[value='']`).length > 0;
       if (!hasPlaceholder) {
-        $f.prepend('<option value="">' + placeholder + '</option>');
+        $f.prepend('<option value="">' + placeholder + "</option>");
       }
       if (!$f.val()) {
         $f.val("");
@@ -372,7 +433,9 @@
     if (cached) {
       console.log("💾 Using cached configurator data");
       applyLoadedData(cached);
-      fetchAndCacheData().catch(() => console.warn("⚠️ Background refresh failed"));
+      fetchAndCacheData().catch(() =>
+        console.warn("⚠️ Background refresh failed")
+      );
       return Promise.resolve(cached);
     }
     return fetchAndCacheData();
@@ -386,7 +449,9 @@
 
   function getImages(v) {
     const imgs = v.gallery_files ? v.gallery_files.map(normSrc) : [];
-    const mainSrc = normSrc(v.main_image || (v.gallery_files && v.gallery_files[0]) || "");
+    const mainSrc = normSrc(
+      v.main_image || (v.gallery_files && v.gallery_files[0]) || ""
+    );
     if (mainSrc && !imgs.includes(mainSrc)) imgs.unshift(mainSrc);
     return imgs;
   }
@@ -407,7 +472,10 @@
     }
 
     const maxIdx = imgs.length - 1;
-    const idx = Math.min(Math.max(forceIndex !== undefined ? forceIndex : (v._imgIdx || 0), 0), maxIdx);
+    const idx = Math.min(
+      Math.max(forceIndex !== undefined ? forceIndex : v._imgIdx || 0, 0),
+      maxIdx
+    );
     v._imgIdx = idx;
     setMainImageSrc(imgs[idx]);
 
@@ -543,11 +611,14 @@
 
     $mainImg.off("load.cfg error.cfg");
 
-    $mainImg.on("load.cfg error.cfg", () => {
+    $mainImg.on("load.cfg error.cfg", (e) => {
       if (localId === imageLoadId) {
         $productImage.removeClass("is-loading");
         updateZoomMetrics();
         updateZoomImage(src);
+        if (e.type === "error") {
+          console.warn("Image failed to load", src);
+        }
       }
     });
 
@@ -556,11 +627,28 @@
 
   function fillSelects() {
     const m = state.machines;
-    populateSelect($el(".cfg-select-machine"), m.map((x) => x.model || x.name), "Выберите кофемашину", false);
-    populateSelect($el(".cfg-select-frame"), m.map((x) => x.frame), "Выберите каркас");
+    populateSelect(
+      $el(".cfg-select-machine"),
+      m.map((x) => x.model || x.name),
+      "Нет",
+      false
+    );
+    populateSelect(
+      $el(".cfg-select-frame"),
+      m.map((x) => x.frame),
+      "Нет"
+    );
     populateColorSelect($el(".cfg-select-frame-color"), FRAME_COLORS, null);
-    populateSelect($el(".cfg-select-fridge"), m.map((x) => x.refrigerator), "Выберите холодильник");
-    populateSelect($el(".cfg-select-terminal"), m.map((x) => x.terminal), "Выберите терминал");
+    populateSelect(
+      $el(".cfg-select-fridge"),
+      m.map((x) => x.refrigerator),
+      "Нет"
+    );
+    populateSelect(
+      $el(".cfg-select-terminal"),
+      m.map((x) => x.terminal),
+      "Нет"
+    );
     populateColorSelect($el(".cfg-select-insert-color"), INSERT_COLORS, null);
 
     ensureMachineSelection();
@@ -572,15 +660,21 @@
   function updateFrameColorState() {
     const frameValue = $el(".cfg-select-frame").val();
     const $frameColor = $el(".cfg-select-frame-color");
-    const $frameColorLabel = $frameColor.closest('.config-item').find('.config-label');
+    const $frameColorLabel = $frameColor
+      .closest(".config-item")
+      .find(".config-label");
 
-    if (!frameValue || frameValue === "" || frameValue.toLowerCase() === "нет") {
+    if (
+      !frameValue ||
+      frameValue === "" ||
+      frameValue.toLowerCase() === "нет"
+    ) {
       $frameColor.prop("disabled", true);
-      $frameColorLabel.addClass('disabled-label');
+      $frameColorLabel.addClass("disabled-label");
       $frameColor.val("");
     } else {
       $frameColor.prop("disabled", false);
-      $frameColorLabel.removeClass('disabled-label');
+      $frameColorLabel.removeClass("disabled-label");
 
       if (!$frameColor.val()) {
         $frameColor.val("black");
@@ -589,15 +683,42 @@
   }
 
   function hasDesignImageForSelection(v, frameColor, insertColor) {
-    if (!v.design_images || !frameColor || !insertColor) return false;
+    if (!designImagesHasMedia(v.design_images) || !frameColor || !insertColor)
+      return false;
     const found = getDesignConfig(v, frameColor, insertColor);
-    return !!(found && found.config && (found.config.main_image || found.config.main_image_path));
+    return !!(
+      found &&
+      found.config &&
+      (found.config.main_image || found.config.main_image_path)
+    );
   }
 
   function hasAnyDesignForFrame(v, frameColor) {
-    if (!v.design_images || !frameColor) return false;
+    if (!designImagesHasMedia(v.design_images) || !frameColor) return false;
     const res = findDesignImageForFrame(v.design_images, frameColor);
-    return !!(res && res.config && (res.config.main_image || res.config.main_image_path));
+    return !!(
+      res &&
+      res.config &&
+      (res.config.main_image || res.config.main_image_path)
+    );
+  }
+
+  function designImagesHasMedia(designImages) {
+    if (!designImages || typeof designImages !== "object") return false;
+    return Object.values(designImages).some((inserts) => {
+      if (!inserts || typeof inserts !== "object") return false;
+      return Object.values(inserts).some(
+        (cfg) => cfg && (cfg.main_image || cfg.main_image_path)
+      );
+    });
+  }
+
+  function inferDesignImagePath(v, frameColor, insertColor) {
+    if (!v || !frameColor || !insertColor) return "";
+    const safeFrame = normalizeColorKey(frameColor);
+    const safeInsert = normalizeColorKey(insertColor);
+    if (!safeFrame || !safeInsert) return "";
+    return `/static/cache/machines/${v.id}/design_${safeFrame}_${safeInsert}.webp`;
   }
 
   function variantScore(v, frameColor, insertColor) {
@@ -621,28 +742,39 @@
       if (mv && normVal(v.model || v.name) !== normVal(mv)) return false;
       if (fv && normVal(v.frame) !== normVal(fv)) return false;
 
-      if (fcv && v.design_images) {
+      const hasDesignMediaFlag = designImagesHasMedia(v.design_images);
+
+      if (fcv && hasDesignMediaFlag) {
         const target = normFcv;
-        const hasColorWithImage = Object.entries(v.design_images).some(([k, val]) => {
-          if (normalizeColorKey(k) !== target) return false;
-          if (!val || typeof val !== "object") return false;
-          return Object.values(val).some(cfg => cfg && (cfg.main_image || cfg.main_image_path));
-        });
+        const hasColorWithImage = Object.entries(v.design_images).some(
+          ([k, val]) => {
+            if (normalizeColorKey(k) !== target) return false;
+            if (!val || typeof val !== "object") return false;
+            return Object.values(val).some(
+              (cfg) => cfg && (cfg.main_image || cfg.main_image_path)
+            );
+          }
+        );
         if (!hasColorWithImage) return false;
-      } else if (fcv && !v.design_images) {
-        return false;
       }
-      if (fcv && v.frame_color && normalizeColorKey(v.frame_color) !== normFcv) return false;
+      if (fcv && v.frame_color && normalizeColorKey(v.frame_color) !== normFcv)
+        return false;
 
       if (rv && normVal(v.refrigerator) !== normVal(rv)) return false;
       if (tv && normVal(v.terminal) !== normVal(tv)) return false;
       return true;
     };
 
-    const matchesAll = state.machines.filter((v) => !excludedVariants.has(v.id) && baseFilter(v));
+    const matchesAll = state.machines.filter(
+      (v) => !excludedVariants.has(v.id) && baseFilter(v)
+    );
 
-    const exactWithImage = matchesAll.filter((v) => hasDesignImageForSelection(v, normFcv, normInsert));
-    const exactWithFrameImage = matchesAll.filter((v) => hasAnyDesignForFrame(v, normFcv));
+    const exactWithImage = matchesAll.filter((v) =>
+      hasDesignImageForSelection(v, normFcv, normInsert)
+    );
+    const exactWithFrameImage = matchesAll.filter((v) =>
+      hasAnyDesignForFrame(v, normFcv)
+    );
 
     const describe = (v) => {
       const di = v.design_images || {};
@@ -656,7 +788,7 @@
         frame_color: v.frame_color,
         refrigerator: v.refrigerator,
         terminal: v.terminal,
-        design_images: frameEntries
+        design_images: frameEntries,
       };
     };
 
@@ -672,7 +804,7 @@
 
     let cands = matchesAll;
 
-    if (!cands.length) return allowEmpty ? null : (state.machines[0] || null);
+    if (!cands.length) return allowEmpty ? null : state.machines[0] || null;
 
     cands = cands
       .map((v) => ({ v, score: variantScore(v, normFcv, normInsert) }))
@@ -711,11 +843,12 @@
       setSelVal(".cfg-select-frame", v.frame || "");
 
       const frameColorMapping = {
-        "белый": "white",
-        "чёрный": "black",
-        "черный": "black"
+        белый: "white",
+        чёрный: "black",
+        черный: "black",
       };
-      const mappedFrameColor = frameColorMapping[v.frame_color] || v.frame_color;
+      const mappedFrameColor =
+        frameColorMapping[v.frame_color] || v.frame_color;
       setSelVal(".cfg-select-frame-color", mappedFrameColor || "");
 
       setSelVal(".cfg-select-fridge", v.refrigerator || "");
@@ -733,6 +866,7 @@
     const frameValue = ($el(".cfg-select-frame").val() || "").toLowerCase();
     let frameColor = normalizeColorKey($el(".cfg-select-frame-color").val());
     let insertColor = normalizeColorKey($el(".cfg-select-insert-color").val());
+    const hasDesignMediaFlag = designImagesHasMedia(v.design_images);
 
     console.log("🎨 renderVariant Debug:", {
       machineId: v.id,
@@ -741,13 +875,19 @@
       frameColor,
       insertColor,
       hasDesignImages: !!v.design_images,
+      hasDesignMedia: hasDesignMediaFlag,
       designImagesKeys: v.design_images ? Object.keys(v.design_images) : [],
-      mainImage: v.main_image
+      mainImage: v.main_image,
     });
 
-    if (frameValue && frameValue !== "нет" && frameValue !== "no" &&
-        frameColor && insertColor && v.design_images) {
-
+    if (
+      frameValue &&
+      frameValue !== "нет" &&
+      frameValue !== "no" &&
+      frameColor &&
+      insertColor &&
+      hasDesignMediaFlag
+    ) {
       const designLookup = getDesignConfig(v, frameColor, insertColor);
       let designConfig = designLookup?.config;
       if (designLookup) {
@@ -760,11 +900,14 @@
         insertColor,
         availableFrameColors: Object.keys(v.design_images),
         foundConfig: !!designConfig,
-        variantId: v.id
+        variantId: v.id,
       });
 
       if (!designConfig) {
-        const fallbackDesign = findDesignImageForFrame(v.design_images, frameColor);
+        const fallbackDesign = findDesignImageForFrame(
+          v.design_images,
+          frameColor
+        );
         if (fallbackDesign) {
           designConfig = fallbackDesign.config;
           console.log("ℹ️ Falling back to available design_images combo");
@@ -772,10 +915,15 @@
       }
 
       if (!designConfig) {
-        const hasSelectedColorKey = Object.keys(v.design_images || {}).some(k => normalizeColorKey(k) === frameColor);
+        const hasSelectedColorKey = Object.keys(v.design_images || {}).some(
+          (k) => normalizeColorKey(k) === frameColor
+        );
         if (hasSelectedColorKey) {
           excludedVariants.add(v.id);
-          console.warn("⛔ Skipping variant with empty design_images", { variantId: v.id, frameColor });
+          console.warn("⛔ Skipping variant with empty design_images", {
+            variantId: v.id,
+            frameColor,
+          });
           const alt = findVariant(true);
           if (alt && alt.id !== v.id) {
             renderVariant(alt, true);
@@ -785,19 +933,46 @@
       }
 
       if (designConfig) {
-        mainSrc = normSrc(designConfig.main_image || designConfig.main_image_path || "");
+        mainSrc = normSrc(
+          designConfig.main_image || designConfig.main_image_path || ""
+        );
         usingDesignImages = true;
         console.log("✓ Using design_images URL:", mainSrc);
         if (designConfig.gallery_folder) {
           galleryFolder = designConfig.gallery_folder;
         }
       } else {
-        console.warn("⚠️ No design config found for", frameColor, "/", insertColor);
+        console.warn(
+          "⚠️ No design config found for",
+          frameColor,
+          "/",
+          insertColor
+        );
+      }
+    }
+
+    // If we have a frame selection but no design_images were provided, try an implicit path:
+    // /static/cache/machines/{id}/design_{frameColor}_{insertColor}.webp
+    if (
+      !mainSrc &&
+      frameValue &&
+      frameValue !== "нет" &&
+      frameValue !== "no" &&
+      frameColor &&
+      insertColor
+    ) {
+      const inferred = inferDesignImagePath(v, frameColor, insertColor);
+      if (inferred) {
+        mainSrc = normSrc(inferred);
+        usingDesignImages = true;
+        console.log("↩️ Using inferred design image path:", mainSrc);
       }
     }
 
     if (!mainSrc) {
-      mainSrc = normSrc(v.main_image || (v.gallery_files && v.gallery_files[0]) || "");
+      mainSrc = normSrc(
+        v.main_image || (v.gallery_files && v.gallery_files[0]) || ""
+      );
       console.log("📷 Using fallback main_image:", mainSrc);
     }
 
@@ -828,10 +1003,20 @@
     const ozonBtn = $el(".cfg-btn-ozon");
     $priceLeft.empty();
     if (ozonBtn.length) {
+      ozonBtn.text("Купить на OZON"); // Текст всегда одинаковый
+
       if (v.ozon_link) {
-        ozonBtn.removeClass("disabled").attr("href", v.ozon_link).text("Купить на OZON");
+        ozonBtn
+          .removeClass("disabled")
+          .removeAttr("disabled")
+          .attr("href", v.ozon_link);
+        hideOzonTooltip();
       } else {
-        ozonBtn.addClass("disabled").attr("href", "#").text("Нет на OZON");
+        ozonBtn
+          .addClass("disabled")
+          .attr("disabled", "disabled")
+          .attr("href", "#");
+        showOzonTooltip();
       }
     }
 
@@ -840,7 +1025,9 @@
     const specR = state.specs["refrigerator"]?.[v.refrigerator] || null;
     const selectedTerminal = $el(".cfg-select-terminal").val();
     const specT = selectedTerminal
-      ? state.specs["terminal"]?.[selectedTerminal] || state.specs["terminal"]?.[v.terminal] || null
+      ? state.specs["terminal"]?.[selectedTerminal] ||
+        state.specs["terminal"]?.[v.terminal] ||
+        null
       : null;
 
     renderSpecs($el(".cfg-spec-machine"), specM);
@@ -849,6 +1036,48 @@
     renderSpecs($el(".cfg-spec-terminal"), specT);
 
     saveSelection();
+  }
+
+  // OZON Tooltip функции
+  function showOzonTooltip() {
+    const $tooltip = $("#ozon-tooltip");
+    const $emoji = $tooltip.find(".ozon-tooltip-icon");
+    const $priceSection = $(".cz-conf .price-section");
+
+    if (!$tooltip.length) return;
+
+    // Показываем tooltip
+    $tooltip.addClass("is-visible is-appearing");
+
+    // На мобильных сдвигаем кнопки вниз
+    if (window.innerWidth <= 968 && $priceSection.length) {
+      $priceSection.addClass("has-tooltip");
+    }
+
+    // Анимация shrug только один раз за сессию
+    if (!ozonShrugAnimationShown) {
+      $emoji.addClass("is-shrugging");
+      ozonShrugAnimationShown = true;
+    }
+
+    // Убираем класс появления после анимации
+    setTimeout(() => {
+      $tooltip.removeClass("is-appearing");
+    }, 400);
+  }
+
+  function hideOzonTooltip() {
+    const $tooltip = $("#ozon-tooltip");
+    const $priceSection = $(".cz-conf .price-section");
+
+    if ($tooltip.length) {
+      $tooltip.removeClass("is-visible is-appearing");
+    }
+
+    // Убираем сдвиг кнопок
+    if ($priceSection.length) {
+      $priceSection.removeClass("has-tooltip");
+    }
   }
 
   // Модальное окно
@@ -888,17 +1117,19 @@
       phone: phone,
       telegram: telegram || "",
       email: email || "",
-      selection: v ? {
-        id: v.id,
-        machine: v.model || v.name,
-        frame: v.frame,
-        frame_color: v.frame_color,
-        refrigerator: v.refrigerator,
-        terminal: v.terminal,
-        price: v.price,
-        ozon_link: v.ozon_link,
-        gallery_folder: v.gallery_folder,
-      } : null,
+      selection: v
+        ? {
+            id: v.id,
+            machine: v.model || v.name,
+            frame: v.frame,
+            frame_color: v.frame_color,
+            refrigerator: v.refrigerator,
+            terminal: v.terminal,
+            price: v.price,
+            ozon_link: v.ozon_link,
+            gallery_folder: v.gallery_folder,
+          }
+        : null,
     };
 
     return $.ajax({
@@ -920,66 +1151,103 @@
     // Показываем индикатор загрузки
     const $btn = $(".cfg-btn-pdf");
     const originalText = $btn.html();
-    $btn.html('<span>...</span>').prop("disabled", true);
+    $btn.html("<span>...</span>").prop("disabled", true);
 
     try {
       const { jsPDF } = window.jspdf;
-      
+
       const doc = new jsPDF({
         orientation: "landscape",
         unit: "mm",
-        format: "a4"
+        format: "a4",
       });
 
       // Загружаем локальный кириллический шрифт (Roboto TTF)
       let fontLoaded = false;
-      
+
       try {
-        // Локальные шрифты из папки fonts/
-        const fontUrl = "./fonts/Roboto-Regular.ttf";
-        const fontBoldUrl = "./fonts/Roboto-Bold.ttf";
-        
-        const [fontResp, fontBoldResp] = await Promise.all([
-          fetch(fontUrl),
-          fetch(fontBoldUrl)
-        ]);
-        
-        if (fontResp.ok && fontBoldResp.ok) {
-          const fontBuffer = await fontResp.arrayBuffer();
-          const fontBoldBuffer = await fontBoldResp.arrayBuffer();
-          
-          // Конвертируем в base64
-          const fontBase64 = arrayBufferToBase64(fontBuffer);
-          const fontBoldBase64 = arrayBufferToBase64(fontBoldBuffer);
-          
-          doc.addFileToVFS("Roboto-Regular.ttf", fontBase64);
-          doc.addFont("Roboto-Regular.ttf", "Roboto", "normal");
-          
-          doc.addFileToVFS("Roboto-Bold.ttf", fontBoldBase64);
-          doc.addFont("Roboto-Bold.ttf", "Roboto", "bold");
-          
-          fontLoaded = true;
-          console.log("Шрифты загружены успешно");
-        } else {
-          console.warn("Не удалось загрузить шрифты. Убедитесь что файлы Roboto-Regular.ttf и Roboto-Bold.ttf находятся в папке fonts/");
+        const inlineReg = window.CZ_FONT_REG_BASE64;
+        const inlineBold = window.CZ_FONT_BOLD_BASE64;
+
+        if (inlineReg && inlineBold) {
+          try {
+            doc.addFileToVFS("Roboto-Regular.ttf", inlineReg);
+            doc.addFont("Roboto-Regular.ttf", "Roboto", "normal");
+
+            doc.addFileToVFS("Roboto-Bold.ttf", inlineBold);
+            doc.addFont("Roboto-Bold.ttf", "Roboto", "bold");
+
+            fontLoaded = true;
+            console.log("Шрифты загружены из встроенных base64");
+          } catch (errInline) {
+            console.warn(
+              "Встроенные base64-шрифты невалидны, пробуем загрузить файлы:",
+              errInline
+            );
+            fontLoaded = false;
+          }
+        }
+
+        if (!fontLoaded) {
+          // Локальные шрифты из папки fonts/
+          const fontUrl = assetUrl("fonts/Roboto-Regular.ttf");
+          const fontBoldUrl = assetUrl("fonts/Roboto-Bold.ttf");
+
+          const [fontResp, fontBoldResp] = await Promise.all([
+            fetch(fontUrl),
+            fetch(fontBoldUrl),
+          ]);
+
+          if (fontResp.ok && fontBoldResp.ok) {
+            const fontBuffer = await fontResp.arrayBuffer();
+            const fontBoldBuffer = await fontBoldResp.arrayBuffer();
+
+            // Конвертируем в base64
+            const fontBase64 = arrayBufferToBase64(fontBuffer);
+            const fontBoldBase64 = arrayBufferToBase64(fontBoldBuffer);
+
+            doc.addFileToVFS("Roboto-Regular.ttf", fontBase64);
+            doc.addFont("Roboto-Regular.ttf", "Roboto", "normal");
+
+            doc.addFileToVFS("Roboto-Bold.ttf", fontBoldBase64);
+            doc.addFont("Roboto-Bold.ttf", "Roboto", "bold");
+
+            fontLoaded = true;
+            console.log("Шрифты загружены успешно");
+          } else {
+            console.warn(
+              "Не удалось загрузить шрифты. Убедитесь что файлы Roboto-Regular.ttf и Roboto-Bold.ttf находятся в папке fonts/"
+            );
+          }
         }
       } catch (e) {
         console.warn("Ошибка загрузки шрифтов:", e);
-        console.warn("Убедитесь что файлы Roboto-Regular.ttf и Roboto-Bold.ttf находятся в папке fonts/");
+        console.warn(
+          "Убедитесь что файлы Roboto-Regular.ttf и Roboto-Bold.ttf находятся в папке fonts/"
+        );
       }
 
-      const useFont = fontLoaded ? "Roboto" : "helvetica";
+      let useFont = fontLoaded ? "Roboto" : "helvetica";
+      // Если по какой-то причине шрифт не зарегистрирован (Tilda может резать инлайн),
+      // переключаемся на встроенный helvetica, чтобы не падать на splitTextToSize.
+      const fontList = doc.getFontList() || {};
+      if (!fontList[useFont]) {
+        console.warn(
+          `Font ${useFont} is not available, falling back to helvetica`
+        );
+        useFont = "helvetica";
+      }
       const pageWidth = 297;
       const pageHeight = 210;
       const margin = 15;
-      
+
       // Получаем спецификации из DOM
       const getSpecFromDOM = (selector) => {
         const $block = $(selector);
         if (!$block.length || $block.is(":hidden")) return null;
         const name = $block.find(".spec-name").text().trim();
         const specs = [];
-        $block.find(".spec-list li").each(function() {
+        $block.find(".spec-list li").each(function () {
           specs.push($(this).text().trim());
         });
         return { name, specs };
@@ -992,16 +1260,20 @@
 
       const frameColorVal = $el(".cfg-select-frame-color").val();
       const insertColorVal = $el(".cfg-select-insert-color").val();
-      const frameColorLabel = COLOR_LABELS[frameColorVal] || frameColorVal || "";
-      const insertColorLabel = COLOR_LABELS[insertColorVal] || insertColorVal || "";
-      const priceText = v.price ? Number(v.price).toLocaleString("ru-RU") + " RUB" : "Цена по запросу";
+      const frameColorLabel =
+        COLOR_LABELS[frameColorVal] || frameColorVal || "";
+      const insertColorLabel =
+        COLOR_LABELS[insertColorVal] || insertColorVal || "";
+      const priceText = v.price
+        ? Number(v.price).toLocaleString("ru-RU") + " RUB"
+        : "Цена по запросу";
 
       // Заголовок
       doc.setFont(useFont, "bold");
       doc.setFontSize(24);
       doc.setTextColor(0, 100, 252);
       doc.text("COFFEE ZONE", pageWidth / 2, 18, { align: "center" });
-      
+
       // Линия под заголовком
       doc.setDrawColor(0, 100, 252);
       doc.setLineWidth(0.5);
@@ -1022,7 +1294,16 @@
         try {
           const imgData = await loadImageAsBase64(imgSrc);
           if (imgData) {
-            doc.addImage(imgData, "PNG", imgAreaX + 5, imgAreaY + 5, imgAreaW - 10, imgAreaH - 10, undefined, "FAST");
+            doc.addImage(
+              imgData,
+              "PNG",
+              imgAreaX + 5,
+              imgAreaY + 5,
+              imgAreaW - 10,
+              imgAreaH - 10,
+              undefined,
+              "FAST"
+            );
           }
         } catch (e) {
           console.warn("Не удалось добавить изображение:", e);
@@ -1036,7 +1317,9 @@
       doc.setFont(useFont, "bold");
       doc.setFontSize(16);
       doc.setTextColor(255, 255, 255);
-      doc.text(priceText, imgAreaX + imgAreaW / 2, priceY + 9.5, { align: "center" });
+      doc.text(priceText, imgAreaX + imgAreaW / 2, priceY + 9.5, {
+        align: "center",
+      });
 
       // Цвета под ценой
       if (frameColorLabel || insertColorLabel) {
@@ -1062,19 +1345,19 @@
       doc.setFontSize(12);
       doc.setTextColor(0, 0, 0);
       doc.text("Спецификации", specStartX, specY);
-      
+
       doc.setDrawColor(200, 200, 200);
       doc.setLineWidth(0.2);
       doc.line(specStartX, specY + 2, pageWidth - margin, specY + 2);
-      
+
       specY += 8;
 
       // Функция отрисовки блока спецификаций
       const drawSpecBlock = (spec, title, x, startY, maxWidth) => {
         if (!spec || !spec.name || spec.name === "—") return startY;
-        
+
         let y = startY;
-        
+
         // Заголовок
         doc.setFont(useFont, "normal");
         doc.setFontSize(7);
@@ -1094,8 +1377,8 @@
         doc.setFont(useFont, "normal");
         doc.setFontSize(7);
         doc.setTextColor(60, 60, 60);
-        
-        spec.specs.forEach(line => {
+
+        spec.specs.forEach((line) => {
           const text = "• " + line;
           const lines = doc.splitTextToSize(text, maxWidth);
           doc.text(lines, x, y);
@@ -1107,14 +1390,32 @@
 
       // Левая колонка спецификаций
       let leftY = specY;
-      leftY = drawSpecBlock(machineSpec, "Кофемашина", specStartX, leftY, specWidth);
+      leftY = drawSpecBlock(
+        machineSpec,
+        "Кофемашина",
+        specStartX,
+        leftY,
+        specWidth
+      );
       leftY = drawSpecBlock(frameSpec, "Каркас", specStartX, leftY, specWidth);
 
       // Правая колонка спецификаций
       const rightX = specStartX + specWidth + 10;
       let rightY = specY;
-      rightY = drawSpecBlock(fridgeSpec, "Холодильник", rightX, rightY, specWidth);
-      rightY = drawSpecBlock(terminalSpec, "Терминал", rightX, rightY, specWidth);
+      rightY = drawSpecBlock(
+        fridgeSpec,
+        "Холодильник",
+        rightX,
+        rightY,
+        specWidth
+      );
+      rightY = drawSpecBlock(
+        terminalSpec,
+        "Терминал",
+        rightX,
+        rightY,
+        specWidth
+      );
 
       // Ссылки с QR-кодами под спецификациями
       const linksY = Math.max(leftY, rightY) + 5;
@@ -1123,22 +1424,22 @@
 
       const qrSize = 25;
       const linkBlockWidth = 70;
-      
+
       // Telegram
       const tgLink = "https://t.me/coffeezone_ru";
       const tgX = specStartX;
       const tgY = linksY + 5;
-      
+
       doc.setFont(useFont, "bold");
       doc.setFontSize(9);
       doc.setTextColor(0, 0, 0);
       doc.text("Telegram", tgX, tgY);
-      
+
       doc.setFont(useFont, "normal");
       doc.setFontSize(7);
       doc.setTextColor(0, 100, 252);
       doc.textWithLink(tgLink, tgX, tgY + 4, { url: tgLink });
-      
+
       // QR для Telegram
       try {
         const tgQR = await generateQRCode(tgLink);
@@ -1153,18 +1454,21 @@
       if (v.ozon_link) {
         const ozonX = tgX + linkBlockWidth;
         const ozonY = tgY;
-        
+
         doc.setFont(useFont, "bold");
         doc.setFontSize(9);
         doc.setTextColor(0, 0, 0);
         doc.text("OZON", ozonX, ozonY);
-        
+
         doc.setFont(useFont, "normal");
         doc.setFontSize(7);
         doc.setTextColor(0, 100, 252);
-        const ozonShort = v.ozon_link.length > 35 ? v.ozon_link.substring(0, 35) + "..." : v.ozon_link;
+        const ozonShort =
+          v.ozon_link.length > 35
+            ? v.ozon_link.substring(0, 35) + "..."
+            : v.ozon_link;
         doc.textWithLink(ozonShort, ozonX, ozonY + 4, { url: v.ozon_link });
-        
+
         // QR для OZON
         try {
           const ozonQR = await generateQRCode(v.ozon_link);
@@ -1180,12 +1484,21 @@
       doc.setFont(useFont, "normal");
       doc.setFontSize(8);
       doc.setTextColor(150, 150, 150);
-      doc.text("coffeezone.ru | " + new Date().toLocaleDateString("ru-RU"), pageWidth / 2, pageHeight - 10, { align: "center" });
+      doc.text(
+        "coffeezone.ru | " + new Date().toLocaleDateString("ru-RU"),
+        pageWidth / 2,
+        pageHeight - 10,
+        { align: "center" }
+      );
 
       // Скачиваем
-      const fileName = "coffeezone-" + (v.model || v.name || "config").replace(/[^a-zA-Z0-9а-яА-ЯёЁ]/g, "-").toLowerCase() + ".pdf";
+      const fileName =
+        "coffeezone-" +
+        (v.model || v.name || "config")
+          .replace(/[^a-zA-Z0-9а-яА-ЯёЁ]/g, "-")
+          .toLowerCase() +
+        ".pdf";
       doc.save(fileName);
-
     } catch (err) {
       console.error("Ошибка генерации PDF:", err);
       alert("Не удалось создать PDF: " + err.message);
@@ -1203,7 +1516,7 @@
         container.style.position = "absolute";
         container.style.left = "-9999px";
         document.body.appendChild(container);
-        
+
         // Генерируем QR
         const qr = new QRCode(container, {
           text: text,
@@ -1211,9 +1524,9 @@
           height: 128,
           colorDark: "#000000",
           colorLight: "#ffffff",
-          correctLevel: QRCode.CorrectLevel.M
+          correctLevel: QRCode.CorrectLevel.M,
         });
-        
+
         // Ждём рендера и получаем canvas
         setTimeout(() => {
           const canvas = container.querySelector("canvas");
@@ -1235,7 +1548,7 @@
 
   // Конвертация ArrayBuffer в Base64
   function arrayBufferToBase64(buffer) {
-    let binary = '';
+    let binary = "";
     const bytes = new Uint8Array(buffer);
     for (let i = 0; i < bytes.byteLength; i++) {
       binary += String.fromCharCode(bytes[i]);
@@ -1248,7 +1561,7 @@
     return new Promise((resolve) => {
       const img = new Image();
       img.crossOrigin = "anonymous";
-      img.onload = function() {
+      img.onload = function () {
         try {
           const canvas = document.createElement("canvas");
           canvas.width = img.naturalWidth;
@@ -1269,17 +1582,16 @@
   }
 
   function bindEvents() {
-    $(".cfg-select-machine, .cfg-select-frame, .cfg-select-frame-color, .cfg-select-fridge, .cfg-select-terminal, .cfg-select-insert-color").on(
-      "change",
-      () => {
-        ensureMachineSelection();
-        ensureFridgeSelection();
-        updateFrameColorState();
-        updateInsertColorState();
-        updateImageLayout();
-        renderVariant(findVariant(true));
-      }
-    );
+    $(
+      ".cfg-select-machine, .cfg-select-frame, .cfg-select-frame-color, .cfg-select-fridge, .cfg-select-terminal, .cfg-select-insert-color"
+    ).on("change", () => {
+      ensureMachineSelection();
+      ensureFridgeSelection();
+      updateFrameColorState();
+      updateInsertColorState();
+      updateImageLayout();
+      renderVariant(findVariant(true));
+    });
 
     $(window).on("resize", repositionSpecs);
 
@@ -1299,7 +1611,10 @@
       closeModal();
     });
 
-    $("#cfg-lead-name, #cfg-lead-phone, #cfg-lead-consent").on("input change", validateForm);
+    $("#cfg-lead-name, #cfg-lead-phone, #cfg-lead-consent").on(
+      "input change",
+      validateForm
+    );
 
     $("#cfg-quote-form").on("submit", (e) => {
       e.preventDefault();
@@ -1316,13 +1631,19 @@
 
       sendLead()
         .done(() => {
-          $message.addClass("success").text("Заявка успешно отправлена!").show();
+          $message
+            .addClass("success")
+            .text("Заявка успешно отправлена!")
+            .show();
           setTimeout(() => {
             closeModal();
           }, 2000);
         })
         .fail(() => {
-          $message.addClass("error").text("Не удалось отправить заявку. Попробуйте ещё раз.").show();
+          $message
+            .addClass("error")
+            .text("Не удалось отправить заявку. Попробуйте ещё раз.")
+            .show();
           $submitBtn.prop("disabled", false).text("Отправить");
         });
     });
@@ -1362,7 +1683,7 @@
         updateImageLayout();
 
         setTimeout(() => {
-          state.machines.slice(0, 5).forEach(machine => {
+          state.machines.slice(0, 5).forEach((machine) => {
             preloadVariantImages(machine);
           });
         }, 500);

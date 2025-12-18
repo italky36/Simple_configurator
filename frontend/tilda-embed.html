@@ -1,0 +1,1319 @@
+<!-- Вставьте этот блок в HTML-блок Tilda. Подтягивает CSS/JS и шрифты с вашего домена. -->
+<style>
+/* === Встроенный styles.css для Tilda === */
+/* Reset */
+*, *::before, *::after {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  padding: 0;
+  font-family: 'Montserrat', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  background: #fff;
+}
+
+.cz-conf {
+  font-family: 'Montserrat', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  background: #FFFFFF;
+  color: #000;
+  padding: 40px 20px;
+  margin: 0 auto;
+  width: 100%;
+  position: relative;
+  overflow: hidden;
+  box-sizing: border-box;
+}
+
+.cz-conf *,
+.cz-conf *::before,
+.cz-conf *::after {
+  box-sizing: border-box;
+}
+
+.cz-conf .container {
+  max-width: 1520px;
+  margin: 0 auto;
+}
+
+.cz-conf h1 {
+  font-size: 30px;
+  font-weight: 600;
+  line-height: 36px;
+  margin: 0 0 20px 0;
+  color: #000000;
+}
+
+.cz-conf .main-content {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 30px;
+  margin-bottom: 0;
+  background: #F7F7F7;
+  padding: 0 20px 0 20px;
+  border-radius: 8px;
+}
+
+.cz-conf .product-image {
+  background: transparent;
+  border-radius: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-end;
+  position: relative;
+  min-height: 520px;
+  height: 520px;
+  overflow: hidden;
+}
+
+.cz-conf .product-image img.cfg-main-image {
+  width: auto;
+  height: 100%;
+  max-width: 100%;
+  max-height: 100%;
+  display: block;
+  object-fit: contain;
+  margin: 0 auto;
+  transition: transform 0.25s ease, opacity 0.2s ease;
+}
+
+.cz-conf .product-image.without-frame {
+  justify-content: center;
+}
+
+.cz-conf .product-image.without-frame img.cfg-main-image {
+  max-width: 110%;
+  max-height: 100%;
+  transform: scale(1.03);
+}
+
+/* Спиннер загрузки */
+.cz-conf .cfg-loader {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 255, 255, 0.12);
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+  z-index: 2;
+}
+
+.cz-conf .cfg-loader:after {
+  content: "";
+  width: 34px;
+  height: 34px;
+  border: 4px solid rgba(0, 0, 0, 0.08);
+  border-top-color: #0064fc;
+  border-radius: 50%;
+  animation: cfg-spin 0.9s linear infinite;
+}
+
+.cz-conf .product-image.is-loading .cfg-loader {
+  opacity: 1;
+}
+
+.cz-conf .product-image.is-loading img.cfg-main-image {
+  opacity: 0.15;
+}
+
+@keyframes cfg-spin {
+  to { transform: rotate(360deg); }
+}
+
+/* Первичный полноэкранный лоадер */
+.cz-conf .cfg-initial-loader {
+  position: absolute;
+  inset: 0;
+  z-index: 30;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 255, 255, 0.6);
+  backdrop-filter: blur(1px);
+  transition: opacity 0.45s ease, visibility 0.45s ease;
+}
+
+.cz-conf .cfg-initial-loader.is-hidden {
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+}
+
+.cz-conf .cfg-loader-card {
+  position: relative;
+  z-index: 2;
+  background: rgba(255, 255, 255, 0.88);
+  border-radius: 12px;
+  padding: 18px 20px 14px;
+  box-shadow: 0 12px 30px rgba(15, 26, 43, 0.12);
+  display: grid;
+  gap: 10px;
+  min-width: 220px;
+  text-align: center;
+  align-items: center;
+}
+
+.cz-conf .cfg-loader-title {
+  font-weight: 700;
+  font-size: 16px;
+  color: #101828;
+  letter-spacing: 0.01em;
+}
+
+.cz-conf .cfg-loader-text {
+  font-size: 12px;
+  color: #4b5563;
+}
+
+.cz-conf .cfg-coffee-icon {
+  position: relative;
+  width: 96px;
+  height: 80px;
+  margin: 0 auto;
+}
+
+.cz-conf .cfg-coffee-steam {
+  position: absolute;
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 70px;
+  height: 38px;
+  pointer-events: none;
+}
+
+.cz-conf .cfg-coffee-steam span {
+  position: absolute;
+  bottom: 0;
+  width: 8px;
+  height: 24px;
+  background: linear-gradient(180deg, rgba(0, 108, 255, 0.58) 0%, rgba(0, 108, 255, 0.0) 100%);
+  border-radius: 12px;
+  filter: blur(0.4px);
+  animation: cfg-steam 1.8s ease-in-out infinite;
+}
+
+.cz-conf .cfg-coffee-steam span:nth-child(1) { left: 16px; animation-delay: 0s; }
+.cz-conf .cfg-coffee-steam span:nth-child(2) { left: 32px; animation-delay: 0.25s; }
+.cz-conf .cfg-coffee-steam span:nth-child(3) { left: 48px; animation-delay: 0.5s; }
+
+.cz-conf .cfg-coffee-cup {
+  position: absolute;
+  bottom: 12px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 78px;
+  height: 44px;
+  background: #ffffff;
+  border: 3px solid #006cff;
+  border-radius: 0 0 14px 14px;
+  box-shadow: inset 0 -6px 0 rgba(0, 108, 255, 0.12);
+}
+
+.cz-conf .cfg-coffee-cup::after {
+  content: "";
+  position: absolute;
+  right: -18px;
+  top: 8px;
+  width: 18px;
+  height: 22px;
+  border: 3px solid #006cff;
+  border-left: none;
+  border-radius: 0 14px 14px 0;
+}
+
+.cz-conf .cfg-coffee-saucer {
+  position: absolute;
+  bottom: 6px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 110px;
+  height: 12px;
+  background: rgba(0, 108, 255, 0.1);
+  border-radius: 999px;
+  filter: blur(0.4px);
+}
+
+@keyframes cfg-steam {
+  0%   { transform: translateY(6px) scale(0.9); opacity: 0; }
+  20%  { opacity: 1; }
+  70%  { transform: translateY(-20px) scale(1); opacity: 0.85; }
+  100% { transform: translateY(-32px) scale(1.05); opacity: 0; }
+}
+
+.cz-conf .cfg-bubbles {
+  position: absolute;
+  width: 260px;
+  height: 220px;
+  left: 50%;
+  top: 45%;
+  transform: translate(-50%, -80%);
+  overflow: hidden;
+  z-index: 1;
+  pointer-events: none;
+}
+
+.cz-conf .cfg-bubbles span {
+  position: absolute;
+  bottom: -20px;
+  display: block;
+  background: rgba(0, 108, 255, 0.28);
+  border: 1px solid rgba(0, 108, 255, 0.36);
+  border-radius: 50%;
+  animation: cfg-bubble-rise 2.4s ease-out infinite;
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.16);
+}
+
+.cz-conf .cfg-bubbles span:nth-child(1) { left: 22%; width: 26px; height: 26px; animation-delay: 0s; }
+.cz-conf .cfg-bubbles span:nth-child(2) { left: 36%; width: 36px; height: 36px; animation-delay: 0.25s; }
+.cz-conf .cfg-bubbles span:nth-child(3) { left: 48%; width: 24px; height: 24px; animation-delay: 0.55s; }
+.cz-conf .cfg-bubbles span:nth-child(4) { left: 60%; width: 34px; height: 34px; animation-delay: 0.1s; }
+.cz-conf .cfg-bubbles span:nth-child(5) { left: 72%; width: 40px; height: 40px; animation-delay: 0.45s; }
+.cz-conf .cfg-bubbles span:nth-child(6) { left: 30%; width: 22px; height: 22px; animation-delay: 0.9s; }
+.cz-conf .cfg-bubbles span:nth-child(7) { left: 50%; width: 30px; height: 30px; animation-delay: 1.2s; }
+.cz-conf .cfg-bubbles span:nth-child(8) { left: 66%; width: 24px; height: 24px; animation-delay: 1.45s; }
+
+@keyframes cfg-bubble-rise {
+  0%   { transform: translateY(0) scale(0.85); opacity: 0; }
+  10%  { opacity: 1; }
+  60%  { transform: translateY(-90px) scale(1.05); opacity: 0.9; }
+  100% { transform: translateY(-130px) scale(1.2); opacity: 0; }
+}
+
+.cz-conf .cfg-gallery {
+  display: none !important;
+}
+
+.cz-conf .cfg-image-nav {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.cz-conf .cfg-zoom-lens {
+  position: absolute;
+  width: 160px;
+  height: 160px;
+  border: 2px solid #0064fc;
+  border-radius: 50%;
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.16);
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: cover;
+  pointer-events: none;
+  display: none;
+  z-index: 4;
+}
+
+.cz-conf .cfg-arrow {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  border: none;
+  background: rgba(255, 255, 255, 0.8);
+  box-shadow: 0 4px 10px rgba(0,0,0,0.12);
+  cursor: pointer;
+  pointer-events: auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 20px;
+  color: #000;
+  transition: background-color 0.15s ease, box-shadow 0.15s ease, opacity 0.15s ease;
+}
+
+.cz-conf .cfg-arrow:hover:not(:disabled):not(.disabled) {
+  background: rgba(255,255,255,0.95);
+  box-shadow: 0 6px 14px rgba(0,0,0,0.16);
+}
+
+.cz-conf .cfg-arrow:disabled,
+.cz-conf .cfg-arrow.disabled {
+  opacity: 0.3;
+  cursor: default;
+  pointer-events: none;
+}
+
+.cz-conf .cfg-arrow-prev { left: 10px; }
+.cz-conf .cfg-arrow-next { right: 10px; }
+
+/* Спецификации */
+.cz-conf .specs {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 35px 20px;
+  padding-top: 18px;
+  padding-bottom: 18px;
+}
+
+.cz-conf .specs-column {
+  display: contents;
+}
+
+.cz-conf .cfg-spec-machine {
+  grid-column: 1;
+  grid-row: 1;
+}
+
+.cz-conf .cfg-spec-fridge {
+  grid-column: 2;
+  grid-row: 1;
+}
+
+.cz-conf .cfg-spec-frame {
+  grid-column: 1;
+  grid-row: 2;
+}
+
+.cz-conf .cfg-spec-terminal {
+  grid-column: 2;
+  grid-row: 2;
+}
+
+.cz-conf .spec-block {
+  padding-bottom: 0;
+}
+
+.cz-conf .spec-title {
+  color: #999;
+  font-size: 14px;
+  text-transform: capitalize;
+  margin-bottom: 8px;
+}
+
+.cz-conf .spec-name {
+  font-size: 18px;
+  font-weight: 700;
+  margin-bottom: 8px;
+  text-transform: uppercase;
+}
+
+.cz-conf .spec-list {
+  list-style: none !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  padding-left: 0 !important;
+}
+
+.cz-conf .spec-list li {
+  font-size: 15px;
+  line-height: 1.5;
+  color: #333;
+  text-indent: -0.8em;
+  padding-left: 0.8em;
+}
+
+.cz-conf .spec-list li:before {
+  content: "• ";
+  font-weight: bold;
+  color: #000;
+}
+
+/* Конфигуратор */
+.cz-conf .configurator-wrapper {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 30px;
+  margin-top: 20px;
+  margin-bottom: 30px;
+  align-items: stretch;
+}
+
+.cz-conf .configurator {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  grid-template-rows: auto auto;
+  gap: 15px;
+}
+
+.cz-conf .config-item {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.cz-conf .config-label {
+  font-size: 14px;
+  font-weight: 600;
+  color: #000;
+  transition: color 0.2s ease;
+}
+
+.cz-conf .config-item:has(.config-select:disabled) .config-label,
+.cz-conf .config-label.disabled-label {
+  color: #b3b3b3 !important;
+}
+
+.cz-conf .config-select,
+.cz-conf .cfg-select {
+  appearance: none;
+  width: 100%;
+  height: 50px;
+  padding: 0 45px 0 20px;
+  cursor: pointer;
+  outline: none;
+  background-color: #f8f8f8;
+  border: 1px solid #e8e8e8;
+  border-radius: 5px;
+  font-family: "Montserrat", sans-serif;
+  font-size: 15px;
+  font-weight: 400;
+  color: #000;
+  background-image: url("data:image/svg+xml,%3Csvg width='10' height='6' viewBox='0 0 10 6' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%23999' stroke-width='1.2' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 16px center;
+  background-size: 10px 6px;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease, transform 0.12s ease-out;
+}
+
+.cz-conf .config-select:hover:not(:disabled),
+.cz-conf .cfg-select:hover:not(:disabled) {
+  border-color: #bdbdbd;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.08);
+  transform: translateY(-1px);
+}
+
+.cz-conf .config-select:disabled,
+.cz-conf .cfg-select:disabled {
+  background-color: #FFFFFF;
+  border-color: #e5e5e5;
+  color: #b3b3b3;
+  cursor: not-allowed;
+}
+
+/* Цены */
+.cz-conf .price-section {
+  display: grid;
+  grid-template-columns: 1fr 1fr auto;
+  gap: 20px;
+  align-items: stretch;
+  align-self: start;
+  height: 100%;
+}
+
+.cz-conf .price-block {
+  display: grid;
+  grid-template-rows: 1fr auto;
+  text-align: center;
+}
+
+.cz-conf .price {
+  font-size: 44px;
+  font-weight: 700;
+  margin: 0;
+  min-height: 1em;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding-top: 26px;
+  padding-bottom: 10px;
+}
+
+.cz-conf .price.cfg-price-left {
+  color: #0066FF;
+}
+
+.cz-conf .price.cfg-price-right {
+  color: #000;
+}
+
+.cz-conf .price-small {
+  font-size: 16px !important;
+  font-weight: 400 !important;
+  color: #666 !important;
+}
+
+/* Кнопки */
+.cz-conf .btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px 32px;
+  font-size: 16px;
+  font-weight: 600;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  transition: background-color 0.2s ease-in-out;
+  width: 100%;
+  text-decoration: none;
+  height: 50px;
+  align-self: end;
+}
+
+.cz-conf .btn-primary,
+.cz-conf a.btn-primary {
+  background-color: #0064fc;
+  color: #ffffff !important;
+}
+
+.cz-conf .btn-primary:hover:not(:disabled):not(.disabled),
+.cz-conf a.btn-primary:hover:not(:disabled):not(.disabled) {
+  background-color: #0052d4;
+  color: #ffffff !important;
+}
+
+.cz-conf .btn-primary:disabled,
+.cz-conf .btn-primary[disabled],
+.cz-conf .btn-primary.disabled,
+.cz-conf a.btn-primary:disabled,
+.cz-conf a.btn-primary[disabled],
+.cz-conf a.btn-primary.disabled {
+  background-color: #d3d3d3 !important;
+  color: #ffffff !important;
+  cursor: not-allowed !important;
+  opacity: 0.7 !important;
+  pointer-events: none !important;
+  text-decoration: none !important;
+}
+
+.cz-conf a.btn-primary[disabled]:hover,
+.cz-conf a.btn-primary[disabled]:focus,
+.cz-conf a.btn-primary[disabled]:active,
+.cz-conf a.btn-primary.disabled:hover,
+.cz-conf a.btn-primary.disabled:focus,
+.cz-conf a.btn-primary.disabled:active {
+  color: #ffffff !important;
+  background-color: #d3d3d3 !important;
+}
+
+.cz-conf .btn-secondary {
+  background-color: #fff;
+  color: #000;
+  border: 2px solid #000;
+}
+
+.cz-conf .btn-secondary:hover {
+  background-color: #000;
+  color: #fff;
+}
+
+/* Кнопка PDF */
+.cz-conf .price-block-pdf {
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+}
+
+.cz-conf .btn-pdf {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  padding: 10px 15px;
+  background: #fff;
+  border: 2px solid #dc3545;
+  border-radius: 5px;
+  color: #dc3545;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-family: "Montserrat", sans-serif;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.cz-conf .btn-pdf:hover {
+  background: #dc3545;
+  color: #fff;
+}
+
+.cz-conf .btn-pdf svg {
+  width: 24px;
+  height: 24px;
+}
+
+/* Tooltip для OZON */
+.cz-conf .ozon-tooltip-wrapper {
+  position: relative;
+  display: inline-block;
+  width: 100%;
+}
+
+.cz-conf .ozon-tooltip {
+  position: absolute;
+  bottom: calc(100% + 12px);
+  left: 50%;
+  transform: translateX(-50%) translateY(10px);
+  background: #fff;
+  border: 2px solid #0064fc;
+  border-radius: 12px;
+  padding: 12px 16px;
+  box-shadow: 0 8px 24px rgba(0, 100, 252, 0.2);
+  white-space: nowrap;
+  z-index: 100;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.3s ease, visibility 0.3s ease, transform 0.3s ease;
+}
+
+.cz-conf .ozon-tooltip.is-visible {
+  opacity: 1;
+  visibility: visible;
+  transform: translateX(-50%) translateY(0);
+}
+
+.cz-conf .ozon-tooltip::after {
+  content: "";
+  position: absolute;
+  top: 100%;
+  left: 75%;
+  transform: translateX(-50%);
+  border: 8px solid transparent;
+  border-top-color: #0064fc;
+}
+
+.cz-conf .ozon-tooltip::before {
+  content: "";
+  position: absolute;
+  top: 100%;
+  left: 75%;
+  transform: translateX(-50%);
+  border: 6px solid transparent;
+  border-top-color: #fff;
+  z-index: 1;
+  margin-top: -2px;
+}
+
+.cz-conf .ozon-tooltip-content {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 13px;
+  font-weight: 500;
+  color: #333;
+}
+
+.cz-conf .ozon-tooltip-icon {
+  flex-shrink: 0;
+  animation: ozon-float 2s ease-in-out infinite;
+}
+
+.cz-conf .ozon-tooltip-icon.is-shrugging {
+  animation: ozon-shrug 0.6s ease-out forwards, ozon-float 2s ease-in-out 0.6s infinite;
+}
+
+@keyframes ozon-shrug {
+  0% {
+    transform: scale(0.5) rotate(-10deg);
+    opacity: 0;
+  }
+  50% {
+    transform: scale(1.2) rotate(5deg);
+  }
+  100% {
+    transform: scale(1) rotate(0deg);
+    opacity: 1;
+  }
+}
+
+@keyframes ozon-float {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-4px);
+  }
+}
+
+.cz-conf .ozon-tooltip.is-appearing {
+  animation: ozon-cloud-appear 0.3s ease-out forwards;
+}
+
+@keyframes ozon-cloud-appear {
+  0% {
+    opacity: 0;
+    transform: translateX(-50%) translateY(10px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
+}
+
+/* Адаптив для десктопа */
+@media (min-width: 969px) {
+  .cz-conf .configurator-wrapper {
+    align-items: start;
+  }
+
+  .cz-conf .price-section {
+    padding-top: 0;
+  }
+
+  .cz-conf .price-block {
+    grid-template-rows: minmax(50px, 1fr) 50px;
+    gap: 15px;
+  }
+
+  .cz-conf .price {
+    padding-top: 10px;
+    font-size: 32px;
+  }
+
+  .cz-conf .btn {
+    height: 50px;
+  }
+}
+
+/* Адаптив для мобильных */
+@media (max-width: 968px) {
+  .cz-conf .main-content {
+    grid-template-columns: 1fr;
+    padding: 0;
+    background: transparent;
+    margin-bottom: 10px;
+  }
+
+  .cz-conf .specs {
+    grid-template-columns: 1fr;
+    padding-top: 10px;
+    padding-bottom: 10px;
+    gap: 25px;
+  }
+
+  .cz-conf .cfg-spec-machine,
+  .cz-conf .cfg-spec-fridge,
+  .cz-conf .cfg-spec-frame,
+  .cz-conf .cfg-spec-terminal {
+    grid-column: auto;
+    grid-row: auto;
+  }
+
+  .cz-conf .product-image {
+    min-height: auto;
+    height: auto;
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: center;
+    padding: 20px 0;
+    background: #F7F7F7;
+    border-radius: 8px;
+  }
+
+  .cz-conf .product-image img.cfg-main-image {
+    width: auto;
+    height: auto;
+    max-width: 80%;
+    max-height: 300px;
+    margin: 0 auto;
+    display: block;
+    object-fit: contain;
+    transform: none;
+  }
+
+  /* С каркасом */
+  .cz-conf .product-image.with-frame {
+    flex-direction: row;
+    justify-content: center;
+    align-items: center;
+  }
+
+  .cz-conf .product-image.with-frame img.cfg-main-image {
+    max-width: 80%;
+    max-height: 300px;
+    transform: none;
+  }
+
+  /* Без каркаса - увеличенный размер */
+  .cz-conf .product-image.without-frame {
+    flex-direction: row;
+    justify-content: center;
+    align-items: center;
+  }
+
+  .cz-conf .product-image.without-frame img.cfg-main-image {
+    max-width: 70%;
+    max-height: 280px;
+    transform: scale(1.15);
+  }
+
+  .cz-conf .configurator-wrapper {
+    grid-template-columns: 1fr;
+    gap: 15px;
+    margin-top: 10px;
+    margin-bottom: 15px;
+  }
+
+  .cz-conf .configurator {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 10px;
+  }
+
+  .cz-conf .price-section {
+    display: grid;
+    grid-template-columns: 1fr 1fr auto;
+    gap: 10px;
+    align-items: end;
+  }
+
+  .cz-conf .price-block {
+    flex: 1;
+  }
+
+  .cz-conf .price-block-pdf {
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
+  }
+
+  .cz-conf .btn-pdf {
+    padding: 6px 10px;
+    font-size: 10px;
+    height: 50px;
+    min-height: 50px;
+    box-sizing: border-box;
+  }
+
+  .cz-conf .btn-pdf svg {
+    width: 18px;
+    height: 18px;
+  }
+
+  .cz-conf .price {
+    font-size: 24px;
+    white-space: nowrap;
+    padding-top: 8px;
+    padding-bottom: 5px;
+  }
+
+  /* OZON tooltip мобильная версия */
+  .cz-conf .ozon-tooltip {
+    white-space: normal;
+    width: auto;
+    max-width: 220px;
+    text-align: center;
+    left: auto;
+    right: 0;
+    bottom: calc(100% + 10px);
+    transform: translateY(10px);
+    font-size: 12px;
+    padding: 10px 14px;
+  }
+  
+  .cz-conf .ozon-tooltip.is-visible {
+    transform: translateY(0);
+  }
+  
+  .cz-conf .ozon-tooltip::after,
+  .cz-conf .ozon-tooltip::before {
+    left: auto;
+    right: 20px;
+    transform: none;
+  }
+  
+  .cz-conf .ozon-tooltip.is-appearing {
+    animation: ozon-cloud-appear-mobile 0.3s ease-out forwards;
+  }
+  
+  @keyframes ozon-cloud-appear-mobile {
+    0% {
+      opacity: 0;
+      transform: translateY(10px);
+    }
+    100% {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+  
+  /* Сдвиг кнопок вниз при появлении tooltip */
+  .cz-conf .price-section {
+    transition: padding-top 0.3s ease;
+  }
+  
+  .cz-conf .price-section.has-tooltip {
+    padding-top: 50px;
+  }
+}
+
+/* Модальное окно */
+.cfg-modal {
+  display: none;
+  position: fixed;
+  inset: 0;
+  z-index: 10000;
+  align-items: center;
+  justify-content: center;
+}
+
+.cfg-modal.is-open {
+  display: flex;
+}
+
+.cfg-modal-overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(2px);
+}
+
+.cfg-modal-content {
+  position: relative;
+  background: #fff;
+  padding: 40px;
+  border-radius: 8px;
+  max-width: 500px;
+  width: 90%;
+  max-height: 90vh;
+  overflow-y: auto;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+  z-index: 1;
+}
+
+.cfg-modal-close {
+  position: absolute;
+  top: 15px;
+  right: 15px;
+  background: none;
+  border: none;
+  font-size: 32px;
+  line-height: 1;
+  cursor: pointer;
+  color: #999;
+  padding: 0;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: color 0.2s ease;
+}
+
+.cfg-modal-close:hover {
+  color: #000;
+}
+
+.cfg-modal-title {
+  font-size: 24px;
+  font-weight: 600;
+  margin: 0 0 24px 0;
+  color: #000;
+}
+
+.cfg-form-group {
+  margin-bottom: 20px;
+}
+
+.cfg-form-group label {
+  display: block;
+  font-size: 14px;
+  font-weight: 600;
+  margin-bottom: 6px;
+  color: #000;
+}
+
+.cfg-required {
+  color: #ff0000;
+}
+
+.cfg-form-control {
+  width: 100%;
+  height: 50px;
+  padding: 0 20px;
+  border: 1px solid #e8e8e8;
+  border-radius: 5px;
+  font-family: "Montserrat", sans-serif;
+  font-size: 15px;
+  color: #000;
+  transition: border-color 0.2s ease;
+}
+
+.cfg-form-control:focus {
+  outline: none;
+  border-color: #0064fc;
+}
+
+.cfg-checkbox-group {
+  margin-bottom: 24px;
+}
+
+.cfg-checkbox-label {
+  display: flex;
+  align-items: flex-start;
+  cursor: pointer;
+  font-weight: 400;
+}
+
+.cfg-checkbox {
+  margin-right: 10px;
+  margin-top: 2px;
+  width: 18px;
+  height: 18px;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.cfg-link {
+  color: #0064fc;
+  text-decoration: none;
+}
+
+.cfg-link:hover {
+  text-decoration: underline;
+}
+
+.cfg-form-message {
+  margin-top: 15px;
+  padding: 12px;
+  border-radius: 5px;
+  font-size: 14px;
+  text-align: center;
+  display: none;
+}
+
+.cfg-form-message.success {
+  display: block;
+  background: #d4edda;
+  color: #155724;
+  border: 1px solid #c3e6cb;
+}
+
+.cfg-form-message.error {
+  display: block;
+  background: #f8d7da;
+  color: #721c24;
+  border: 1px solid #f5c6cb;
+}
+</style>
+
+<script>
+  // Базовый префикс для статики
+  window.CZ_ASSETS_BASE = "https://coffeezonefranchise.ru";
+  
+  // Инициализируем как null - шрифты загрузятся асинхронно
+  window.CZ_FONT_REG_BASE64 = null;
+  window.CZ_FONT_BOLD_BASE64 = null;
+  window.CZ_FONTS_LOADED = false;
+  
+  // Предзагрузка шрифтов с сервера
+  (async function() {
+    const FONT_URLS = {
+      regular: "https://coffeezonefranchise.ru/fonts/Roboto-Regular.ttf",
+      bold: "https://coffeezonefranchise.ru/fonts/Roboto-Bold.ttf"
+    };
+
+    async function loadFontAsBase64(url) {
+      try {
+        const response = await fetch(url);
+        if (!response.ok) throw new Error("HTTP " + response.status);
+        const buffer = await response.arrayBuffer();
+        // Конвертируем ArrayBuffer в base64
+        let binary = "";
+        const bytes = new Uint8Array(buffer);
+        const chunkSize = 8192;
+        for (let i = 0; i < bytes.length; i += chunkSize) {
+          const chunk = bytes.subarray(i, i + chunkSize);
+          binary += String.fromCharCode.apply(null, chunk);
+        }
+        return btoa(binary);
+      } catch (err) {
+        console.error("Ошибка загрузки шрифта:", url, err);
+        return null;
+      }
+    }
+
+    try {
+      console.log("⏳ Загрузка шрифтов Roboto...");
+      const [regBase64, boldBase64] = await Promise.all([
+        loadFontAsBase64(FONT_URLS.regular),
+        loadFontAsBase64(FONT_URLS.bold)
+      ]);
+
+      if (regBase64 && boldBase64) {
+        window.CZ_FONT_REG_BASE64 = regBase64;
+        window.CZ_FONT_BOLD_BASE64 = boldBase64;
+        window.CZ_FONTS_LOADED = true;
+        console.log("✓ Шрифты Roboto загружены успешно");
+      } else {
+        console.warn("⚠ Не удалось загрузить шрифты, PDF будет использовать fallback");
+      }
+    } catch (e) {
+      console.error("Ошибка предзагрузки шрифтов:", e);
+    }
+  })();
+</script>
+
+<div class="cz-conf">
+  <div class="cfg-initial-loader">
+    <div class="cfg-bubbles">
+      <span></span><span></span><span></span><span></span>
+      <span></span><span></span><span></span><span></span>
+    </div>
+    <div class="cfg-loader-card">
+      <div class="cfg-coffee-icon">
+        <div class="cfg-coffee-steam">
+          <span></span><span></span><span></span>
+        </div>
+        <div class="cfg-coffee-cup"></div>
+        <div class="cfg-coffee-saucer"></div>
+      </div>
+      <div class="cfg-loader-text">Готовим конфигуратор:</div>
+    </div>
+  </div>
+  <div class="container">
+    <h1>Конфигуратор</h1>
+    <div class="main-content">
+      <div class="product-image">
+        <div class="cfg-loader is-hidden"></div>
+        <img class="cfg-main-image" src="" alt="Конфигурация">
+        <div class="cfg-zoom-lens"></div>
+      </div>
+      <div class="specs">
+        <div class="specs-column">
+          <div class="spec-card cfg-spec-machine">
+            <div class="spec-title">Кофемашина</div>
+            <div class="spec-name">—</div>
+            <ul class="spec-list"></ul>
+          </div>
+          <div class="spec-card cfg-spec-frame">
+            <div class="spec-title">Каркас</div>
+            <div class="spec-name">—</div>
+            <ul class="spec-list"></ul>
+          </div>
+        </div>
+        <div class="specs-column">
+          <div class="spec-card cfg-spec-fridge">
+            <div class="spec-title">Холодильник</div>
+            <div class="spec-name">—</div>
+            <ul class="spec-list"></ul>
+          </div>
+          <div class="spec-card cfg-spec-terminal">
+            <div class="spec-title">Терминал</div>
+            <div class="spec-name">—</div>
+            <ul class="spec-list"></ul>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="configurator-wrapper">
+      <div class="configurator">
+        <div class="config-item">
+          <label class="config-label">Кофемашина</label>
+          <select class="config-select cfg-select-machine">
+            <option value="">Загрузка...</option>
+          </select>
+        </div>
+
+        <div class="config-item">
+          <label class="config-label">Холодильник</label>
+          <select class="config-select cfg-select-fridge">
+            <option value="">Загрузка...</option>
+          </select>
+        </div>
+
+        <div class="config-item">
+          <label class="config-label">Терминал</label>
+          <select class="config-select cfg-select-terminal">
+            <option value="">Загрузка...</option>
+          </select>
+        </div>
+
+        <div class="config-item">
+          <label class="config-label">Каркас</label>
+          <select class="config-select cfg-select-frame">
+            <option value="">Загрузка...</option>
+          </select>
+        </div>
+
+        <div class="config-item">
+          <label class="config-label">Цвет каркаса</label>
+          <select class="config-select cfg-select-frame-color">
+            <option value="">-</option>
+          </select>
+        </div>
+
+        <div class="config-item">
+          <label class="config-label">Цвета дизайна</label>
+          <select class="config-select cfg-select-insert-color" disabled>
+            <option value="">-</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="price-section">
+        <div class="price-block">
+          <div class="price cfg-price-left">-</div>
+          <div class="ozon-tooltip-wrapper">
+            <div class="ozon-tooltip" id="ozon-tooltip">
+              <div class="ozon-tooltip-content">
+                <svg class="ozon-tooltip-icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#0064fc" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <circle cx="12" cy="12" r="10"/>
+                  <line x1="12" y1="16" x2="12" y2="12"/>
+                  <line x1="12" y1="8" x2="12.01" y2="8"/>
+                </svg>
+                <span>Данной конфигурации нет на OZON</span>
+              </div>
+            </div>
+            <a href="#" class="btn btn-primary cfg-btn-ozon" target="_blank" rel="noopener noreferrer">Купить на OZON</a>
+          </div>
+        </div>
+
+        <div class="price-block">
+          <div class="price cfg-price-right">-</div>
+          <button class="btn btn-secondary cfg-btn-quote">Запросить счёт</button>
+        </div>
+
+        <div class="price-block price-block-pdf">
+          <button class="btn-pdf cfg-btn-pdf" title="Скачать PDF">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M14 2H6C5.46957 2 4.96086 2.21071 4.58579 2.58579C4.21071 2.96086 4 3.46957 4 4V20C4 20.5304 4.21071 21.0391 4.58579 21.4142C4.96086 21.7893 5.46957 22 6 22H18C18.5304 22 19.0391 21.7893 19.4142 21.4142C19.7893 21.0391 20 20.5304 20 20V8L14 2Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+              <path d="M14 2V8H20" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+              <path d="M9 15H15" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+              <path d="M9 11H10" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+            <span>PDF</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="cfg-modal" id="cfg-quote-modal">
+  <div class="cfg-modal-overlay"></div>
+  <div class="cfg-modal-content">
+    <button class="cfg-modal-close" aria-label="Закрыть">×</button>
+    <h2>Запросить счёт</h2>
+    <form id="cfg-quote-form">
+      <div class="cfg-form-group">
+        <label for="cfg-lead-name">Имя</label>
+        <input type="text" id="cfg-lead-name" class="cfg-form-control" required>
+      </div>
+      <div class="cfg-form-group">
+        <label for="cfg-lead-phone">Телефон</label>
+        <input type="tel" id="cfg-lead-phone" class="cfg-form-control" required>
+      </div>
+      <div class="cfg-form-group">
+        <label for="cfg-lead-telegram">Telegram ID</label>
+        <input type="text" id="cfg-lead-telegram" class="cfg-form-control" placeholder="@username или ID">
+      </div>
+      <div class="cfg-form-group">
+        <label for="cfg-lead-email">Email</label>
+        <input type="email" id="cfg-lead-email" class="cfg-form-control">
+      </div>
+      <div class="cfg-form-group cfg-checkbox-group">
+        <label class="cfg-checkbox-label">
+          <input type="checkbox" id="cfg-lead-consent" class="cfg-checkbox">
+          <span>Я согласен(а) с <a href="https://93-170-123-229.nip.io/privacy-policy" target="_blank" class="cfg-link">обработкой персональных данных</a> <span class="cfg-required">*</span></span>
+        </label>
+      </div>
+      <button type="submit" class="btn btn-primary cfg-lead-submit" disabled>Отправить</button>
+      <div class="cfg-form-message"></div>
+    </form>
+  </div>
+</div>
+
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<script src="https://coffeezonefranchise.ru/script.js"></script>
