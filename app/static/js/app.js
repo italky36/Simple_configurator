@@ -365,6 +365,7 @@ document.addEventListener("DOMContentLoaded", () => {
             "model",
             "frame",
             "frame_color",
+            "frame_design_color",
             "refrigerator",
             "terminal",
             "price",

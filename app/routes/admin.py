@@ -85,6 +85,7 @@ def _build_machine_payload(
     model: Optional[str],
     frame: Optional[str],
     frame_color: Optional[str],
+    frame_design_color: Optional[str],
     refrigerator: Optional[str],
     terminal: Optional[str],
     price: Optional[str],
@@ -114,6 +115,7 @@ def _build_machine_payload(
         "model": model,
         "frame": frame,
         "frame_color": frame_color,
+        "frame_design_color": frame_design_color,
         "refrigerator": refrigerator,
         "terminal": terminal,
         "ozon_link": ozon_link,
@@ -151,6 +153,10 @@ def _build_machine_payload(
         data["price"] = None
     # При обновлении, если price пустая строка, не включаем в data (уже исключена выше)
 
+    # frame_design_color должен быть заполнен только для вариантов, доступных на Озон
+    if not data.get("ozon_link"):
+        data["frame_design_color"] = None
+
     return data
 
 
@@ -160,6 +166,7 @@ def create_machine(
     model: Optional[str] = Form(None),
     frame: Optional[str] = Form(None),
     frame_color: Optional[str] = Form(None),
+    frame_design_color: Optional[str] = Form(None),
     refrigerator: Optional[str] = Form(None),
     terminal: Optional[str] = Form(None),
     price: Optional[str] = Form(None),
@@ -180,6 +187,7 @@ def create_machine(
         model,
         frame,
         frame_color,
+        frame_design_color,
         refrigerator,
         terminal,
         price,
@@ -207,6 +215,7 @@ def update_machine(
     model: Optional[str] = Form(None),
     frame: Optional[str] = Form(None),
     frame_color: Optional[str] = Form(None),
+    frame_design_color: Optional[str] = Form(None),
     refrigerator: Optional[str] = Form(None),
     terminal: Optional[str] = Form(None),
     price: Optional[str] = Form(None),
@@ -230,6 +239,7 @@ def update_machine(
         model,
         frame,
         frame_color,
+        frame_design_color,
         refrigerator,
         terminal,
         price,

@@ -12,6 +12,7 @@ FIELD_HEADERS: List[Tuple[str, str]] = [
     ("model", "Модель оборудования"),
     ("frame", "Каркас"),
     ("frame_color", "Цвет каркаса"),
+    ("frame_design_color", "Цвет дизайна каркаса"),
     ("refrigerator", "Холодильник"),
     ("terminal", "Терминал"),
     ("price", "Цена"),
@@ -27,6 +28,9 @@ ALIAS_MAP = {
     "модель оборудования": "model",
     "каркас": "frame",
     "цвет каркаса": "frame_color",
+    "цвет дизайна каркаса": "frame_design_color",
+    "цвет дизайна": "frame_design_color",
+    "цвет вставки": "frame_design_color",
     "холодильник": "refrigerator",
     "терминал": "terminal",
     "цена": "price",
@@ -65,6 +69,9 @@ def _prepare_machine_data(raw: Dict[str, str]) -> Dict[str, str]:
     data = map_row_keys(raw)
     if not data.get("name"):
         data["name"] = data.get("model") or "Coffee Machine"
+    # frame_design_color используется только если есть ссылка на Озон
+    if not data.get("ozon_link"):
+        data["frame_design_color"] = None
     if "price" in data:
         data["price"] = _parse_price(data.get("price"))
     return {k: v for k, v in data.items() if v not in (None, "")}
@@ -89,6 +96,7 @@ def import_file(db: Session, file: UploadFile, update_existing: bool = True) -> 
             data.get("model"),
             data.get("frame"),
             data.get("frame_color"),
+            data.get("frame_design_color"),
             data.get("refrigerator"),
             data.get("terminal"),
         )
@@ -128,16 +136,17 @@ def export_xlsx(machines: Iterable[models.CoffeeMachine]) -> io.BytesIO:
         ws.append([getattr(machine, field, "") or "" for field, _ in FIELD_HEADERS])
     # Немного ширины по умолчанию
     widths = {
-        "A": 20,
-        "B": 16,
-        "C": 14,
-        "D": 14,
-        "E": 14,
-        "F": 10,
-        "G": 40,
-        "H": 40,
-        "I": 40,
-        "J": 24,
+        "A": 20,  # model
+        "B": 16,  # frame
+        "C": 14,  # frame_color
+        "D": 14,  # frame_design_color
+        "E": 14,  # refrigerator
+        "F": 14,  # terminal
+        "G": 10,  # price
+        "H": 40,  # ozon_link
+        "I": 40,  # graphic_link
+        "J": 40,  # main_image
+        "K": 24,  # gallery_folder
     }
     for col, width in widths.items():
         if col in ws.column_dimensions:

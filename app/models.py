@@ -14,6 +14,7 @@ class CoffeeMachine(Base):
     # Основные характеристики
     frame = Column(String(100))  # Каркас
     frame_color = Column(String(100))  # Цвет каркаса
+    frame_design_color = Column(String(100))  # Цвет дизайна каркаса (акцентные вставки для OZON)
     refrigerator = Column(String(100))  # Холодильник
     terminal = Column(String(100))  # Терминал
     price = Column(Float)

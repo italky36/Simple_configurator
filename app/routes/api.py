@@ -125,6 +125,7 @@ def machine_to_dict(
         "model": machine.model,
         "frame": machine.frame,
         "frame_color": machine.frame_color,
+        "frame_design_color": machine.frame_design_color,
         "refrigerator": machine.refrigerator,
         "terminal": machine.terminal,
         "price": machine.price,

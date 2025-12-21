@@ -22,6 +22,7 @@ def get_coffee_machine_by_signature(
     model: Optional[str],
     frame: Optional[str],
     frame_color: Optional[str],
+    frame_design_color: Optional[str],
     refrigerator: Optional[str],
     terminal: Optional[str],
 ) -> Optional[models.CoffeeMachine]:
@@ -31,6 +32,7 @@ def get_coffee_machine_by_signature(
             models.CoffeeMachine.model == model,
             models.CoffeeMachine.frame == frame,
             models.CoffeeMachine.frame_color == frame_color,
+            models.CoffeeMachine.frame_design_color == frame_design_color,
             models.CoffeeMachine.refrigerator == refrigerator,
             models.CoffeeMachine.terminal == terminal,
         )

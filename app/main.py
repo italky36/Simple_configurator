@@ -36,6 +36,11 @@ with engine.connect() as conn:
             conn.execute(text("ALTER TABLE coffee_machines ADD COLUMN main_image_path VARCHAR(500)"))
         except Exception:
             pass
+    if "frame_design_color" not in cols:
+        try:
+            conn.execute(text("ALTER TABLE coffee_machines ADD COLUMN frame_design_color VARCHAR(100)"))
+        except Exception:
+            pass
 
 
 @app.get("/")

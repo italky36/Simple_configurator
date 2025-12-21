@@ -17,6 +17,7 @@
                 <th class="sortable" data-sort-key="model">Кофемашина <span class="sort-indicator"></span><span class="table-resize-handle"></span></th>
                 <th class="sortable" data-sort-key="frame">Каркас <span class="sort-indicator"></span><span class="table-resize-handle"></span></th>
                 <th class="sortable" data-sort-key="frame_color">Цвет каркаса <span class="sort-indicator"></span><span class="table-resize-handle"></span></th>
+                <th class="sortable" data-sort-key="frame_design_color">Цвет дизайна каркаса <span class="sort-indicator"></span><span class="table-resize-handle"></span></th>
                 <th class="sortable" data-sort-key="refrigerator">Холодильник <span class="sort-indicator"></span><span class="table-resize-handle"></span></th>
                 <th class="sortable" data-sort-key="terminal">Терминал <span class="sort-indicator"></span><span class="table-resize-handle"></span></th>
                 <th class="sortable" data-sort-key="price">Цена <span class="sort-indicator"></span><span class="table-resize-handle"></span></th>
@@ -34,6 +35,7 @@
                 "model": machine.model or "",
                 "frame": machine.frame or "",
                 "frame_color": machine.frame_color or "",
+                "frame_design_color": machine.frame_design_color or "",
                 "refrigerator": machine.refrigerator or "",
                 "terminal": machine.terminal or "",
                 "price": machine.price or "",
@@ -50,6 +52,7 @@
                 <td class="text-break">{{ machine.model or machine.name or "-" }}</td>
                 <td>{{ machine.frame or "-" }}</td>
                 <td>{{ machine.frame_color or "-" }}</td>
+                <td>{{ machine.frame_design_color or "-" }}</td>
                 <td>{{ machine.refrigerator or "-" }}</td>
                 <td>{{ machine.terminal or "-" }}</td>
                 <td>{{ machine.price or "-" }}</td>
@@ -99,6 +102,10 @@
             <div class="col-md-6">
               <label class="form-label">Цвет каркаса</label>
               <input type="text" class="form-control" name="frame_color">
+            </div>
+            <div class="col-md-6">
+              <label class="form-label">Цвет дизайна каркаса (акцент для Озон)</label>
+              <input type="text" class="form-control" name="frame_design_color">
             </div>
             <div class="col-md-6">
               <label class="form-label">Холодильник</label>
