@@ -21,6 +21,13 @@
   const FRAME_COLORS = ["white", "black"];
   const INSERT_COLORS = ["yellow", "green", "red", "gray", "blue", "purple"];
 
+  // Цвета дизайна, которые временно скрываем из селектора (ключи нормализуются)
+  const HIDDEN_DESIGN_COLORS = {
+    orange: true,
+    оранжевый: true,
+    фиолетовый: true,
+  };
+
   // Маппинг английских ключей на русские названия
   const COLOR_LABELS = {
     white: "Белый",
@@ -70,6 +77,9 @@
     };
     return map[k] || k;
   };
+
+  const isHiddenDesignColor = (key) =>
+    !!HIDDEN_DESIGN_COLORS[normalizeColorKey(key)];
 
   // Предзагрузка изображения в кеш
   function preloadImage(src) {
@@ -347,6 +357,58 @@
     $sel.html(opts.join(""));
   }
 
+  function getAvailableDesignColorsForSelection() {
+    const mv = $el(".cfg-select-machine").val();
+    const frameVal = $el(".cfg-select-frame").val();
+    const frameColorVal = $el(".cfg-select-frame-color").val();
+    const fridgeVal = $el(".cfg-select-fridge").val();
+    const terminalVal = $el(".cfg-select-terminal").val();
+    const targetFrameColor = normalizeColorKey(frameColorVal);
+    const colors = new Set();
+
+    if (!frameVal || !frameColorVal) return [];
+
+    state.machines.forEach((m) => {
+      if (mv && normVal(m.model || m.name) !== normVal(mv)) return;
+      if (frameVal && normVal(m.frame) !== normVal(frameVal)) return;
+      if (
+        targetFrameColor &&
+        m.frame_color &&
+        normalizeColorKey(m.frame_color) !== targetFrameColor
+      )
+        return;
+      if (fridgeVal && normVal(m.refrigerator) !== normVal(fridgeVal)) return;
+      if (terminalVal && normVal(m.terminal) !== normVal(terminalVal)) return;
+
+      // Доступные цвета из design_images для выбранного цвета каркаса
+      if (m.design_images && targetFrameColor) {
+        Object.entries(m.design_images).forEach(([fc, inserts]) => {
+          if (normalizeColorKey(fc) !== targetFrameColor) return;
+          if (!inserts || typeof inserts !== "object") return;
+          Object.keys(inserts).forEach((ic) => {
+            const normIc = normalizeColorKey(ic);
+            if (normIc && !isHiddenDesignColor(normIc)) colors.add(normIc);
+          });
+        });
+      }
+
+      // Цвет дизайна каркаса из таблицы (маркер наличия ссылки на Ozon)
+      if (m.frame_design_color && m.ozon_link) {
+        const normFd = normalizeColorKey(m.frame_design_color);
+        const normFrameColor = normalizeColorKey(m.frame_color);
+        if (
+          (!targetFrameColor || normFrameColor === targetFrameColor) &&
+          normFd &&
+          !isHiddenDesignColor(normFd)
+        ) {
+          colors.add(normFd);
+        }
+      }
+    });
+
+    return Array.from(colors);
+  }
+
   function updateTerminalState() {
     const mv = $el(".cfg-select-machine").val();
     const $t = $el(".cfg-select-terminal");
@@ -361,8 +423,16 @@
   function updateInsertColorState() {
     const frameValue = ($el(".cfg-select-frame").val() || "").toLowerCase();
     const insertColorSelect = $el(".cfg-select-insert-color");
+    const availableColors = getAvailableDesignColorsForSelection();
 
-    if (!frameValue || frameValue === "нет" || frameValue === "no") {
+    populateColorSelect(insertColorSelect, availableColors, null);
+
+    if (
+      !frameValue ||
+      frameValue === "нет" ||
+      frameValue === "no" ||
+      !availableColors.length
+    ) {
       if (insertColorSelect.length) {
         insertColorSelect.prop("disabled", true);
         insertColorSelect.val("");
@@ -370,8 +440,12 @@
     } else {
       if (insertColorSelect.length) {
         insertColorSelect.prop("disabled", false);
-        if (!insertColorSelect.val()) {
-          insertColorSelect.val("blue");
+        const current = normalizeColorKey(insertColorSelect.val());
+        const hasCurrent = availableColors.some(
+          (c) => normalizeColorKey(c) === current
+        );
+        if (!hasCurrent) {
+          insertColorSelect.val(availableColors[0] || "");
         }
       }
     }
@@ -649,7 +723,6 @@
       m.map((x) => x.terminal),
       "Нет"
     );
-    populateColorSelect($el(".cfg-select-insert-color"), INSERT_COLORS, null);
 
     ensureMachineSelection();
     ensureFridgeSelection();
@@ -728,6 +801,33 @@
     return 0;
   }
 
+  function findOzonLinkForSelection() {
+    const mv = $el(".cfg-select-machine").val();
+    const fv = $el(".cfg-select-frame").val();
+    const fcv = normalizeColorKey($el(".cfg-select-frame-color").val());
+    const design = normalizeColorKey($el(".cfg-select-insert-color").val());
+    const rv = $el(".cfg-select-fridge").val();
+    const tv = $el(".cfg-select-terminal").val();
+
+    if (!design) return null;
+
+    const candidate = state.machines.find((m) => {
+      if (mv && normVal(m.model || m.name) !== normVal(mv)) return false;
+      if (fv && normVal(m.frame) !== normVal(fv)) return false;
+      if (fcv && normalizeColorKey(m.frame_color) !== fcv) return false;
+      if (rv && normVal(m.refrigerator) !== normVal(rv)) return false;
+      if (tv && normVal(m.terminal) !== normVal(tv)) return false;
+      if (
+        !m.frame_design_color ||
+        normalizeColorKey(m.frame_design_color) !== design
+      )
+        return false;
+      return !!m.ozon_link;
+    });
+
+    return candidate ? candidate.ozon_link : null;
+  }
+
   function findVariant(allowEmpty = true) {
     const mv = $el(".cfg-select-machine").val();
     const fv = $el(".cfg-select-frame").val();
@@ -769,6 +869,14 @@
       (v) => !excludedVariants.has(v.id) && baseFilter(v)
     );
 
+    const designMatch = matchesAll.filter(
+      (v) =>
+        normInsert &&
+        v.frame_design_color &&
+        normalizeColorKey(v.frame_design_color) === normInsert &&
+        v.ozon_link
+    );
+
     const exactWithImage = matchesAll.filter((v) =>
       hasDesignImageForSelection(v, normFcv, normInsert)
     );
@@ -797,8 +905,10 @@
       matchesAll: matchesAll.map(describe),
       withPairImage: exactWithImage.map(describe),
       withFrameImage: exactWithFrameImage.map(describe),
+      designMatch: designMatch.map(describe),
     });
 
+    if (designMatch.length) return designMatch[0];
     if (exactWithImage.length) return exactWithImage[0];
     if (exactWithFrameImage.length) return exactWithFrameImage[0];
 
@@ -1004,12 +1114,16 @@
     $priceLeft.empty();
     if (ozonBtn.length) {
       ozonBtn.text("Купить на OZON"); // Текст всегда одинаковый
+      const designSelected = !!normalizeColorKey(
+        $el(".cfg-select-insert-color").val()
+      );
+      const ozonLink = designSelected ? findOzonLinkForSelection() : null;
 
-      if (v.ozon_link) {
+      if (ozonLink) {
         ozonBtn
           .removeClass("disabled")
           .removeAttr("disabled")
-          .attr("href", v.ozon_link);
+          .attr("href", ozonLink);
         hideOzonTooltip();
       } else {
         ozonBtn
