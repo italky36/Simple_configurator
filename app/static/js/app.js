@@ -726,4 +726,61 @@ document.addEventListener("DOMContentLoaded", () => {
         });
         syncSpecsBulk();
     }
+
+    // Import/Export page: submit import without leaving the page
+    const importForm = document.getElementById("import-form");
+    const importFeedback = document.getElementById("import-feedback");
+    if (importForm && importFeedback) {
+        const setFeedback = (kind, html) => {
+            const klass = kind === "success" ? "alert-success" : "alert-danger";
+            importFeedback.innerHTML = `<div class="alert ${klass} mb-0" role="alert">${html}</div>`;
+        };
+
+        importForm.addEventListener("submit", async (e) => {
+            e.preventDefault();
+
+            const submitBtn = importForm.querySelector('button[type="submit"]');
+            const fileInput = importForm.querySelector('input[type="file"][name="file"]');
+            if (!fileInput || !fileInput.files || !fileInput.files.length) {
+                setFeedback("error", "Выберите файл для импорта.");
+                return;
+            }
+
+            const prevText = submitBtn ? submitBtn.textContent : "";
+            if (submitBtn) {
+                submitBtn.disabled = true;
+                submitBtn.textContent = "Импорт...";
+            }
+            importFeedback.innerHTML = '<div class="text-muted small">Импортируем файл, подождите...</div>';
+
+            try {
+                const resp = await fetch(importForm.action, {
+                    method: "POST",
+                    body: new FormData(importForm),
+                });
+
+                const contentType = (resp.headers.get("content-type") || "").toLowerCase();
+                const payload = contentType.includes("application/json") ? await resp.json() : { detail: await resp.text() };
+
+                if (!resp.ok) {
+                    const msg = typeof payload?.detail === "string" ? payload.detail : "Ошибка импорта";
+                    setFeedback("error", msg);
+                    return;
+                }
+
+                const created = payload?.created ?? 0;
+                const updated = payload?.updated ?? 0;
+                const detail = payload?.detail || "Импорт завершён";
+                setFeedback("success", `${detail}<br><b>Создано:</b> ${created} <b>Обновлено:</b> ${updated}`);
+            } catch (err) {
+                console.error(err);
+                setFeedback("error", "Не удалось выполнить импорт. Проверьте соединение и попробуйте ещё раз.");
+            } finally {
+                if (submitBtn) {
+                    submitBtn.disabled = false;
+                    submitBtn.textContent = prevText || "Загрузить";
+                }
+            }
+        });
+    }
 });
