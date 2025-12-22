@@ -1,5 +1,8 @@
-"""                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               scripts/auto_assign_design_images.py
+"""
+scripts/auto_assign_design_images.py
 Автоподбор main_image_path для design_images на основе структуры Seafile.
+
+ИСПРАВЛЕНА функция fuzzy_match для корректного сопоставления JL15 моделей.
 
 Структура на Seafile:
   /Конфигуратор/Графика/<model_dir>/<frame_dir>/<frame_color>/<insert_color>/<signature_folder>/<file.svg>
@@ -36,8 +39,8 @@ BASE_DIR = "/Конфигуратор/Графика"
 
 # === ВАРИАНТЫ "НЕТ" / "ОТСУТСТВУЕТ" (всё в нижнем регистре) ===
 NO_VALUE_VARIANTS = {
-    "нет", "net", "no", "none", "-", "",
-    "отсутствует", "null", "н/д", "—", "–"
+    "нет", "het", "net", "no", "none", "-", "",
+    "отсутствует", "null", "н/д", "-", "-"
 }
 
 # === МАППИНГ КАРКАСОВ: БД -> Seafile (ключи в нижнем регистре) ===
@@ -48,6 +51,20 @@ FRAME_MAPPING = {
     "coffeezone business": "business",
     "mini": "mini",
     "business": "business",
+}
+
+# Маппинг моделей из БД -> имя папки модели на Seafile (ключи в norm_key виде)
+MODEL_FOLDER_MAPPING = {
+    # JL36A
+    "jl36abt": "JL36A-BT-MW",
+    "jl36ast": "JL36A-ST-MW",
+    "jl36abtmw": "JL36A-BT-MW",
+    "jl36astmw": "JL36A-ST-MW",
+    # JL15
+    "jl15stpro": "JL15_VIVA-ST-MW-PRO",
+    "jl15btpro": "JL15_VIVA-BT-MW",
+    "jl15vivastmwpro": "JL15_VIVA-ST-MW-PRO",
+    "jl15vivabtmw": "JL15_VIVA-BT-MW",
 }
 
 # Варианты написания "Без_каркаса" на Seafile (в нижнем регистре, без разделителей)
@@ -113,9 +130,17 @@ def norm_key(val: str) -> str:
 
 def fuzzy_match(db_value: str, seafile_value: str) -> bool:
     """
-    Гибкое сопоставление названий с учетом версий и вариаций написания.
-    Например: 'Vendista v2.5' совпадает с 'vendista'
-              'MC16DAST' совпадает с 'MC16DAST'
+    УЛУЧШЕННАЯ ВЕРСИЯ: Гибкое сопоставление названий с учетом версий и вариаций написания.
+    
+    Специально обрабатывает случай JL15:
+    - БД: "JL15-BT PRO" или "JL15-ST PRO"
+    - Seafile: "JL15_VIVA-BT-MW" или "JL15_VIVA-ST-MW-PRO"
+    
+    Примеры:
+      'JL15-BT PRO' совпадает с 'JL15_VIVA-BT-MW' ✓
+      'JL15-ST PRO' совпадает с 'JL15_VIVA-ST-MW-PRO' ✓
+      'Vendista v2.5' совпадает с 'vendista' ✓
+      'MC16DAST' совпадает с 'MC16DAST' ✓
     """
     if not db_value or not seafile_value:
         return False
@@ -133,6 +158,41 @@ def fuzzy_match(db_value: str, seafile_value: str) -> bool:
     # Проверяем совпадение без версии
     if db_no_version == sf_norm:
         return True
+
+    # === СПЕЦИАЛЬНАЯ ЛОГИКА ДЛЯ JL15 ===
+    # Обрабатываем случаи типа "JL15-BT PRO" vs "JL15_VIVA-BT-MW"
+    if "jl15" in db_norm and "jl15" in sf_norm:
+        # Проверяем наличие BT или ST в обеих строках
+        db_has_bt = 'bt' in db_norm
+        db_has_st = 'st' in db_norm
+        sf_has_bt = 'bt' in sf_norm
+        sf_has_st = 'st' in sf_norm
+        
+        # Если в БД BT, а в Seafile ST (или наоборот) - НЕ совпадение
+        if (db_has_bt and sf_has_st and not sf_has_bt) or \
+           (db_has_st and sf_has_bt and not sf_has_st):
+            return False
+        
+        # Если оба содержат jl15 и оба содержат либо bt, либо st - совпадение!
+        if (db_has_bt and sf_has_bt) or (db_has_st and sf_has_st):
+            if VERBOSE:
+                print(f"  [fuzzy_match] JL15 match: '{db_value}' <-> '{seafile_value}'")
+            return True
+
+    # === СПЕЦИАЛЬНАЯ ЛОГИКА ДЛЯ JL36A ===
+    # Аналогично для других моделей
+    if "jl36" in db_norm and "jl36" in sf_norm:
+        db_has_bt = 'bt' in db_norm
+        db_has_st = 'st' in db_norm
+        sf_has_bt = 'bt' in sf_norm
+        sf_has_st = 'st' in sf_norm
+        
+        if (db_has_bt and sf_has_st and not sf_has_bt) or \
+           (db_has_st and sf_has_bt and not sf_has_st):
+            return False
+        
+        if (db_has_bt and sf_has_bt) or (db_has_st and sf_has_st):
+            return True
 
     # Частичное совпадение (seafile содержится в db или наоборот)
     if len(sf_norm) >= 3 and (sf_norm in db_norm or db_norm in sf_norm):
@@ -236,19 +296,21 @@ def pick_entry(items: List[dict], target: str) -> Optional[str]:
                 print(f"  [pick_entry] ✓ Совпадение (кириллица): '{name}'")
             return name
 
-        # Частичное совпадение (для случаев вроде "JL15_VIVA-ST-MW-PRO" vs "JL15_VIVA-ST-MW PRO")
-        if t_norm in name_norm or name_norm in t_norm:
-            candidates.append((name, 2))  # приоритет 2
-        elif t_simple in name_simple or name_simple in t_simple:
-            candidates.append((name, 1))  # приоритет 1 (кириллица)
+        # Частичное совпадение
+        score = 0
+        if t_norm and name_norm and (t_norm in name_norm or name_norm in t_norm):
+            score = 2
+        elif t_simple and name_simple and (t_simple in name_simple or name_simple in t_simple):
+            score = 1
+        if score:
+            candidates.append((score, name))
             if VERBOSE:
-                print(f"  [pick_entry] ~ Частичное совпадение (кириллица): '{name}' (simple: '{name_simple}')")
+                print(f"  [pick_entry] ~ Частичное совпадение: '{name}' (score={score})")
 
-    # Если есть кандидаты с частичным совпадением, выбираем с наивысшим приоритетом
+    # Если есть кандидаты с частичным совпадением, выбираем с наивысшим приоритетом, затем по длине
     if candidates:
-        # Сортируем по приоритету (выше лучше), затем по длине
-        candidates.sort(key=lambda x: (x[1], len(x[0])), reverse=True)
-        result = candidates[0][0]
+        candidates.sort(key=lambda x: (x[0], len(x[1])), reverse=True)
+        result = candidates[0][1]
         if VERBOSE:
             print(f"  [pick_entry] → Выбран из кандидатов: '{result}'")
         return result
@@ -327,10 +389,10 @@ def pick_file_for_insert(path: str, client: SeafileClient, machine: CoffeeMachin
         if VERBOSE:
             print(f"    [pick_file] Проверяем папку: '{folder_name}' -> model={sig_model}, fridge={sig_fridge}, terminal={sig_terminal}")
 
-        # Строгая проверка модели (регистронезависимо)
-        if machine.model and norm_key(sig_model) != norm_key(machine.model):
+        # Проверка модели (регистронезависимо, допускаем частичное совпадение)
+        if machine.model and not fuzzy_match(machine.model, sig_model):
             if VERBOSE:
-                print(f"    [pick_file]   ✗ Модель не совпадает")
+                print(f"    [pick_file]   ✗ Модель не совпадает (БД: {machine.model}, Seafile: {sig_model})")
             continue
 
         # Холодильник
@@ -414,7 +476,30 @@ def build_design_images(machine: CoffeeMachine, client: SeafileClient) -> Dict[s
         print(f"[{machine.id}] Не удалось открыть {BASE_DIR}: {exc}")
         return {}
 
-    model_dir = pick_entry(model_entries, machine.model or machine.name)
+    target_model = MODEL_FOLDER_MAPPING.get(norm_key(machine.model or machine.name), machine.model or machine.name)
+    model_dir = pick_entry(model_entries, target_model)
+    if not model_dir:
+        # Попробуем подобрать по частичному совпадению norm_key (fallback)
+        norm_target = norm_key(target_model)
+        candidates = []
+        for it in model_entries:
+            if it.get("type") != "dir":
+                continue
+            name = it.get("name") or ""
+            norm_name = norm_key(name)
+            score = 0
+            if norm_name == norm_target:
+                score = 3
+            elif norm_target and norm_name and (norm_target in norm_name or norm_name in norm_target):
+                score = 2
+            if score:
+                candidates.append((score, name))
+        if candidates:
+            candidates.sort(key=lambda x: (x[0], len(x[1])), reverse=True)
+            model_dir = candidates[0][1]
+            if VERBOSE:
+                print(f"  [fallback] Подобрана модель '{model_dir}' по частичному совпадению с '{target_model}'")
+
     if not model_dir:
         names = [it.get("name") for it in model_entries if it.get("type") == "dir"]
         print(
@@ -586,7 +671,7 @@ def main() -> None:
 
         # Сливаем с существующими
         existing = m.design_images if isinstance(m.design_images, dict) else {}
-        # deepcopy �ब�����, �⮡ࠦ����� �� ᮡᮡᮢ����� ��⮬���᪨ dict � ��६�� �ਨ���� SQLAlchemy
+        # deepcopy чтобы изображения не собсобствовались автоматически dict и не вызывали ошибку SQLAlchemy
         merged = copy.deepcopy(existing)
         for fc, inserts in design_images.items():
             merged.setdefault(fc, {})
@@ -621,6 +706,3 @@ if __name__ == "__main__":
         import sys
         sys.stderr.close()
         sys.exit(0)
-
-
-
