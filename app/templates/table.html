@@ -57,9 +57,12 @@
                 <td>{{ machine.terminal or "-" }}</td>
                 <td>{{ machine.price or "-" }}</td>
                 <td class="text-break cell-ellipsis" title="{{ machine.ozon_link or '-' }}">{{ machine.ozon_link or "-" }}</td>
-                <td class="text-break" title="{{ machine.main_image or '-' }}">
-                    {% if machine.main_image %}
-                        <img src="{{ machine.main_image }}" alt="main" class="thumb-img">
+                <td class="text-break" title="{{ (cached_main.get(machine.id) or (machine.main_image if machine.main_image and not machine.main_image.startswith('/static/cache/machines/') else None)) or '-' }}">
+                    {% set _cached = cached_main.get(machine.id) %}
+                    {% set _fallback = (machine.main_image if machine.main_image and not machine.main_image.startswith('/static/cache/machines/') else None) %}
+                    {% set _thumb = _cached or _fallback %}
+                    {% if _thumb %}
+                        <img src="{{ _thumb }}" alt="main" class="thumb-img" loading="lazy">
                     {% else %}-{% endif %}
                 </td>
                 <td class="text-break cell-ellipsis-wide" title="{{ machine.gallery_folder or '-' }}">{{ machine.gallery_folder or "-" }}</td>

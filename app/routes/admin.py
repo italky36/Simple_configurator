@@ -29,7 +29,8 @@ def admin_dashboard(request: Request, db=Depends(get_db)):
 @router.get("/table")
 def admin_table(request: Request, db=Depends(get_db)):
     machines = crud.get_coffee_machines(db)
-    return templates.TemplateResponse("table.html", {"request": request, "machines": machines})
+    cached_main = {m.id: media_cache.get_cached_main(m.id) for m in machines}
+    return templates.TemplateResponse("table.html", {"request": request, "machines": machines, "cached_main": cached_main})
 
 
 @router.get("/specs")
