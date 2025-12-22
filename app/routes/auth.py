@@ -19,7 +19,7 @@ def login_post(request: Request, username: str = Form(...), password: str = Form
         verify_credentials(type("cred", (), {"username": username, "password": password}))
     except Exception:
         return templates.TemplateResponse("login.html", {"request": request, "error": "Неверный логин или пароль"}, status_code=401)
-    resp = RedirectResponse(url="/admin/", status_code=303)
+    resp = RedirectResponse(url="/admin/table", status_code=303)
     return make_login_response(resp, username)
 
 

@@ -2,6 +2,7 @@ import json
 from typing import Dict, Optional
 
 from fastapi import APIRouter, Body, Depends, File, Form, HTTPException, Request, UploadFile
+from starlette.responses import RedirectResponse
 from fastapi.responses import JSONResponse, StreamingResponse
 from fastapi.templating import Jinja2Templates
 
@@ -22,8 +23,7 @@ seafile_client = SeafileClient(settings.seafile_server, settings.seafile_repo_id
 
 @router.get("/")
 def admin_dashboard(request: Request, db=Depends(get_db)):
-    machines = crud.get_coffee_machines(db, limit=5)
-    return templates.TemplateResponse("dashboard.html", {"request": request, "machines": machines})
+    return RedirectResponse(url="/admin/table", status_code=303)
 
 
 @router.get("/table")
