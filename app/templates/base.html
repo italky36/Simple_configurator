@@ -8,17 +8,18 @@
     <link href="{{ url_for('static', path='css/styles.css') }}" rel="stylesheet">
 </head>
 <body>
+    {% set _path = (request.url.path if request and request.url and request.url.path else '') %}
     <nav class="navbar navbar-expand-lg navbar-dark mb-4" style="background: linear-gradient(90deg, #ff8a00, #e52e71);">
         <div class="container-fluid">
-            <a class="navbar-brand fw-bold" href="/admin/table">☕ Coffee Admin</a>
+            <a class="navbar-brand fw-bold {% if _path.rstrip('/') == '/admin' %}cz-nav-active{% endif %}" href="/admin/table">☕ Coffee Admin</a>
             <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
                 <span class="navbar-toggler-icon"></span>
             </button>
             <div class="collapse navbar-collapse" id="navbarNav">
                 <ul class="navbar-nav me-auto">
-                    <li class="nav-item"><a class="nav-link" href="/admin/table">Таблица</a></li>
-                    <li class="nav-item"><a class="nav-link" href="/admin/specs">Характеристики</a></li>
-                    <li class="nav-item"><a class="nav-link" href="/admin/import_export">Импорт/Экспорт</a></li>
+                    <li class="nav-item"><a class="nav-link {% if _path.startswith('/admin/table') %}active cz-nav-active{% endif %}" href="/admin/table" {% if _path.startswith('/admin/table') %}aria-current="page"{% endif %}>Таблица</a></li>
+                    <li class="nav-item"><a class="nav-link {% if _path.startswith('/admin/specs') %}active cz-nav-active{% endif %}" href="/admin/specs" {% if _path.startswith('/admin/specs') %}aria-current="page"{% endif %}>Характеристики</a></li>
+                    <li class="nav-item"><a class="nav-link {% if _path.startswith('/admin/import_export') %}active cz-nav-active{% endif %}" href="/admin/import_export" {% if _path.startswith('/admin/import_export') %}aria-current="page"{% endif %}>Импорт/Экспорт</a></li>
                 </ul>
                 <span class="navbar-text">
                     <a class="text-light text-decoration-underline" href="/logout">Выйти</a>

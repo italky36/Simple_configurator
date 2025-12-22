@@ -15,6 +15,15 @@ body {
 .navbar-dark {
     box-shadow: 0 2px 8px rgba(0,0,0,0.18);
 }
+.navbar-dark .nav-link.cz-nav-active,
+.navbar-dark .navbar-brand.cz-nav-active {
+    text-decoration: underline;
+    text-underline-offset: 0.35em;
+    text-decoration-thickness: 2px;
+}
+.navbar-dark .nav-link.cz-nav-active {
+    font-weight: 600;
+}
 
 .table-sm td, .table-sm th {
     vertical-align: middle;
