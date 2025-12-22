@@ -71,6 +71,9 @@
       blue: "blue",
       синий: "blue",
       синяя: "blue",
+      orange: "orange", // ✅ ДОБАВЛЕНО
+      оранжевый: "orange", // ✅ ДОБАВЛЕНО
+      оранжевая: "orange", // ✅ ДОБАВЛЕНО
       purple: "purple",
       фиолетовый: "purple",
       фиолетовая: "purple",
@@ -171,6 +174,27 @@
         );
       }
     });
+
+    // ✅ ДОБАВЛЕНО: Отладка цветов дизайна
+    const uniqueDesignColors = new Set();
+    state.machines.forEach((m) => {
+      if (m.frame_design_color && m.ozon_link) {
+        uniqueDesignColors.add(m.frame_design_color);
+      }
+    });
+
+    console.log(
+      "🎨 Уникальные цвета дизайна с Ozon ссылками:",
+      Array.from(uniqueDesignColors)
+    );
+
+    console.log(
+      "🔄 После нормализации:",
+      Array.from(uniqueDesignColors).map((c) => ({
+        original: c,
+        normalized: normalizeColorKey(c),
+      }))
+    );
   }
 
   function loadCachedData() {
@@ -425,6 +449,9 @@
     const insertColorSelect = $el(".cfg-select-insert-color");
     const availableColors = getAvailableDesignColorsForSelection();
 
+    // ✅ СОХРАНЯЕМ текущее значение ДО пересоздания селектора
+    const currentValue = insertColorSelect.val();
+
     populateColorSelect(insertColorSelect, availableColors, null);
 
     if (
@@ -440,11 +467,16 @@
     } else {
       if (insertColorSelect.length) {
         insertColorSelect.prop("disabled", false);
-        const current = normalizeColorKey(insertColorSelect.val());
+        // ✅ ПРОВЕРЯЕМ сохранённое значение, а не текущее из пересозданного селектора
+        const current = normalizeColorKey(currentValue);
         const hasCurrent = availableColors.some(
           (c) => normalizeColorKey(c) === current
         );
-        if (!hasCurrent) {
+        if (hasCurrent) {
+          // ✅ Восстанавливаем сохранённое значение
+          insertColorSelect.val(currentValue);
+        } else {
+          // Только если текущее значение недоступно - берём первое
           insertColorSelect.val(availableColors[0] || "");
         }
       }
@@ -801,6 +833,7 @@
     return 0;
   }
 
+  // ✅ ИСПРАВЛЕНО: Добавлена отладка + поддержка вариантов без каркаса
   function findOzonLinkForSelection() {
     const mv = $el(".cfg-select-machine").val();
     const fv = $el(".cfg-select-frame").val();
@@ -809,21 +842,71 @@
     const rv = $el(".cfg-select-fridge").val();
     const tv = $el(".cfg-select-terminal").val();
 
-    if (!design) return null;
+    console.log("🔍 findOzonLinkForSelection - Поиск Ozon ссылки:", {
+      machine: mv,
+      frame: fv,
+      frameColor: fcv,
+      designColor: design,
+      fridge: rv,
+      terminal: tv,
+    });
 
-    const candidate = state.machines.find((m) => {
+    // ✅ ИСПРАВЛЕНО: Проверяем есть ли каркас
+    const hasFrame = fv && normVal(fv) !== "нет" && normVal(fv) !== "no";
+    
+    // Если есть каркас, но нет цвета дизайна - возвращаем null
+    if (hasFrame && !design) {
+      console.log("⚠️ Каркас выбран, но цвет дизайна не выбран");
+      return null;
+    }
+
+    // ✅ ДОБАВЛЕНО: Находим ВСЕ подходящие варианты для отладки
+    const allMatches = state.machines.filter((m) => {
       if (mv && normVal(m.model || m.name) !== normVal(mv)) return false;
       if (fv && normVal(m.frame) !== normVal(fv)) return false;
-      if (fcv && normalizeColorKey(m.frame_color) !== fcv) return false;
       if (rv && normVal(m.refrigerator) !== normVal(rv)) return false;
       if (tv && normVal(m.terminal) !== normVal(tv)) return false;
-      if (
-        !m.frame_design_color ||
-        normalizeColorKey(m.frame_design_color) !== design
-      )
-        return false;
+
+      // ✅ ИСПРАВЛЕНО: Для вариантов без каркаса не проверяем цвета
+      if (hasFrame) {
+        // Для вариантов С каркасом проверяем цвета
+        if (fcv && normalizeColorKey(m.frame_color) !== fcv) return false;
+
+        const machineDesignColor = normalizeColorKey(m.frame_design_color);
+        if (!m.frame_design_color || machineDesignColor !== design)
+          return false;
+      } else {
+        // Для вариантов БЕЗ каркаса проверяем что frame_color и frame_design_color пустые
+        const mFrame = normVal(m.frame);
+        if (mFrame !== "нет" && mFrame !== "no" && mFrame !== "") return false;
+      }
+
       return !!m.ozon_link;
     });
+
+    console.log(
+      `📊 Найдено ${allMatches.length} вариантов с Ozon ссылкой:`,
+      allMatches.map((m) => ({
+        id: m.id,
+        frame: m.frame,
+        frame_color: m.frame_color,
+        frame_design_color: m.frame_design_color,
+        ozon_link: m.ozon_link,
+      }))
+    );
+
+    const candidate = allMatches[0];
+
+    if (candidate) {
+      console.log("✅ Выбран вариант:", {
+        id: candidate.id,
+        frame: candidate.frame,
+        frame_design_color: candidate.frame_design_color,
+        ozon_link: candidate.ozon_link,
+      });
+    } else {
+      console.log("❌ Не найдено подходящих вариантов");
+    }
 
     return candidate ? candidate.ozon_link : null;
   }
@@ -1113,11 +1196,11 @@
     const ozonBtn = $el(".cfg-btn-ozon");
     $priceLeft.empty();
     if (ozonBtn.length) {
-      ozonBtn.text("Купить на OZON"); // Текст всегда одинаковый
-      const designSelected = !!normalizeColorKey(
-        $el(".cfg-select-insert-color").val()
-      );
-      const ozonLink = designSelected ? findOzonLinkForSelection() : null;
+      ozonBtn.text("Купить на OZON");
+
+      // ✅ ИСПРАВЛЕНО: Всегда вызываем findOzonLinkForSelection
+      // Она сама определит, нужна ли проверка цвета дизайна
+      const ozonLink = findOzonLinkForSelection();
 
       if (ozonLink) {
         ozonBtn
@@ -1696,13 +1779,21 @@
   }
 
   function bindEvents() {
+    // ✅ ИСПРАВЛЕНО: Разделяем обработчики для разных селекторов
+    // При изменении этих полей обновляем состояние цвета дизайна
     $(
-      ".cfg-select-machine, .cfg-select-frame, .cfg-select-frame-color, .cfg-select-fridge, .cfg-select-terminal, .cfg-select-insert-color"
+      ".cfg-select-machine, .cfg-select-frame, .cfg-select-frame-color, .cfg-select-fridge, .cfg-select-terminal"
     ).on("change", () => {
       ensureMachineSelection();
       ensureFridgeSelection();
       updateFrameColorState();
-      updateInsertColorState();
+      updateInsertColorState(); // Обновляем доступные цвета дизайна
+      updateImageLayout();
+      renderVariant(findVariant(true));
+    });
+
+    // При изменении самого цвета дизайна НЕ вызываем updateInsertColorState
+    $(".cfg-select-insert-color").on("change", () => {
       updateImageLayout();
       renderVariant(findVariant(true));
     });
