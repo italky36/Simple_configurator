@@ -1308,6 +1308,12 @@
     const phone = $("#cfg-lead-phone").val().trim();
     const telegram = $("#cfg-lead-telegram").val().trim();
     const email = $("#cfg-lead-email").val().trim();
+    const ozonLink = findOzonLinkForSelection();
+    const frameValue = $el(".cfg-select-frame").val();
+    const hasFrame = frameValue && normVal(frameValue) !== "нет" && normVal(frameValue) !== "no";
+    const insertColorVal = $el(".cfg-select-insert-color").val();
+    const insertColorKey = normalizeColorKey(insertColorVal);
+    const insertColorLabel = hasFrame ? (COLOR_LABELS[insertColorKey] || insertColorVal || "") : "";
 
     const payload = {
       name: name,
@@ -1320,10 +1326,11 @@
             machine: v.model || v.name,
             frame: v.frame,
             frame_color: v.frame_color,
+            insert_color: insertColorLabel,
             refrigerator: v.refrigerator,
             terminal: v.terminal,
             price: v.price,
-            ozon_link: v.ozon_link,
+            ozon_link: ozonLink,
             gallery_folder: v.gallery_folder,
           }
         : null,
@@ -1344,6 +1351,8 @@
       alert("Сначала выберите конфигурацию");
       return;
     }
+
+    const ozonLink = findOzonLinkForSelection();
 
     // Показываем индикатор загрузки
     const $btn = $(".cfg-btn-pdf");
@@ -1551,7 +1560,12 @@
 
       // Функция отрисовки блока спецификаций
       const drawSpecBlock = (spec, title, x, startY, maxWidth) => {
-        if (!spec || !spec.name || spec.name === "—") return startY;
+        if (
+          !spec ||
+          !spec.name ||
+          ["-", "—", "–"].includes(String(spec.name).trim())
+        )
+          return startY;
 
         let y = startY;
 
@@ -1648,7 +1662,7 @@
       }
 
       // OZON (если есть)
-      if (v.ozon_link) {
+      if (ozonLink) {
         const ozonX = tgX + linkBlockWidth;
         const ozonY = tgY;
 
@@ -1661,14 +1675,14 @@
         doc.setFontSize(7);
         doc.setTextColor(0, 100, 252);
         const ozonShort =
-          v.ozon_link.length > 35
-            ? v.ozon_link.substring(0, 35) + "..."
-            : v.ozon_link;
-        doc.textWithLink(ozonShort, ozonX, ozonY + 4, { url: v.ozon_link });
+          ozonLink.length > 35
+            ? ozonLink.substring(0, 35) + "..."
+            : ozonLink;
+        doc.textWithLink(ozonShort, ozonX, ozonY + 4, { url: ozonLink });
 
         // QR для OZON
         try {
-          const ozonQR = await generateQRCode(v.ozon_link);
+          const ozonQR = await generateQRCode(ozonLink);
           if (ozonQR) {
             doc.addImage(ozonQR, "PNG", ozonX, ozonY + 7, qrSize, qrSize);
           }

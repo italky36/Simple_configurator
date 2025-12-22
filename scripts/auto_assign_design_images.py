@@ -336,16 +336,60 @@ def pick_frame_entry(items: List[dict], db_frame: str) -> Optional[str]:
 
 def parse_signature_folder(name: str) -> Tuple[str, Optional[str], Optional[str]]:
     """
-    Парсит подпапку вида '4_JL15_VIVA-ST-MW PRO+MC6D-B+vendista' -> (model, fridge, terminal)
+    ИСПРАВЛЕНО: Парсит подпапку вида '4_JL15_VIVA-ST-MW PRO+MC6D-B+vendista' -> (model, fridge, terminal)
+    
+    Теперь правильно определяет, что является холодильником, а что терминалом:
+    - Холодильники: MC6D-B, MC16DAST, и т.д. (обычно содержат 'MC' или 'D')
+    - Терминалы: vendista, Vendista v2.5, и т.д. (обычно содержат 'vendista' или другие названия)
+    
+    Примеры:
+      '1_JL15_VIVA-BT-MW' -> ('JL15_VIVA-BT-MW', None, None)
+      '2_JL15_VIVA-BT-MW+vendista' -> ('JL15_VIVA-BT-MW', None, 'vendista')
+      '3_JL15_VIVA-BT-MW+MC6D-B' -> ('JL15_VIVA-BT-MW', 'MC6D-B', None)
+      '4_JL15_VIVA-BT-MW+MC6D-B+vendista' -> ('JL15_VIVA-BT-MW', 'MC6D-B', 'vendista')
     """
     if not name:
         return "", None, None
+    
     parts = name.split("_", 1)
     payload = parts[1] if len(parts) > 1 else parts[0]
-    tokens = payload.split("+")
-    model = tokens[0].strip() if tokens else ""
-    fridge = tokens[1].strip() if len(tokens) > 1 else None
-    terminal = tokens[2].strip() if len(tokens) > 2 else None
+    tokens = [t.strip() for t in payload.split("+")]
+    
+    model = tokens[0] if tokens else ""
+    fridge = None
+    terminal = None
+    
+    # Обрабатываем остальные токены (после модели)
+    for i in range(1, len(tokens)):
+        token = tokens[i]
+        token_lower = token.lower()
+        
+        # Определяем, холодильник это или терминал по паттерну имени
+        # Холодильники обычно содержат: MC, DAST, числа и дефисы
+        # Терминалы обычно содержат: vendista, vendor, или другие названия без MC
+        
+        is_fridge = False
+        is_terminal = False
+        
+        # Проверяем признаки холодильника
+        if 'mc' in token_lower or 'dast' in token_lower:
+            is_fridge = True
+        # Проверяем признаки терминала
+        elif 'vendista' in token_lower or 'vendor' in token_lower:
+            is_terminal = True
+        # Если непонятно, используем эвристику:
+        # - Если есть цифры И дефис/подчеркивание -> вероятно холодильник
+        # - Иначе -> вероятно терминал
+        elif any(c.isdigit() for c in token) and ('-' in token or '_' in token):
+            is_fridge = True
+        else:
+            is_terminal = True
+        
+        if is_fridge:
+            fridge = token
+        elif is_terminal:
+            terminal = token
+    
     return model, fridge, terminal
 
 
@@ -416,6 +460,10 @@ def pick_file_for_insert(path: str, client: SeafileClient, machine: CoffeeMachin
             if sig_terminal and not fuzzy_match(machine.terminal, sig_terminal):
                 if VERBOSE:
                     print(f"    [pick_file]   ✗ Терминал не совпадает (БД: {machine.terminal}, Seafile: {sig_terminal})")
+                continue
+            if not sig_terminal:
+                if VERBOSE:
+                    print(f"    [pick_file]   ✗ Терминал требуется, но не указан в папке")
                 continue
         else:
             if sig_terminal:

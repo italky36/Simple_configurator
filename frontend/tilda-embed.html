@@ -349,33 +349,16 @@ body {
 .cz-conf .specs {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 35px 20px;
+  column-gap: 20px;
   padding-top: 18px;
   padding-bottom: 18px;
+  align-items: start;
 }
 
 .cz-conf .specs-column {
-  display: contents;
-}
-
-.cz-conf .cfg-spec-machine {
-  grid-column: 1;
-  grid-row: 1;
-}
-
-.cz-conf .cfg-spec-fridge {
-  grid-column: 2;
-  grid-row: 1;
-}
-
-.cz-conf .cfg-spec-frame {
-  grid-column: 1;
-  grid-row: 2;
-}
-
-.cz-conf .cfg-spec-terminal {
-  grid-column: 2;
-  grid-row: 2;
+  display: flex;
+  flex-direction: column;
+  gap: 35px;
 }
 
 .cz-conf .spec-block {
@@ -778,6 +761,10 @@ body {
     padding-top: 10px;
     padding-bottom: 10px;
     gap: 25px;
+  }
+
+  .cz-conf .specs-column {
+    display: contents;
   }
 
   .cz-conf .cfg-spec-machine,

@@ -1,21 +1,60 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="ru">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta http-equiv="X-UA-Compatible" content="IE=edge">
-  <title>Конфигуратор кофемашин</title>
-  
-  <!-- Google Fonts: Montserrat -->
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700&display=swap" rel="stylesheet">
-  
-  <!-- Стили конфигуратора -->
-  <link rel="stylesheet" href="styles.css">
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Конфигуратор</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700&display=swap" rel="stylesheet" />
+
+  <link rel="stylesheet" href="styles.css" />
+
+  <script>
+    // Для простого веб-сервера: статика (fonts/...) лежит рядом с index.html
+    window.CZ_ASSETS_BASE = ".";
+
+    // В index.html шрифты предзагружаются в base64 для PDF.
+    window.CZ_FONT_REG_BASE64 = null;
+    window.CZ_FONT_BOLD_BASE64 = null;
+    window.CZ_FONTS_LOADED = false;
+
+    (async function () {
+      const FONT_URLS = {
+        regular: "fonts/Roboto-Regular.ttf",
+        bold: "fonts/Roboto-Bold.ttf",
+      };
+
+      async function loadFontAsBase64(url) {
+        const response = await fetch(url);
+        if (!response.ok) throw new Error("HTTP " + response.status);
+        const buffer = await response.arrayBuffer();
+        let binary = "";
+        const bytes = new Uint8Array(buffer);
+        const chunkSize = 8192;
+        for (let i = 0; i < bytes.length; i += chunkSize) {
+          const chunk = bytes.subarray(i, i + chunkSize);
+          binary += String.fromCharCode.apply(null, chunk);
+        }
+        return btoa(binary);
+      }
+
+      try {
+        const [regBase64, boldBase64] = await Promise.all([
+          loadFontAsBase64(FONT_URLS.regular),
+          loadFontAsBase64(FONT_URLS.bold),
+        ]);
+        window.CZ_FONT_REG_BASE64 = regBase64;
+        window.CZ_FONT_BOLD_BASE64 = boldBase64;
+        window.CZ_FONTS_LOADED = true;
+      } catch (err) {
+        console.warn("Не удалось предзагрузить шрифты Roboto для PDF:", err);
+      }
+    })();
+  </script>
 </head>
 <body>
-
 <div class="cz-conf">
   <div class="cfg-initial-loader">
     <div class="cfg-bubbles">
@@ -30,45 +69,44 @@
         <div class="cfg-coffee-cup"></div>
         <div class="cfg-coffee-saucer"></div>
       </div>
-      <div class="cfg-loader-text">Готовим конфигуратор…</div>
+      <div class="cfg-loader-text">Готовим конфигуратор:</div>
     </div>
   </div>
   <div class="container">
     <h1>Конфигуратор</h1>
-
     <div class="main-content">
       <div class="product-image">
+        <div class="cfg-loader is-hidden"></div>
         <img class="cfg-main-image" src="" alt="Конфигурация">
-        <div class="cfg-gallery"></div>
+        <div class="cfg-zoom-lens"></div>
       </div>
-
       <div class="specs">
-        <div class="spec-block cfg-spec-machine">
-          <div class="spec-title">Кофемашина</div>
-          <div class="spec-name">—</div>
-          <ul class="spec-list"></ul>
+        <div class="specs-column">
+          <div class="spec-card cfg-spec-machine">
+            <div class="spec-title">Кофемашина</div>
+            <div class="spec-name">—</div>
+            <ul class="spec-list"></ul>
+          </div>
+          <div class="spec-card cfg-spec-frame">
+            <div class="spec-title">Каркас</div>
+            <div class="spec-name">—</div>
+            <ul class="spec-list"></ul>
+          </div>
         </div>
-
-        <div class="spec-block cfg-spec-fridge">
-          <div class="spec-title">Холодильник</div>
-          <div class="spec-name">—</div>
-          <ul class="spec-list"></ul>
-        </div>
-
-        <div class="spec-block cfg-spec-frame">
-          <div class="spec-title">Каркас</div>
-          <div class="spec-name">—</div>
-          <ul class="spec-list"></ul>
-        </div>
-
-        <div class="spec-block cfg-spec-terminal">
-          <div class="spec-title">Терминал</div>
-          <div class="spec-name">—</div>
-          <ul class="spec-list"></ul>
+        <div class="specs-column">
+          <div class="spec-card cfg-spec-fridge">
+            <div class="spec-title">Холодильник</div>
+            <div class="spec-name">—</div>
+            <ul class="spec-list"></ul>
+          </div>
+          <div class="spec-card cfg-spec-terminal">
+            <div class="spec-title">Терминал</div>
+            <div class="spec-name">—</div>
+            <ul class="spec-list"></ul>
+          </div>
         </div>
       </div>
     </div>
-
     <div class="configurator-wrapper">
       <div class="configurator">
         <div class="config-item">
@@ -102,26 +140,38 @@
         <div class="config-item">
           <label class="config-label">Цвет каркаса</label>
           <select class="config-select cfg-select-frame-color">
-            <option value="">—</option>
+            <option value="">-</option>
           </select>
         </div>
 
         <div class="config-item">
           <label class="config-label">Цвета дизайна</label>
           <select class="config-select cfg-select-insert-color" disabled>
-            <option value="">—</option>
+            <option value="">-</option>
           </select>
         </div>
       </div>
 
       <div class="price-section">
         <div class="price-block">
-          <div class="price cfg-price-left">—</div>
-          <a href="#" class="btn btn-primary cfg-btn-ozon" target="_blank" rel="noopener noreferrer">Купить на OZON</a>
+          <div class="price cfg-price-left">-</div>
+          <div class="ozon-tooltip-wrapper">
+            <div class="ozon-tooltip" id="ozon-tooltip">
+              <div class="ozon-tooltip-content">
+                <svg class="ozon-tooltip-icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#0064fc" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <circle cx="12" cy="12" r="10"/>
+                  <line x1="12" y1="16" x2="12" y2="12"/>
+                  <line x1="12" y1="8" x2="12.01" y2="8"/>
+                </svg>
+                <span>Данной конфигурации нет на OZON</span>
+              </div>
+            </div>
+            <a href="#" class="btn btn-primary cfg-btn-ozon" target="_blank" rel="noopener noreferrer">Купить на OZON</a>
+          </div>
         </div>
 
         <div class="price-block">
-          <div class="price cfg-price-right">—</div>
+          <div class="price cfg-price-right">-</div>
           <button class="btn btn-secondary cfg-btn-quote">Запросить счёт</button>
         </div>
 
@@ -141,57 +191,44 @@
   </div>
 </div>
 
-<!-- Модальное окно формы запроса счёта -->
 <div class="cfg-modal" id="cfg-quote-modal">
   <div class="cfg-modal-overlay"></div>
   <div class="cfg-modal-content">
-    <button class="cfg-modal-close" aria-label="Закрыть">&times;</button>
-    <h2 class="cfg-modal-title">Запросить счёт</h2>
-    <form class="cfg-quote-form" id="cfg-quote-form">
+    <button class="cfg-modal-close" aria-label="Закрыть">×</button>
+    <h2>Запросить счёт</h2>
+    <form id="cfg-quote-form">
       <div class="cfg-form-group">
-        <label for="cfg-lead-name">Имя <span class="cfg-required">*</span></label>
+        <label for="cfg-lead-name">Имя</label>
         <input type="text" id="cfg-lead-name" class="cfg-form-control" required>
       </div>
-
       <div class="cfg-form-group">
-        <label for="cfg-lead-phone">Номер телефона <span class="cfg-required">*</span></label>
+        <label for="cfg-lead-phone">Телефон</label>
         <input type="tel" id="cfg-lead-phone" class="cfg-form-control" required>
       </div>
-
       <div class="cfg-form-group">
         <label for="cfg-lead-telegram">Telegram ID</label>
         <input type="text" id="cfg-lead-telegram" class="cfg-form-control" placeholder="@username или ID">
       </div>
-
       <div class="cfg-form-group">
         <label for="cfg-lead-email">Email</label>
         <input type="email" id="cfg-lead-email" class="cfg-form-control">
       </div>
-
       <div class="cfg-form-group cfg-checkbox-group">
         <label class="cfg-checkbox-label">
           <input type="checkbox" id="cfg-lead-consent" class="cfg-checkbox">
           <span>Я согласен(а) с <a href="https://93-170-123-229.nip.io/privacy-policy" target="_blank" class="cfg-link">обработкой персональных данных</a> <span class="cfg-required">*</span></span>
         </label>
       </div>
-
       <button type="submit" class="btn btn-primary cfg-lead-submit" disabled>Отправить</button>
       <div class="cfg-form-message"></div>
     </form>
   </div>
 </div>
 
-<!-- jQuery -->
-<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 
-<!-- jsPDF для генерации PDF -->
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-
-<!-- QR Code генератор -->
-<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
-
-<!-- Скрипт конфигуратора -->
-<script src="script.js"></script>
-
+  <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+  <script src="script.js"></script>
 </body>
 </html>

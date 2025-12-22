@@ -111,6 +111,10 @@ def pick_file_in_no_frame(path: str, client: SeafileClient, machine: CoffeeMachi
                 if base.VERBOSE:
                     print(f"    [pick_file_no_frame]   ✗ Терминал не совпадает (БД: {machine.terminal}, Seafile: {sig_terminal})")
                 continue
+            if not sig_terminal:
+                if base.VERBOSE:
+                    print(f"    [pick_file_no_frame]   ✗ Терминал требуется, но не указан в папке")
+                continue
         else:
             if sig_terminal:
                 if base.VERBOSE:

@@ -315,12 +315,22 @@ def send_to_telegram(lead_data: Dict[str, Any]) -> bool:
 
     selection = lead_data.get('selection')
     if selection:
+        frame_raw = str(selection.get("frame") or "").strip().lower()
+        has_frame = frame_raw not in ("", "нет", "no", "-", "none")
+        insert_color = str(selection.get("insert_color") or "").strip()
+
         message_lines.extend([
             "",
             "⚙️ <b>Выбранная конфигурация:</b>",
             f"• Кофемашина: {selection.get('machine', '-')}",
             f"• Каркас: {selection.get('frame', '-')}",
             f"• Цвет каркаса: {selection.get('frame_color', '-')}",
+        ])
+
+        if has_frame and insert_color:
+            message_lines.append(f"• Цвет дизайна: {insert_color}")
+
+        message_lines.extend([
             f"• Холодильник: {selection.get('refrigerator', '-')}",
             f"• Терминал: {selection.get('terminal', '-')}",
             f"• Цена: {selection.get('price', '-')} ₽",
