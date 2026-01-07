@@ -172,6 +172,77 @@
     return Number.isInteger(rounded) ? String(rounded) : rounded.toFixed(1);
   };
 
+  const UE_COUNTUP_MS = 350;
+  const prefersReducedMotion =
+    typeof window !== "undefined" &&
+    window.matchMedia &&
+    window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+  const easeOutCubic = (t) => 1 - Math.pow(1 - t, 3);
+
+  const formatMonths = (value) => {
+    if (!Number.isFinite(value)) return "—";
+    const rounded = Math.round(value * 10) / 10;
+    return `${rounded.toLocaleString("ru-RU")} мес.`;
+  };
+
+  const animateNumber = ($el, target, formatter, options = {}) => {
+    if (!$el.length) return;
+    if (!Number.isFinite(target)) {
+      $el.text("—");
+      $el.removeData("num");
+      return;
+    }
+
+    const animate = options.animate !== false;
+    const duration = options.duration || UE_COUNTUP_MS;
+    const previous = $el.data("num");
+    const start = Number.isFinite(previous) ? previous : target;
+
+    if (!animate || prefersReducedMotion || start === target) {
+      $el.text(formatter(target));
+      $el.data("num", target);
+      return;
+    }
+
+    const prevFrame = $el.data("animFrame");
+    if (prevFrame) {
+      cancelAnimationFrame(prevFrame);
+    }
+
+    const from = start;
+    const to = target;
+    const startTime = performance.now();
+
+    const step = (now) => {
+      const t = Math.min(1, (now - startTime) / duration);
+      const eased = easeOutCubic(t);
+      const current = from + (to - from) * eased;
+      $el.text(formatter(current));
+      if (t < 1) {
+        const frameId = requestAnimationFrame(step);
+        $el.data("animFrame", frameId);
+      } else {
+        $el.text(formatter(to));
+        $el.data("num", to);
+        $el.removeData("animFrame");
+      }
+    };
+
+    const frameId = requestAnimationFrame(step);
+    $el.data("animFrame", frameId);
+  };
+
+  const clamp01 = (value) => Math.max(0, Math.min(1, value));
+
+  const getProfitColor = (ratio) => {
+    const startHue = 210;
+    const endHue = 125;
+    const t = clamp01(ratio);
+    const hue = startHue + (endHue - startHue) * t;
+    return `hsl(${hue}, 75%, 42%)`;
+  };
+
   const normSrc = (src) => {
     if (!src) return "";
     if (/^(https?:)?\/\//i.test(src) || src.startsWith("data:")) return src;
@@ -420,6 +491,7 @@
     const $calc = $(".ue-calc");
     if (!$calc.length) return;
     const syncInputs = options.syncInputs !== false;
+    const animateNumbers = options.animate !== false;
 
     const price = readUeControl(
       $calc.find("[data-ue='price-range']"),
@@ -441,12 +513,41 @@
     const partnerProfit = net * share.partner;
     const companyShare = net * share.company;
     const perDay = monthly / 30;
+    const maxMonthly = parseNumber($calc.find("[data-ue='monthly-range']").attr("max"));
+    const profitRatio =
+      Number.isFinite(maxMonthly) && maxMonthly > 0 ? monthly / maxMonthly : 0;
+    $calc[0].style.setProperty("--ue-profit-color", getProfitColor(profitRatio));
 
-    $calc.find("[data-ue='per-day']").text(formatCount(perDay));
-    $calc.find("[data-ue='gross']").text(formatRub(gross));
-    $calc.find("[data-ue='net']").text(formatRub(net));
-    $calc.find("[data-ue='partner-share']").text(formatRub(partnerProfit));
-    $calc.find("[data-ue='company-share']").text(formatRub(companyShare));
+    animateNumber(
+      $calc.find("[data-ue='per-day']"),
+      perDay,
+      formatCount,
+      { animate: animateNumbers }
+    );
+    animateNumber(
+      $calc.find("[data-ue='gross']"),
+      gross,
+      formatRub,
+      { animate: animateNumbers }
+    );
+    animateNumber(
+      $calc.find("[data-ue='net']"),
+      net,
+      formatRub,
+      { animate: animateNumbers }
+    );
+    animateNumber(
+      $calc.find("[data-ue='partner-share']"),
+      partnerProfit,
+      formatRub,
+      { animate: animateNumbers }
+    );
+    animateNumber(
+      $calc.find("[data-ue='company-share']"),
+      companyShare,
+      formatRub,
+      { animate: animateNumbers }
+    );
     $calc
       .find("[data-ue='partner-label']")
       .text(`Партнер (${Math.round(share.partner * 100)}%)`);
@@ -462,25 +563,38 @@
       $piePartner.css("stroke-dasharray", `${partnerLen} ${restLen}`);
       $piePartner.css("stroke-dashoffset", "0");
     }
-    $calc.find("[data-ue='partner-percent']").text(`${partnerPercent}%`);
-    $calc.find("[data-ue='partner-profit']").text(formatRub(partnerProfit));
+    animateNumber(
+      $calc.find("[data-ue='partner-percent']"),
+      partnerPercent,
+      (value) => `${Math.round(value)}%`,
+      { animate: animateNumbers }
+    );
+    animateNumber(
+      $calc.find("[data-ue='partner-profit']"),
+      partnerProfit,
+      formatRub,
+      { animate: animateNumbers }
+    );
 
     const investment = parseNumber(variant && variant.price);
     const $investmentValue = $calc.find("[data-ue='investment-value']");
     const $paybackValue = $calc.find("[data-ue='payback-value']");
 
     if (mode === UE_MODES.OWN && Number.isFinite(investment)) {
-      $investmentValue.text(formatRub(investment));
-      if (partnerProfit > 0) {
-        const months = investment / partnerProfit;
-        const rounded = Math.round(months * 10) / 10;
-        $paybackValue.text(`${rounded.toLocaleString("ru-RU")} мес.`);
-      } else {
-        $paybackValue.text("—");
-      }
+      animateNumber($investmentValue, investment, formatRub, {
+        animate: animateNumbers,
+      });
+      const months = partnerProfit > 0 ? investment / partnerProfit : Number.NaN;
+      animateNumber($paybackValue, months, formatMonths, {
+        animate: animateNumbers,
+      });
     } else {
-      $investmentValue.text("—");
-      $paybackValue.text("—");
+      animateNumber($investmentValue, Number.NaN, formatRub, {
+        animate: false,
+      });
+      animateNumber($paybackValue, Number.NaN, formatMonths, {
+        animate: false,
+      });
     }
   }
 
@@ -491,10 +605,69 @@
     const initialMode = $calc.attr("data-ue-mode") || UE_MODES.OWN;
     setUnitEconomicsMode(initialMode, true);
 
+    let suppressToggleClick = false;
+
     $calc.find(".ue-toggle-btn").on("click", function () {
+      if (suppressToggleClick) {
+        suppressToggleClick = false;
+        return;
+      }
       const mode = $(this).data("ue-mode");
       setUnitEconomicsMode(mode);
     });
+
+    const $toggle = $calc.find(".ue-toggle");
+    if ($toggle.length) {
+      const toggleEl = $toggle[0];
+      let dragging = false;
+      let lastRatio = 0;
+      let dragStartX = 0;
+      let dragMoved = false;
+      let dragRect = null;
+
+      const setDragRatio = (ratio) => {
+        lastRatio = clamp01(ratio);
+        toggleEl.style.setProperty("--ue-toggle-x", lastRatio);
+      };
+
+      const onPointerDown = (event) => {
+        if (event.button !== undefined && event.button !== 0) return;
+        dragging = true;
+        dragMoved = false;
+        dragStartX = event.clientX;
+        dragRect = toggleEl.getBoundingClientRect();
+        $toggle.addClass("is-dragging");
+        toggleEl.setPointerCapture(event.pointerId);
+        setDragRatio((event.clientX - dragRect.left) / dragRect.width);
+        event.preventDefault();
+      };
+
+      const onPointerMove = (event) => {
+        if (!dragging || !dragRect) return;
+        if (!dragMoved && Math.abs(event.clientX - dragStartX) > 6) {
+          dragMoved = true;
+        }
+        setDragRatio((event.clientX - dragRect.left) / dragRect.width);
+      };
+
+      const onPointerUp = (event) => {
+        if (!dragging) return;
+        dragging = false;
+        dragRect = null;
+        $toggle.removeClass("is-dragging");
+        try {
+          toggleEl.releasePointerCapture(event.pointerId);
+        } catch (e) {}
+        toggleEl.style.removeProperty("--ue-toggle-x");
+        suppressToggleClick = dragMoved;
+        setUnitEconomicsMode(lastRatio >= 0.5 ? UE_MODES.RENT : UE_MODES.OWN);
+      };
+
+      toggleEl.addEventListener("pointerdown", onPointerDown);
+      toggleEl.addEventListener("pointermove", onPointerMove);
+      toggleEl.addEventListener("pointerup", onPointerUp);
+      toggleEl.addEventListener("pointercancel", onPointerUp);
+    }
 
     const $priceRange = $calc.find("[data-ue='price-range']");
     const $priceInput = $calc.find("[data-ue='price-input']");
@@ -525,10 +698,14 @@
         $priceRange.val(rawValue);
       }
       setUeWarning($priceWarning, "price", getWarningMessage(rawValue, min, max, "₽"));
-      updateUnitEconomics(state.current, { syncInputs: false, priceOverride: raw });
+      updateUnitEconomics(state.current, {
+        syncInputs: false,
+        priceOverride: raw,
+        animate: false,
+      });
     };
 
-    const commitPriceInput = (raw) => {
+    const commitPriceInput = (raw, animate = true) => {
       const min = parseNumber($priceRange.attr("min"));
       const max = parseNumber($priceRange.attr("max"));
       const rawValue = parseNumber(raw);
@@ -536,7 +713,7 @@
       $priceRange.val(value);
       $priceInput.val(value);
       setUeWarning($priceWarning, "price", getWarningMessage(rawValue, min, max, "₽"));
-      updateUnitEconomics(state.current);
+      updateUnitEconomics(state.current, { animate });
     };
 
     const previewMonthlyInput = (raw) => {
@@ -547,10 +724,14 @@
         $monthlyRange.val(rawValue);
       }
       setUeWarning($monthlyWarning, "monthly", getWarningMessage(rawValue, min, max, "шт."));
-      updateUnitEconomics(state.current, { syncInputs: false, monthlyOverride: raw });
+      updateUnitEconomics(state.current, {
+        syncInputs: false,
+        monthlyOverride: raw,
+        animate: false,
+      });
     };
 
-    const commitMonthlyInput = (raw) => {
+    const commitMonthlyInput = (raw, animate = true) => {
       const min = parseNumber($monthlyRange.attr("min"));
       const max = parseNumber($monthlyRange.attr("max"));
       const rawValue = parseNumber(raw);
@@ -558,11 +739,13 @@
       $monthlyRange.val(value);
       $monthlyInput.val(value);
       setUeWarning($monthlyWarning, "monthly", getWarningMessage(rawValue, min, max, "шт."));
-      updateUnitEconomics(state.current);
+      updateUnitEconomics(state.current, { animate });
     };
 
-    $priceRange.on("input change", () => commitPriceInput($priceRange.val()));
-    $monthlyRange.on("input change", () => commitMonthlyInput($monthlyRange.val()));
+    $priceRange.on("input", () => commitPriceInput($priceRange.val(), false));
+    $priceRange.on("change", () => commitPriceInput($priceRange.val(), true));
+    $monthlyRange.on("input", () => commitMonthlyInput($monthlyRange.val(), false));
+    $monthlyRange.on("change", () => commitMonthlyInput($monthlyRange.val(), true));
 
     $priceInput.on("input", () => previewPriceInput($priceInput.val()));
     $priceInput.on("change", () => commitPriceInput($priceInput.val()));

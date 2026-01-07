@@ -1116,27 +1116,73 @@ body {
 }
 
 .cz-conf .ue-toggle {
+  position: relative;
   display: flex;
   border: 1px solid #d9dde3;
   border-radius: 999px;
-  background: #ffffff;
+  background: #eef2f7;
+  padding: 3px;
   overflow: hidden;
+  box-shadow: inset 0 1px 2px rgba(15, 23, 42, 0.08);
+  --ue-toggle-x: 0;
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.cz-conf .ue-calc[data-ue-mode="rent"] .ue-toggle {
+  --ue-toggle-x: 1;
+}
+
+.cz-conf .ue-toggle::before {
+  content: "";
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: calc(50% - 3px);
+  height: calc(100% - 6px);
+  background: #0064fc;
+  border-radius: 999px;
+  box-shadow: 0 8px 14px rgba(0, 100, 252, 0.28);
+  transform: translateX(calc(var(--ue-toggle-x) * 100%));
+  transition: transform 0.25s ease;
+  will-change: transform;
+}
+
+.cz-conf .ue-toggle:hover::before {
+  box-shadow: 0 10px 18px rgba(0, 100, 252, 0.35);
+}
+
+.cz-conf .ue-toggle.is-dragging::before {
+  transition: none;
 }
 
 .cz-conf .ue-toggle-btn {
   flex: 1;
-  padding: 10px 14px;
+  padding: 11px 16px;
   border: none;
   background: transparent;
+  border-radius: 999px;
   font-size: 13px;
   font-weight: 600;
-  color: #111;
+  color: #475569;
   cursor: pointer;
-  transition: background-color 0.2s ease, color 0.2s ease;
+  transition: background-color 0.2s ease, color 0.2s ease,
+    box-shadow 0.2s ease, transform 0.2s ease;
+  position: relative;
+  z-index: 1;
+}
+
+.cz-conf .ue-toggle-btn:hover:not(.is-active) {
+  color: #1f2937;
+}
+
+.cz-conf .ue-toggle-btn:focus-visible {
+  outline: 2px solid rgba(0, 100, 252, 0.6);
+  outline-offset: 2px;
 }
 
 .cz-conf .ue-toggle-btn.is-active {
-  background: #0064fc;
   color: #fff;
 }
 
@@ -1307,11 +1353,11 @@ body {
 
 .cz-conf .ue-pie-partner {
   fill: none;
-  stroke: #0064fc;
+  stroke: var(--ue-profit-color, #0064fc);
   stroke-width: 14;
   stroke-linecap: round;
   stroke-dasharray: 0 999;
-  transition: stroke-dasharray 0.6s ease;
+  transition: stroke-dasharray 0.6s ease, stroke 0.3s ease;
 }
 
 .cz-conf .ue-pie-center {
@@ -1363,7 +1409,7 @@ body {
 }
 
 .cz-conf .ue-dot-partner {
-  background: #0064fc;
+  background: var(--ue-profit-color, #0064fc);
 }
 
 .cz-conf .ue-dot-company {
@@ -1408,8 +1454,9 @@ body {
 }
 
 .cz-conf .ue-kpi-main {
-  background: #0064fc;
+  background: var(--ue-profit-color, #0064fc);
   color: #ffffff;
+  transition: background-color 0.3s ease;
 }
 
 .cz-conf .ue-kpi-main span,
@@ -1419,7 +1466,9 @@ body {
 
 .cz-conf .ue-calc[data-ue-mode="rent"] [data-ue="investment-block"],
 .cz-conf .ue-calc[data-ue-mode="rent"] [data-ue="payback-block"] {
-  display: none;
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
 }
 
 @media (max-width: 968px) {
