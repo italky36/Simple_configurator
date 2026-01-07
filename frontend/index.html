@@ -188,6 +188,135 @@
         </div>
       </div>
     </div>
+
+    <section class="ue-calc" data-ue-mode="own">
+      <div class="ue-header">
+        <h2>Калькулятор юнит-экономики</h2>
+        <p>Расчет финансовой модели на основе выбранной конфигурации и планируемых продаж.</p>
+      </div>
+
+      <div class="ue-grid">
+        <div class="ue-card ue-controls">
+          <div class="ue-toggle" role="tablist" aria-label="Модель работы">
+            <button type="button" class="ue-toggle-btn is-active" data-ue-mode="own">Оборудование в собственности</button>
+            <button type="button" class="ue-toggle-btn" data-ue-mode="rent">Аренда оборудования</button>
+          </div>
+
+          <div class="ue-field">
+            <div class="ue-field-head">
+              <span class="ue-label">Стоимость напитка</span>
+              <div class="ue-input">
+                <input type="number" class="ue-number" data-ue="price-input" min="50" max="500" step="5" value="100">
+                <span class="ue-unit">₽</span>
+              </div>
+            </div>
+            <input type="range" class="ue-range" data-ue="price-range" min="50" max="500" step="5" value="100">
+            <div class="ue-warning" data-ue="price-warning">
+              <div class="ue-warning-content">
+                <svg class="ue-warning-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#0064fc" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <circle cx="12" cy="12" r="10"/>
+                  <line x1="12" y1="16" x2="12" y2="12"/>
+                  <line x1="12" y1="8" x2="12.01" y2="8"/>
+                </svg>
+                <span>Максимум: 500 ₽</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="ue-field">
+            <div class="ue-field-head">
+              <span class="ue-label">Напитков в месяц</span>
+              <div class="ue-input">
+                <input type="number" class="ue-number" data-ue="monthly-input" min="50" max="5000" step="50" value="500">
+                <span class="ue-unit">шт.</span>
+              </div>
+            </div>
+            <input type="range" class="ue-range" data-ue="monthly-range" min="50" max="5000" step="50" value="500">
+            <div class="ue-warning" data-ue="monthly-warning">
+              <div class="ue-warning-content">
+                <svg class="ue-warning-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#0064fc" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <circle cx="12" cy="12" r="10"/>
+                  <line x1="12" y1="16" x2="12" y2="12"/>
+                  <line x1="12" y1="8" x2="12.01" y2="8"/>
+                </svg>
+                <span>Максимум: 5000 шт.</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="ue-field ue-field-static">
+            <div class="ue-field-head">
+              <span class="ue-label">Напитков в день</span>
+              <div class="ue-static" data-ue="per-day">-</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="ue-card ue-results">
+          <div class="ue-metrics">
+            <div class="ue-metric">
+              <span>Выручка в месяц</span>
+              <strong data-ue="gross">—</strong>
+            </div>
+            <div class="ue-metric">
+              <span>Эквайринг и облачная касса</span>
+              <strong>3%</strong>
+            </div>
+            <div class="ue-metric">
+              <span>Чистая выручка</span>
+              <strong data-ue="net">—</strong>
+            </div>
+          </div>
+
+          <div class="ue-diagram">
+            <div class="ue-diagram-title">Распределение чистой выручки</div>
+            <div class="ue-chart ue-chart--pie" data-ue="pie">
+              <svg class="ue-pie" viewBox="0 0 120 120" role="img" aria-label="Распределение чистой выручки">
+                <circle class="ue-pie-track" cx="60" cy="60" r="48"></circle>
+                <circle class="ue-pie-partner" data-ue="pie-partner" cx="60" cy="60" r="48"></circle>
+              </svg>
+              <div class="ue-pie-center">
+                <div class="ue-pie-value" data-ue="partner-percent">—</div>
+                <div class="ue-pie-caption">Партнер</div>
+              </div>
+            </div>
+            <div class="ue-legend">
+              <div class="ue-legend-item">
+                <span class="ue-legend-label">
+                  <span class="ue-dot ue-dot-partner"></span>
+                  <span data-ue="partner-label">Партнер</span>
+                </span>
+                <strong data-ue="partner-share">—</strong>
+              </div>
+              <div class="ue-legend-item">
+                <span class="ue-legend-label">
+                  <span class="ue-dot ue-dot-company"></span>
+                  <span data-ue="company-label">Компания</span>
+                </span>
+                <strong data-ue="company-share">—</strong>
+              </div>
+              <div class="ue-legend-note" data-ue="company-note"></div>
+            </div>
+          </div>
+
+          <div class="ue-kpis">
+            <div class="ue-kpi ue-kpi-main">
+              <span>Прибыль партнера в месяц</span>
+              <strong data-ue="partner-profit">—</strong>
+            </div>
+            <div class="ue-kpi ue-kpi-invest" data-ue="investment-block">
+              <span>Сумма инвестиций</span>
+              <strong data-ue="investment-value">—</strong>
+              <small>Берется из выбранной конфигурации</small>
+            </div>
+            <div class="ue-kpi ue-kpi-payback" data-ue="payback-block">
+              <span>Окупаемость</span>
+              <strong data-ue="payback-value">—</strong>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
   </div>
 </div>
 

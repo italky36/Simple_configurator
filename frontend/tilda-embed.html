@@ -1071,6 +1071,376 @@ body {
   color: #721c24;
   border: 1px solid #f5c6cb;
 }
+
+/* Юнит-экономика */
+.cz-conf .ue-calc {
+  margin-top: 40px;
+}
+
+.cz-conf .ue-header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 16px;
+  margin-bottom: 18px;
+}
+
+.cz-conf .ue-header h2 {
+  margin: 0;
+  font-size: 24px;
+  font-weight: 700;
+  color: #000;
+}
+
+.cz-conf .ue-header p {
+  margin: 0;
+  font-size: 14px;
+  color: #6b7280;
+  max-width: 640px;
+}
+
+.cz-conf .ue-grid {
+  display: grid;
+  grid-template-columns: 1.1fr 1fr;
+  gap: 24px;
+}
+
+.cz-conf .ue-card {
+  background: #ffffff;
+  border: 1px solid #e8e8e8;
+  border-radius: 12px;
+  padding: 20px;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.06);
+}
+
+.cz-conf .ue-controls {
+  background: #f7f7f7;
+}
+
+.cz-conf .ue-toggle {
+  display: flex;
+  border: 1px solid #d9dde3;
+  border-radius: 999px;
+  background: #ffffff;
+  overflow: hidden;
+}
+
+.cz-conf .ue-toggle-btn {
+  flex: 1;
+  padding: 10px 14px;
+  border: none;
+  background: transparent;
+  font-size: 13px;
+  font-weight: 600;
+  color: #111;
+  cursor: pointer;
+  transition: background-color 0.2s ease, color 0.2s ease;
+}
+
+.cz-conf .ue-toggle-btn.is-active {
+  background: #0064fc;
+  color: #fff;
+}
+
+.cz-conf .ue-field {
+  margin-top: 18px;
+}
+
+.cz-conf .ue-field-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.cz-conf .ue-label {
+  font-size: 14px;
+  font-weight: 600;
+  color: #111;
+}
+
+.cz-conf .ue-input {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: #ffffff;
+  border: 1px solid #e8e8e8;
+  border-radius: 8px;
+  padding: 6px 10px;
+}
+
+.cz-conf .ue-number {
+  width: 110px;
+  border: none;
+  background: transparent;
+  font-size: 16px;
+  font-weight: 600;
+  color: #111;
+  outline: none;
+}
+
+.cz-conf .ue-unit {
+  font-size: 13px;
+  color: #6b7280;
+}
+
+.cz-conf .ue-range {
+  width: 100%;
+  margin-top: 10px;
+  accent-color: #0064fc;
+}
+
+.cz-conf .ue-warning {
+  position: relative;
+  margin-top: 10px;
+  padding: 12px 16px;
+  background: #fff;
+  border: 2px solid #0064fc;
+  border-radius: 12px;
+  box-shadow: 0 8px 24px rgba(0, 100, 252, 0.2);
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(6px);
+  transition: opacity 0.2s ease, visibility 0.2s ease, transform 0.2s ease;
+}
+
+.cz-conf .ue-warning::after {
+  content: "";
+  position: absolute;
+  top: 100%;
+  left: 26px;
+  border: 8px solid transparent;
+  border-top-color: #0064fc;
+}
+
+.cz-conf .ue-warning::before {
+  content: "";
+  position: absolute;
+  top: 100%;
+  left: 26px;
+  border: 6px solid transparent;
+  border-top-color: #fff;
+  margin-top: -2px;
+}
+
+.cz-conf .ue-warning.is-visible {
+  opacity: 1;
+  visibility: visible;
+  transform: translateY(0);
+}
+
+.cz-conf .ue-warning-content {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 13px;
+  font-weight: 500;
+  color: #333;
+}
+
+.cz-conf .ue-warning-icon {
+  flex-shrink: 0;
+}
+
+.cz-conf .ue-field-static .ue-static {
+  font-size: 18px;
+  font-weight: 700;
+  color: #0064fc;
+}
+
+.cz-conf .ue-metrics {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+}
+
+.cz-conf .ue-metric {
+  background: #f7f7f7;
+  border-radius: 10px;
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.cz-conf .ue-metric span {
+  font-size: 12px;
+  color: #6b7280;
+}
+
+.cz-conf .ue-metric strong {
+  font-size: 18px;
+  font-weight: 700;
+  color: #111;
+}
+
+.cz-conf .ue-diagram {
+  margin-top: 18px;
+}
+
+.cz-conf .ue-diagram-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: #111;
+  margin-bottom: 10px;
+}
+
+.cz-conf .ue-chart {
+  position: relative;
+  width: 170px;
+  height: 170px;
+  margin: 10px auto 0;
+  display: grid;
+  place-items: center;
+}
+
+.cz-conf .ue-pie {
+  width: 100%;
+  height: 100%;
+  transform: rotate(-90deg);
+}
+
+.cz-conf .ue-pie-track {
+  fill: none;
+  stroke: #111111;
+  stroke-width: 14;
+  opacity: 0.9;
+}
+
+.cz-conf .ue-pie-partner {
+  fill: none;
+  stroke: #0064fc;
+  stroke-width: 14;
+  stroke-linecap: round;
+  stroke-dasharray: 0 999;
+  transition: stroke-dasharray 0.6s ease;
+}
+
+.cz-conf .ue-pie-center {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  text-align: center;
+}
+
+.cz-conf .ue-pie-value {
+  font-size: 22px;
+  font-weight: 700;
+  color: #111;
+}
+
+.cz-conf .ue-pie-caption {
+  font-size: 11px;
+  color: #6b7280;
+}
+
+.cz-conf .ue-legend {
+  margin-top: 12px;
+  display: grid;
+  gap: 8px;
+}
+
+.cz-conf .ue-legend-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 13px;
+  color: #111;
+}
+
+.cz-conf .ue-legend-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.cz-conf .ue-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+}
+
+.cz-conf .ue-dot-partner {
+  background: #0064fc;
+}
+
+.cz-conf .ue-dot-company {
+  background: #111111;
+}
+
+.cz-conf .ue-legend-note {
+  font-size: 12px;
+  color: #6b7280;
+}
+
+.cz-conf .ue-kpis {
+  margin-top: 18px;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+}
+
+.cz-conf .ue-kpi {
+  background: #f7f7f7;
+  border-radius: 10px;
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.cz-conf .ue-kpi span {
+  font-size: 12px;
+  color: #6b7280;
+}
+
+.cz-conf .ue-kpi strong {
+  font-size: 18px;
+  font-weight: 700;
+  color: #111;
+}
+
+.cz-conf .ue-kpi small {
+  font-size: 11px;
+  color: #6b7280;
+}
+
+.cz-conf .ue-kpi-main {
+  background: #0064fc;
+  color: #ffffff;
+}
+
+.cz-conf .ue-kpi-main span,
+.cz-conf .ue-kpi-main strong {
+  color: #ffffff;
+}
+
+.cz-conf .ue-calc[data-ue-mode="rent"] [data-ue="investment-block"],
+.cz-conf .ue-calc[data-ue-mode="rent"] [data-ue="payback-block"] {
+  display: none;
+}
+
+@media (max-width: 968px) {
+  .cz-conf .ue-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .cz-conf .ue-metrics {
+    grid-template-columns: 1fr;
+  }
+
+  .cz-conf .ue-kpis {
+    grid-template-columns: 1fr;
+  }
+
+  .cz-conf .ue-number {
+    width: 90px;
+  }
+}
 </style>
 
 <script>
@@ -1263,6 +1633,135 @@ body {
         </div>
       </div>
     </div>
+
+    <section class="ue-calc" data-ue-mode="own">
+      <div class="ue-header">
+        <h2>Калькулятор юнит-экономики</h2>
+        <p>Расчет финансовой модели на основе выбранной конфигурации и планируемых продаж.</p>
+      </div>
+
+      <div class="ue-grid">
+        <div class="ue-card ue-controls">
+          <div class="ue-toggle" role="tablist" aria-label="Модель работы">
+            <button type="button" class="ue-toggle-btn is-active" data-ue-mode="own">Оборудование в собственности</button>
+            <button type="button" class="ue-toggle-btn" data-ue-mode="rent">Аренда оборудования</button>
+          </div>
+
+          <div class="ue-field">
+            <div class="ue-field-head">
+              <span class="ue-label">Стоимость напитка</span>
+              <div class="ue-input">
+                <input type="number" class="ue-number" data-ue="price-input" min="50" max="500" step="5" value="100">
+                <span class="ue-unit">₽</span>
+              </div>
+            </div>
+            <input type="range" class="ue-range" data-ue="price-range" min="50" max="500" step="5" value="100">
+            <div class="ue-warning" data-ue="price-warning">
+              <div class="ue-warning-content">
+                <svg class="ue-warning-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#0064fc" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <circle cx="12" cy="12" r="10"/>
+                  <line x1="12" y1="16" x2="12" y2="12"/>
+                  <line x1="12" y1="8" x2="12.01" y2="8"/>
+                </svg>
+                <span>Максимум: 500 ₽</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="ue-field">
+            <div class="ue-field-head">
+              <span class="ue-label">Напитков в месяц</span>
+              <div class="ue-input">
+                <input type="number" class="ue-number" data-ue="monthly-input" min="50" max="5000" step="50" value="500">
+                <span class="ue-unit">шт.</span>
+              </div>
+            </div>
+            <input type="range" class="ue-range" data-ue="monthly-range" min="50" max="5000" step="50" value="500">
+            <div class="ue-warning" data-ue="monthly-warning">
+              <div class="ue-warning-content">
+                <svg class="ue-warning-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#0064fc" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <circle cx="12" cy="12" r="10"/>
+                  <line x1="12" y1="16" x2="12" y2="12"/>
+                  <line x1="12" y1="8" x2="12.01" y2="8"/>
+                </svg>
+                <span>Максимум: 5000 шт.</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="ue-field ue-field-static">
+            <div class="ue-field-head">
+              <span class="ue-label">Напитков в день</span>
+              <div class="ue-static" data-ue="per-day">-</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="ue-card ue-results">
+          <div class="ue-metrics">
+            <div class="ue-metric">
+              <span>Выручка в месяц</span>
+              <strong data-ue="gross">—</strong>
+            </div>
+            <div class="ue-metric">
+              <span>Эквайринг и облачная касса</span>
+              <strong>3%</strong>
+            </div>
+            <div class="ue-metric">
+              <span>Чистая выручка</span>
+              <strong data-ue="net">—</strong>
+            </div>
+          </div>
+
+          <div class="ue-diagram">
+            <div class="ue-diagram-title">Распределение чистой выручки</div>
+            <div class="ue-chart ue-chart--pie" data-ue="pie">
+              <svg class="ue-pie" viewBox="0 0 120 120" role="img" aria-label="Распределение чистой выручки">
+                <circle class="ue-pie-track" cx="60" cy="60" r="48"></circle>
+                <circle class="ue-pie-partner" data-ue="pie-partner" cx="60" cy="60" r="48"></circle>
+              </svg>
+              <div class="ue-pie-center">
+                <div class="ue-pie-value" data-ue="partner-percent">—</div>
+                <div class="ue-pie-caption">Партнер</div>
+              </div>
+            </div>
+            <div class="ue-legend">
+              <div class="ue-legend-item">
+                <span class="ue-legend-label">
+                  <span class="ue-dot ue-dot-partner"></span>
+                  <span data-ue="partner-label">Партнер</span>
+                </span>
+                <strong data-ue="partner-share">—</strong>
+              </div>
+              <div class="ue-legend-item">
+                <span class="ue-legend-label">
+                  <span class="ue-dot ue-dot-company"></span>
+                  <span data-ue="company-label">Компания</span>
+                </span>
+                <strong data-ue="company-share">—</strong>
+              </div>
+              <div class="ue-legend-note" data-ue="company-note"></div>
+            </div>
+          </div>
+
+          <div class="ue-kpis">
+            <div class="ue-kpi ue-kpi-main">
+              <span>Прибыль партнера в месяц</span>
+              <strong data-ue="partner-profit">—</strong>
+            </div>
+            <div class="ue-kpi ue-kpi-invest" data-ue="investment-block">
+              <span>Сумма инвестиций</span>
+              <strong data-ue="investment-value">—</strong>
+              <small>Берется из выбранной конфигурации</small>
+            </div>
+            <div class="ue-kpi ue-kpi-payback" data-ue="payback-block">
+              <span>Окупаемость</span>
+              <strong data-ue="payback-value">—</strong>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
   </div>
 </div>
 

@@ -13,6 +13,22 @@
   const STORAGE_KEY = "cz-conf-selection";
   const DATA_CACHE_KEY = "cz-conf-cache-v1";
   const CACHE_TTL_MS = 12 * 60 * 60 * 1000;
+  const UE_DEFAULTS = { price: 100, monthly: 500 };
+  const UE_MODES = { OWN: "own", RENT: "rent" };
+  const UE_SHARES = {
+    own: {
+      partner: 0.55,
+      company: 0.45,
+      note: "За ингредиенты, их доставку и сопровождение",
+    },
+    rent: {
+      partner: 0.25,
+      company: 0.75,
+      note: "За оборудование, ингредиенты, их доставку и сопровождение",
+    },
+  };
+  const UE_PIE_RADIUS = 48;
+  const UE_PIE_CIRC = 2 * Math.PI * UE_PIE_RADIUS;
 
   // Флаг: была ли уже показана анимация shrug за сессию
   let ozonShrugAnimationShown = false;
@@ -127,6 +143,34 @@
   const setText = (jq, txt) => jq.length && jq.text(txt || "—");
   const fmtPrice = (v) =>
     v || v === 0 ? Number(v).toLocaleString("ru-RU") + " ₽" : "—";
+
+  const parseNumber = (value) => {
+    if (value === null || value === undefined) return Number.NaN;
+    const normalized = String(value).replace(",", ".").trim();
+    if (!normalized) return Number.NaN;
+    const parsed = Number(normalized);
+    return Number.isFinite(parsed) ? parsed : Number.NaN;
+  };
+
+  const normalizeUeValue = (value, min, max, fallback) => {
+    const parsed = parseNumber(value);
+    if (!Number.isFinite(parsed)) return fallback;
+    let next = parsed;
+    if (Number.isFinite(min)) next = Math.max(min, next);
+    if (Number.isFinite(max)) next = Math.min(max, next);
+    return next;
+  };
+
+  const formatRub = (value) => {
+    if (!Number.isFinite(value)) return "—";
+    return Math.round(value).toLocaleString("ru-RU") + " ₽";
+  };
+
+  const formatCount = (value) => {
+    if (!Number.isFinite(value)) return "—";
+    const rounded = Math.round(value * 10) / 10;
+    return Number.isInteger(rounded) ? String(rounded) : rounded.toFixed(1);
+  };
 
   const normSrc = (src) => {
     if (!src) return "";
@@ -320,6 +364,210 @@
     } catch (e) {
       return null;
     }
+  }
+
+  function readUeControl($range, $input, fallback, options = {}) {
+    if (!$range.length || !$input.length) return fallback;
+    const sync = options.sync !== false;
+    const min = parseNumber($range.attr("min"));
+    const max = parseNumber($range.attr("max"));
+    const rawValue = options.rawValue !== undefined ? options.rawValue : $input.val();
+    const value = normalizeUeValue(rawValue, min, max, fallback);
+    if (sync) {
+      $range.val(value);
+      $input.val(value);
+    }
+    return value;
+  }
+
+  const ueWarningTimers = { price: null, monthly: null };
+  const UE_WARNING_TIMEOUT_MS = 2500;
+
+  function setUeWarning($warning, key, message) {
+    if (!$warning.length) return;
+    if (message) {
+      $warning.addClass("is-visible");
+      $warning.find("span").text(message);
+      if (ueWarningTimers[key]) {
+        clearTimeout(ueWarningTimers[key]);
+      }
+      ueWarningTimers[key] = setTimeout(() => {
+        $warning.removeClass("is-visible");
+        ueWarningTimers[key] = null;
+      }, UE_WARNING_TIMEOUT_MS);
+    } else {
+      $warning.removeClass("is-visible");
+      if (ueWarningTimers[key]) {
+        clearTimeout(ueWarningTimers[key]);
+        ueWarningTimers[key] = null;
+      }
+    }
+  }
+
+  function setUnitEconomicsMode(mode, skipUpdate = false) {
+    const $calc = $(".ue-calc");
+    if (!$calc.length) return;
+    const normalized = mode === UE_MODES.RENT ? UE_MODES.RENT : UE_MODES.OWN;
+    $calc.attr("data-ue-mode", normalized);
+    $calc.find(".ue-toggle-btn").removeClass("is-active");
+    $calc.find(`.ue-toggle-btn[data-ue-mode='${normalized}']`).addClass("is-active");
+    if (!skipUpdate) {
+      updateUnitEconomics(state.current);
+    }
+  }
+
+  function updateUnitEconomics(variant, options = {}) {
+    const $calc = $(".ue-calc");
+    if (!$calc.length) return;
+    const syncInputs = options.syncInputs !== false;
+
+    const price = readUeControl(
+      $calc.find("[data-ue='price-range']"),
+      $calc.find("[data-ue='price-input']"),
+      UE_DEFAULTS.price,
+      { sync: syncInputs, rawValue: options.priceOverride }
+    );
+    const monthly = readUeControl(
+      $calc.find("[data-ue='monthly-range']"),
+      $calc.find("[data-ue='monthly-input']"),
+      UE_DEFAULTS.monthly,
+      { sync: syncInputs, rawValue: options.monthlyOverride }
+    );
+
+    const mode = $calc.attr("data-ue-mode") === UE_MODES.RENT ? UE_MODES.RENT : UE_MODES.OWN;
+    const share = UE_SHARES[mode];
+    const gross = price * monthly;
+    const net = gross * 0.97;
+    const partnerProfit = net * share.partner;
+    const companyShare = net * share.company;
+    const perDay = monthly / 30;
+
+    $calc.find("[data-ue='per-day']").text(formatCount(perDay));
+    $calc.find("[data-ue='gross']").text(formatRub(gross));
+    $calc.find("[data-ue='net']").text(formatRub(net));
+    $calc.find("[data-ue='partner-share']").text(formatRub(partnerProfit));
+    $calc.find("[data-ue='company-share']").text(formatRub(companyShare));
+    $calc
+      .find("[data-ue='partner-label']")
+      .text(`Партнер (${Math.round(share.partner * 100)}%)`);
+    $calc
+      .find("[data-ue='company-label']")
+      .text(`Компания (${Math.round(share.company * 100)}%)`);
+    $calc.find("[data-ue='company-note']").text(share.note);
+    const partnerPercent = Math.round(share.partner * 100);
+    const $piePartner = $calc.find("[data-ue='pie-partner']");
+    if ($piePartner.length) {
+      const partnerLen = (UE_PIE_CIRC * share.partner).toFixed(2);
+      const restLen = (UE_PIE_CIRC - partnerLen).toFixed(2);
+      $piePartner.css("stroke-dasharray", `${partnerLen} ${restLen}`);
+      $piePartner.css("stroke-dashoffset", "0");
+    }
+    $calc.find("[data-ue='partner-percent']").text(`${partnerPercent}%`);
+    $calc.find("[data-ue='partner-profit']").text(formatRub(partnerProfit));
+
+    const investment = parseNumber(variant && variant.price);
+    const $investmentValue = $calc.find("[data-ue='investment-value']");
+    const $paybackValue = $calc.find("[data-ue='payback-value']");
+
+    if (mode === UE_MODES.OWN && Number.isFinite(investment)) {
+      $investmentValue.text(formatRub(investment));
+      if (partnerProfit > 0) {
+        const months = investment / partnerProfit;
+        const rounded = Math.round(months * 10) / 10;
+        $paybackValue.text(`${rounded.toLocaleString("ru-RU")} мес.`);
+      } else {
+        $paybackValue.text("—");
+      }
+    } else {
+      $investmentValue.text("—");
+      $paybackValue.text("—");
+    }
+  }
+
+  function initUnitEconomics() {
+    const $calc = $(".ue-calc");
+    if (!$calc.length) return;
+
+    const initialMode = $calc.attr("data-ue-mode") || UE_MODES.OWN;
+    setUnitEconomicsMode(initialMode, true);
+
+    $calc.find(".ue-toggle-btn").on("click", function () {
+      const mode = $(this).data("ue-mode");
+      setUnitEconomicsMode(mode);
+    });
+
+    const $priceRange = $calc.find("[data-ue='price-range']");
+    const $priceInput = $calc.find("[data-ue='price-input']");
+    const $monthlyRange = $calc.find("[data-ue='monthly-range']");
+    const $monthlyInput = $calc.find("[data-ue='monthly-input']");
+    const $priceWarning = $calc.find("[data-ue='price-warning']");
+    const $monthlyWarning = $calc.find("[data-ue='monthly-warning']");
+
+    const getWarningMessage = (rawValue, min, max, unit) => {
+      if (!Number.isFinite(rawValue)) return "";
+      if (Number.isFinite(min) && rawValue < min) return `Минимум: ${min} ${unit}`;
+      if (Number.isFinite(max) && rawValue > max) return `Максимум: ${max} ${unit}`;
+      return "";
+    };
+
+    const isWithinBounds = (rawValue, min, max) => {
+      if (!Number.isFinite(rawValue)) return false;
+      if (Number.isFinite(min) && rawValue < min) return false;
+      if (Number.isFinite(max) && rawValue > max) return false;
+      return true;
+    };
+
+    const previewPriceInput = (raw) => {
+      const min = parseNumber($priceRange.attr("min"));
+      const max = parseNumber($priceRange.attr("max"));
+      const rawValue = parseNumber(raw);
+      if (isWithinBounds(rawValue, min, max)) {
+        $priceRange.val(rawValue);
+      }
+      setUeWarning($priceWarning, "price", getWarningMessage(rawValue, min, max, "₽"));
+      updateUnitEconomics(state.current, { syncInputs: false, priceOverride: raw });
+    };
+
+    const commitPriceInput = (raw) => {
+      const min = parseNumber($priceRange.attr("min"));
+      const max = parseNumber($priceRange.attr("max"));
+      const rawValue = parseNumber(raw);
+      const value = normalizeUeValue(raw, min, max, UE_DEFAULTS.price);
+      $priceRange.val(value);
+      $priceInput.val(value);
+      setUeWarning($priceWarning, "price", getWarningMessage(rawValue, min, max, "₽"));
+      updateUnitEconomics(state.current);
+    };
+
+    const previewMonthlyInput = (raw) => {
+      const min = parseNumber($monthlyRange.attr("min"));
+      const max = parseNumber($monthlyRange.attr("max"));
+      const rawValue = parseNumber(raw);
+      if (isWithinBounds(rawValue, min, max)) {
+        $monthlyRange.val(rawValue);
+      }
+      setUeWarning($monthlyWarning, "monthly", getWarningMessage(rawValue, min, max, "шт."));
+      updateUnitEconomics(state.current, { syncInputs: false, monthlyOverride: raw });
+    };
+
+    const commitMonthlyInput = (raw) => {
+      const min = parseNumber($monthlyRange.attr("min"));
+      const max = parseNumber($monthlyRange.attr("max"));
+      const rawValue = parseNumber(raw);
+      const value = normalizeUeValue(raw, min, max, UE_DEFAULTS.monthly);
+      $monthlyRange.val(value);
+      $monthlyInput.val(value);
+      setUeWarning($monthlyWarning, "monthly", getWarningMessage(rawValue, min, max, "шт."));
+      updateUnitEconomics(state.current);
+    };
+
+    $priceRange.on("input change", () => commitPriceInput($priceRange.val()));
+    $monthlyRange.on("input change", () => commitMonthlyInput($monthlyRange.val()));
+
+    $priceInput.on("input", () => previewPriceInput($priceInput.val()));
+    $priceInput.on("change", () => commitPriceInput($priceInput.val()));
+    $monthlyInput.on("input", () => previewMonthlyInput($monthlyInput.val()));
+    $monthlyInput.on("change", () => commitMonthlyInput($monthlyInput.val()));
   }
 
   function renderSpecs($block, spec) {
@@ -1009,8 +1257,8 @@
   function renderVariant(v, syncSelects = false) {
     if (!v) {
       state.current = null;
-      setText($el(".cfg-price-right"), "—");
-      setText($el(".cfg-price-left"), "—");
+      setText($el(".cfg-price-right"), "-");
+      setText($el(".cfg-price-left"), "-");
       $el(".cfg-gallery").empty();
       setMainImageSrc("");
       renderSpecs($el(".cfg-spec-machine"), null);
@@ -1021,6 +1269,7 @@
       updateInsertColorState();
       updateImageLayout();
       updateTerminalState();
+      updateUnitEconomics(null);
       return;
     }
     state.current = v;
@@ -1233,6 +1482,7 @@
     renderSpecs($el(".cfg-spec-terminal"), specT);
 
     saveSelection();
+    updateUnitEconomics(v);
   }
 
   // OZON Tooltip функции
@@ -1889,6 +2139,7 @@
         updateFrameColorState();
         updateInsertColorState();
         updateTerminalState();
+        initUnitEconomics();
 
         let initialVariant = findVariant(true);
         let syncSelects = false;
