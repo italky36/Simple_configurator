@@ -664,7 +664,6 @@
         dragRect = toggleEl.getBoundingClientRect();
         $toggle.addClass("is-dragging");
         toggleEl.setPointerCapture(event.pointerId);
-        setDragRatio((event.clientX - dragRect.left) / dragRect.width);
         event.preventDefault();
       };
 
@@ -680,13 +679,37 @@
         if (!dragging) return;
         dragging = false;
         dragRect = null;
-        $toggle.removeClass("is-dragging");
         try {
           toggleEl.releasePointerCapture(event.pointerId);
         } catch (e) {}
-        toggleEl.style.removeProperty("--ue-toggle-x");
+
+        // Убираем is-dragging ПЕРЕД установкой финальной позиции, чтобы transition сработал
+        $toggle.removeClass("is-dragging");
+
+        // Определяем целевой режим
+        let targetMode;
+        let targetRatio;
+
+        if (!dragMoved) {
+          // Клик без перетаскивания - переключаем на противоположный режим
+          const currentMode = $calc.attr("data-ue-mode");
+          targetMode =
+            currentMode === UE_MODES.OWN ? UE_MODES.RENT : UE_MODES.OWN;
+        } else {
+          // Обычное перетаскивание - используем lastRatio
+          targetMode = lastRatio >= 0.5 ? UE_MODES.RENT : UE_MODES.OWN;
+        }
+
+        targetRatio = targetMode === UE_MODES.RENT ? 1 : 0;
+        setDragRatio(targetRatio);
+
+        // Удаляем переменную после завершения CSS transition
+        setTimeout(() => {
+          toggleEl.style.removeProperty("--ue-toggle-x");
+        }, 200);
+
         suppressToggleClick = dragMoved;
-        setUnitEconomicsMode(lastRatio >= 0.5 ? UE_MODES.RENT : UE_MODES.OWN);
+        setUnitEconomicsMode(targetMode);
       };
 
       toggleEl.addEventListener("pointerdown", onPointerDown);
@@ -704,8 +727,10 @@
 
     const getWarningMessage = (rawValue, min, max, unit) => {
       if (!Number.isFinite(rawValue)) return "";
-      if (Number.isFinite(min) && rawValue < min) return `Минимум: ${min} ${unit}`;
-      if (Number.isFinite(max) && rawValue > max) return `Максимум: ${max} ${unit}`;
+      if (Number.isFinite(min) && rawValue < min)
+        return `Минимум: ${min} ${unit}`;
+      if (Number.isFinite(max) && rawValue > max)
+        return `Максимум: ${max} ${unit}`;
       return "";
     };
 
@@ -723,7 +748,11 @@
       if (isWithinBounds(rawValue, min, max)) {
         $priceRange.val(rawValue);
       }
-      setUeWarning($priceWarning, "price", getWarningMessage(rawValue, min, max, "₽"));
+      setUeWarning(
+        $priceWarning,
+        "price",
+        getWarningMessage(rawValue, min, max, "₽"),
+      );
       updateUnitEconomics(state.current, {
         syncInputs: false,
         priceOverride: raw,
@@ -739,8 +768,15 @@
       const value = normalizeUeValue(raw, min, max, UE_DEFAULTS.price);
       $priceRange.val(value);
       $priceInput.val(value);
-      setUeWarning($priceWarning, "price", getWarningMessage(rawValue, min, max, "₽"));
-      updateUnitEconomics(state.current, { animate, duration: duration || undefined });
+      setUeWarning(
+        $priceWarning,
+        "price",
+        getWarningMessage(rawValue, min, max, "₽"),
+      );
+      updateUnitEconomics(state.current, {
+        animate,
+        duration: duration || undefined,
+      });
     };
 
     const previewMonthlyInput = (raw) => {
@@ -750,7 +786,11 @@
       if (isWithinBounds(rawValue, min, max)) {
         $monthlyRange.val(rawValue);
       }
-      setUeWarning($monthlyWarning, "monthly", getWarningMessage(rawValue, min, max, "шт."));
+      setUeWarning(
+        $monthlyWarning,
+        "monthly",
+        getWarningMessage(rawValue, min, max, "шт."),
+      );
       updateUnitEconomics(state.current, {
         syncInputs: false,
         monthlyOverride: raw,
@@ -766,19 +806,38 @@
       const value = normalizeUeValue(raw, min, max, UE_DEFAULTS.monthly);
       $monthlyRange.val(value);
       $monthlyInput.val(value);
-      setUeWarning($monthlyWarning, "monthly", getWarningMessage(rawValue, min, max, "шт."));
-      updateUnitEconomics(state.current, { animate, duration: duration || undefined });
+      setUeWarning(
+        $monthlyWarning,
+        "monthly",
+        getWarningMessage(rawValue, min, max, "шт."),
+      );
+      updateUnitEconomics(state.current, {
+        animate,
+        duration: duration || undefined,
+      });
     };
 
-    $priceRange.on("input", () => commitPriceInput($priceRange.val(), true, 160));
-    $priceRange.on("change", () => commitPriceInput($priceRange.val(), true, 450));
-    $monthlyRange.on("input", () => commitMonthlyInput($monthlyRange.val(), true, 160));
-    $monthlyRange.on("change", () => commitMonthlyInput($monthlyRange.val(), true, 450));
+    $priceRange.on("input", () =>
+      commitPriceInput($priceRange.val(), true, 160),
+    );
+    $priceRange.on("change", () =>
+      commitPriceInput($priceRange.val(), true, 450),
+    );
+    $monthlyRange.on("input", () =>
+      commitMonthlyInput($monthlyRange.val(), true, 160),
+    );
+    $monthlyRange.on("change", () =>
+      commitMonthlyInput($monthlyRange.val(), true, 450),
+    );
 
     $priceInput.on("input", () => previewPriceInput($priceInput.val()));
-    $priceInput.on("change", () => commitPriceInput($priceInput.val(), true, 450));
+    $priceInput.on("change", () =>
+      commitPriceInput($priceInput.val(), true, 450),
+    );
     $monthlyInput.on("input", () => previewMonthlyInput($monthlyInput.val()));
-    $monthlyInput.on("change", () => commitMonthlyInput($monthlyInput.val(), true, 450));
+    $monthlyInput.on("change", () =>
+      commitMonthlyInput($monthlyInput.val(), true, 450),
+    );
   }
 
   function renderSpecs($block, spec) {
@@ -810,20 +869,20 @@
     $sel,
     values,
     placeholder,
-    includePlaceholder = true
+    includePlaceholder = true,
   ) {
     if (!$sel.length) return;
     const uniq = Array.from(
       new Set(
-        values.filter((v) => v && !skipValues.has(String(v).toLowerCase()))
-      )
+        values.filter((v) => v && !skipValues.has(String(v).toLowerCase())),
+      ),
     );
     const opts =
       placeholder && includePlaceholder
         ? ['<option value="">' + placeholder + "</option>"]
         : [];
     uniq.forEach((v) =>
-      opts.push('<option value="' + v + '">' + v + "</option>")
+      opts.push('<option value="' + v + '">' + v + "</option>"),
     );
     $sel.html(opts.join(""));
   }
@@ -929,7 +988,7 @@
         // ✅ ПРОВЕРЯЕМ сохранённое значение, а не текущее из пересозданного селектора
         const current = normalizeColorKey(currentValue);
         const hasCurrent = availableColors.some(
-          (c) => normalizeColorKey(c) === current
+          (c) => normalizeColorKey(c) === current,
         );
         if (hasCurrent) {
           // ✅ Восстанавливаем сохранённое значение
@@ -999,7 +1058,7 @@
       console.log("💾 Using cached configurator data");
       applyLoadedData(cached);
       fetchAndCacheData().catch(() =>
-        console.warn("⚠️ Background refresh failed")
+        console.warn("⚠️ Background refresh failed"),
       );
       return Promise.resolve(cached);
     }
@@ -1015,7 +1074,7 @@
   function getImages(v) {
     const imgs = v.gallery_files ? v.gallery_files.map(normSrc) : [];
     const mainSrc = normSrc(
-      v.main_image || (v.gallery_files && v.gallery_files[0]) || ""
+      v.main_image || (v.gallery_files && v.gallery_files[0]) || "",
     );
     if (mainSrc && !imgs.includes(mainSrc)) imgs.unshift(mainSrc);
     return imgs;
@@ -1039,7 +1098,7 @@
     const maxIdx = imgs.length - 1;
     const idx = Math.min(
       Math.max(forceIndex !== undefined ? forceIndex : v._imgIdx || 0, 0),
-      maxIdx
+      maxIdx,
     );
     v._imgIdx = idx;
     setMainImageSrc(imgs[idx]);
@@ -1196,23 +1255,23 @@
       $el(".cfg-select-machine"),
       m.map((x) => x.model || x.name),
       "Нет",
-      false
+      false,
     );
     populateSelect(
       $el(".cfg-select-frame"),
       m.map((x) => x.frame),
-      "Нет"
+      "Нет",
     );
     populateColorSelect($el(".cfg-select-frame-color"), FRAME_COLORS, null);
     populateSelect(
       $el(".cfg-select-fridge"),
       m.map((x) => x.refrigerator),
-      "Нет"
+      "Нет",
     );
     populateSelect(
       $el(".cfg-select-terminal"),
       m.map((x) => x.terminal),
-      "Нет"
+      "Нет",
     );
 
     ensureMachineSelection();
@@ -1272,7 +1331,7 @@
     return Object.values(designImages).some((inserts) => {
       if (!inserts || typeof inserts !== "object") return false;
       return Object.values(inserts).some(
-        (cfg) => cfg && (cfg.main_image || cfg.main_image_path)
+        (cfg) => cfg && (cfg.main_image || cfg.main_image_path),
       );
     });
   }
@@ -1312,7 +1371,7 @@
 
     // ✅ ИСПРАВЛЕНО: Проверяем есть ли каркас
     const hasFrame = fv && normVal(fv) !== "нет" && normVal(fv) !== "no";
-    
+
     // Если есть каркас, но нет цвета дизайна - возвращаем null
     if (hasFrame && !design) {
       console.log("⚠️ Каркас выбран, но цвет дизайна не выбран");
@@ -1351,7 +1410,7 @@
         frame_color: m.frame_color,
         frame_design_color: m.frame_design_color,
         ozon_link: m.ozon_link,
-      }))
+      })),
     );
 
     const candidate = allMatches[0];
@@ -1393,9 +1452,9 @@
             if (normalizeColorKey(k) !== target) return false;
             if (!val || typeof val !== "object") return false;
             return Object.values(val).some(
-              (cfg) => cfg && (cfg.main_image || cfg.main_image_path)
+              (cfg) => cfg && (cfg.main_image || cfg.main_image_path),
             );
-          }
+          },
         );
         if (!hasColorWithImage) return false;
       }
@@ -1408,7 +1467,7 @@
     };
 
     const matchesAll = state.machines.filter(
-      (v) => !excludedVariants.has(v.id) && baseFilter(v)
+      (v) => !excludedVariants.has(v.id) && baseFilter(v),
     );
 
     const designMatch = matchesAll.filter(
@@ -1416,14 +1475,14 @@
         normInsert &&
         v.frame_design_color &&
         normalizeColorKey(v.frame_design_color) === normInsert &&
-        v.ozon_link
+        v.ozon_link,
     );
 
     const exactWithImage = matchesAll.filter((v) =>
-      hasDesignImageForSelection(v, normFcv, normInsert)
+      hasDesignImageForSelection(v, normFcv, normInsert),
     );
     const exactWithFrameImage = matchesAll.filter((v) =>
-      hasAnyDesignForFrame(v, normFcv)
+      hasAnyDesignForFrame(v, normFcv),
     );
 
     const describe = (v) => {
@@ -1560,7 +1619,7 @@
       if (!designConfig) {
         const fallbackDesign = findDesignImageForFrame(
           v.design_images,
-          frameColor
+          frameColor,
         );
         if (fallbackDesign) {
           designConfig = fallbackDesign.config;
@@ -1570,7 +1629,7 @@
 
       if (!designConfig) {
         const hasSelectedColorKey = Object.keys(v.design_images || {}).some(
-          (k) => normalizeColorKey(k) === frameColor
+          (k) => normalizeColorKey(k) === frameColor,
         );
         if (hasSelectedColorKey) {
           excludedVariants.add(v.id);
@@ -1588,7 +1647,7 @@
 
       if (designConfig) {
         mainSrc = normSrc(
-          designConfig.main_image || designConfig.main_image_path || ""
+          designConfig.main_image || designConfig.main_image_path || "",
         );
         usingDesignImages = true;
         console.log("✓ Using design_images URL:", mainSrc);
@@ -1600,7 +1659,7 @@
           "⚠️ No design config found for",
           frameColor,
           "/",
-          insertColor
+          insertColor,
         );
       }
     }
@@ -1625,7 +1684,7 @@
 
     if (!mainSrc) {
       mainSrc = normSrc(
-        v.main_image || (v.gallery_files && v.gallery_files[0]) || ""
+        v.main_image || (v.gallery_files && v.gallery_files[0]) || "",
       );
       console.log("📷 Using fallback main_image:", mainSrc);
     }
@@ -1777,10 +1836,93 @@
     const email = $("#cfg-lead-email").val().trim();
     const ozonLink = findOzonLinkForSelection();
     const frameValue = $el(".cfg-select-frame").val();
-    const hasFrame = frameValue && normVal(frameValue) !== "нет" && normVal(frameValue) !== "no";
+    const hasFrame =
+      frameValue &&
+      normVal(frameValue) !== "нет" &&
+      normVal(frameValue) !== "no";
     const insertColorVal = $el(".cfg-select-insert-color").val();
     const insertColorKey = normalizeColorKey(insertColorVal);
-    const insertColorLabel = hasFrame ? (COLOR_LABELS[insertColorKey] || insertColorVal || "") : "";
+    const insertColorLabel = hasFrame
+      ? COLOR_LABELS[insertColorKey] || insertColorVal || ""
+      : "";
+
+    // Получаем данные из калькулятора юнит-экономики
+    const $calc = $(".ue-calc");
+    const ueMode = $calc.attr("data-ue-mode") || "own";
+    const drinkPrice = parseNumber($calc.find("[data-ue='price-input']").val());
+    const monthlyDrinks = parseNumber(
+      $calc.find("[data-ue='monthly-input']").val(),
+    );
+
+    // Добавляем данные юнит-экономики в сообщение (не меняя логику отправки)
+    const modeKey = ueMode === UE_MODES.RENT ? UE_MODES.RENT : UE_MODES.OWN;
+    const modeLabel =
+      modeKey === UE_MODES.RENT
+        ? "Аренда оборудования"
+        : "Оборудование в собственности";
+    const share = UE_SHARES[modeKey] || UE_SHARES.own;
+
+    const $priceRange = $calc.find("[data-ue='price-range']");
+    const $monthlyRange = $calc.find("[data-ue='monthly-range']");
+    const priceMin = parseNumber($priceRange.attr("min"));
+    const priceMax = parseNumber($priceRange.attr("max"));
+    const monthlyMin = parseNumber($monthlyRange.attr("min"));
+    const monthlyMax = parseNumber($monthlyRange.attr("max"));
+
+    const priceNorm = normalizeUeValue(
+      drinkPrice,
+      priceMin,
+      priceMax,
+      UE_DEFAULTS.price,
+    );
+    const monthlyNorm = normalizeUeValue(
+      monthlyDrinks,
+      monthlyMin,
+      monthlyMax,
+      UE_DEFAULTS.monthly,
+    );
+
+    const gross = priceNorm * monthlyNorm;
+    const net = gross * 0.97;
+    const partnerProfit = net * share.partner;
+    const companyProfit = net * share.company;
+    const perDay = monthlyNorm / 30;
+
+    const investment = parseNumber(v && v.price);
+    const paybackMonths =
+      modeKey === UE_MODES.OWN &&
+      Number.isFinite(investment) &&
+      partnerProfit > 0
+        ? investment / partnerProfit
+        : Number.NaN;
+
+    const ueText = [
+      "Юнит-экономика:",
+      `• Режим: ${modeLabel}`,
+      `• Стоимость напитка: ${formatRub(priceNorm)}`,
+      `• Напитков в месяц: ${Math.round(monthlyNorm).toLocaleString("ru-RU")} шт.`,
+      `• Напитков в день: ${formatCount(perDay)} шт.`,
+      `• Выручка в месяц: ${formatRub(gross)}`,
+      `• Чистая выручка: ${formatRub(net)}`,
+      `• Партнер: ${Math.round(share.partner * 100)}% (${formatRub(partnerProfit)})`,
+      `• Франшиза: ${Math.round(share.company * 100)}% (${formatRub(companyProfit)})`,
+      modeKey === UE_MODES.OWN
+        ? `• Окупаемость: ${formatMonths(paybackMonths)}`
+        : null,
+    ]
+      .filter(Boolean)
+      .join("\n");
+
+    // ВАЖНО: бэкенд сейчас выводит в Telegram только блок selection,
+    // поэтому добавляем юнит-экономику в поле цены (которое точно показывается).
+    const leadPrice =
+      (Number.isFinite(investment)
+        ? formatRub(investment)
+        : v && v.price
+          ? String(v.price)
+          : "") +
+      "\n" +
+      ueText;
 
     const payload = {
       name: name,
@@ -1796,11 +1938,19 @@
             insert_color: insertColorLabel,
             refrigerator: v.refrigerator,
             terminal: v.terminal,
-            price: v.price,
+            price: leadPrice,
             ozon_link: ozonLink,
             gallery_folder: v.gallery_folder,
           }
         : null,
+      unit_economics: {
+        mode:
+          ueMode === "rent"
+            ? "Аренда оборудования"
+            : "Оборудование в собственности",
+        drink_price: drinkPrice,
+        monthly_drinks: monthlyDrinks,
+      },
     };
 
     return $.ajax({

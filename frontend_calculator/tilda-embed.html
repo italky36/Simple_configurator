@@ -1117,6 +1117,39 @@ body {
   border: 1px solid #f5c6cb;
 }
 
+/* Стили кнопок для модального окна */
+.cfg-modal .btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px 32px;
+  font-size: 16px;
+  font-weight: 600;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  transition: background-color 0.2s ease-in-out;
+  width: 100%;
+  text-decoration: none;
+  height: 50px;
+}
+
+.cfg-modal .btn-primary {
+  background-color: #0064fc;
+  color: #ffffff;
+}
+
+.cfg-modal .btn-primary:hover:not(:disabled) {
+  background-color: #0052d4;
+}
+
+.cfg-modal .btn-primary:disabled {
+  background-color: #d3d3d3;
+  color: #ffffff;
+  cursor: not-allowed;
+  opacity: 0.7;
+}
+
 /* Юнит-экономика */
 .cz-conf .ue-calc {
   --ue-accent: #7a3ff2;
@@ -1344,14 +1377,14 @@ body {
 }
 
 .cz-conf .ue-number {
-  width: auto;
+  width: 52px;
   border: none;
   background: transparent;
   font-size: 13px;
   font-weight: 600;
   color: #111;
   outline: none;
-  flex: 1 1 auto;
+  flex: 0 0 52px;
   min-width: 0;
   text-align: right;
 }
@@ -1359,7 +1392,8 @@ body {
 .cz-conf .ue-unit {
   font-size: 12px;
   color: #6b6b7a;
-  min-width: 0;
+  width: 24px;
+  flex: 0 0 24px;
   white-space: nowrap;
   text-align: left;
 }
@@ -1600,11 +1634,11 @@ body {
 
 .cz-conf .ue-pie-partner {
   fill: none;
-  stroke: var(--ue-profit-color, #0064fc);
+  stroke: url(#pieGradient);
   stroke-width: 12;
   stroke-linecap: round;
   stroke-dasharray: 0 999;
-  transition: stroke-dasharray 0.6s ease, stroke 0.3s ease;
+  transition: stroke-dasharray 0.6s ease;
 }
 
 .cz-conf .ue-pie-center {
@@ -1985,6 +2019,20 @@ body {
   }
 }
 
+/* Десктоп: "3%" как цифры выручки/чистой */
+@media (min-width: 1201px) {
+  .cz-conf .ue-metrics.is-secondary .ue-metric:first-child strong{
+    font-size: 21px;
+    line-height: 1.15;
+  }
+}
+
+/* Десктоп: поднять нижние блоки вверх */
+@media (min-width: 1201px) {
+  .cz-conf .ue-grid{
+    align-content: start; /* вместо space-between */
+  }
+}
 
 
 </style>
@@ -2161,6 +2209,12 @@ body {
                 <div class="ue-diagram-title">Распределение чистой выручки</div>
                 <div class="ue-chart ue-chart--pie" data-ue="pie">
                   <svg class="ue-pie" viewBox="0 0 120 120" role="img" aria-label="Распределение чистой выручки">
+                    <defs>
+                      <linearGradient id="pieGradient" x1="0%" y1="100%" x2="100%" y2="0%">
+                        <stop offset="0%" style="stop-color:#9b6bff;stop-opacity:1" />
+                        <stop offset="100%" style="stop-color:#7a3ff2;stop-opacity:1" />
+                      </linearGradient>
+                    </defs>
                     <circle class="ue-pie-track" cx="60" cy="60" r="48"></circle>
                     <circle class="ue-pie-partner" data-ue="pie-partner" cx="60" cy="60" r="48"></circle>
                   </svg>
