@@ -1,0 +1,651 @@
+/* ============================================
+   Coffee Zone Configurator v2
+   Новый дизайн: две колонки, фиолетовый акцент
+   ============================================ */
+
+*, *::before, *::after { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  padding: 0;
+  font-family: 'Montserrat', -apple-system, BlinkMacSystemFont, sans-serif;
+  background: #fff;
+  color: #1a1a1a;
+  line-height: 1.5;
+}
+
+/* === Контейнер === */
+.cz-conf {
+  font-family: 'Montserrat', sans-serif;
+  background: #fff;
+  padding: 40px 20px;
+  position: relative;
+}
+
+.cz-conf .container {
+  max-width: 1400px;
+  margin: 0 auto;
+}
+
+.cz-conf h1, .cz-conf h2 {
+  font-size: 28px;
+  font-weight: 700;
+  margin: 0 0 24px 0;
+  color: #000;
+}
+
+.cz-conf h3 {
+  font-size: 20px;
+  font-weight: 600;
+  margin: 0 0 16px 0;
+  color: #000;
+}
+
+/* === ДВУХКОЛОНОЧНЫЙ LAYOUT === */
+.cz-two-columns {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 40px;
+  align-items: start;
+}
+
+.cz-col-left, .cz-col-right {
+  min-width: 0;
+}
+
+/* === ЛЕВАЯ КОЛОНКА: Изображение === */
+.cz-image-block {
+  background: #f5f5f5;
+  border-radius: 16px;
+  padding: 20px;
+  margin-bottom: 24px;
+}
+
+.cz-conf .product-image {
+  position: relative;
+  height: 380px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 16px;
+  background: transparent;
+}
+
+.cz-conf .product-image img.cfg-main-image {
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+  transition: opacity 0.2s;
+}
+
+.cz-conf .product-image.is-loading img.cfg-main-image {
+  opacity: 0.3;
+}
+
+/* Loader */
+.cz-conf .cfg-loader {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.2s;
+}
+.cz-conf .cfg-loader:after {
+  content: "";
+  width: 36px;
+  height: 36px;
+  border: 3px solid #e0e0e0;
+  border-top-color: #7c3aed;
+  border-radius: 50%;
+  animation: cz-spin 0.8s linear infinite;
+}
+.cz-conf .product-image.is-loading .cfg-loader { opacity: 1; }
+@keyframes cz-spin { to { transform: rotate(360deg); } }
+
+/* Zoom lens */
+.cz-conf .cfg-zoom-lens {
+  display: none;
+  position: absolute;
+  width: 150px;
+  height: 150px;
+  border: 2px solid #7c3aed;
+  border-radius: 50%;
+  pointer-events: none;
+}
+
+/* Миниатюры */
+.cz-thumbs {
+  display: flex;
+  justify-content: center;
+  gap: 12px;
+}
+
+.cz-thumb {
+  width: 72px;
+  height: 72px;
+  border: 2px solid #e0e0e0;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  background: #fff;
+  transition: border-color 0.2s, transform 0.2s;
+  overflow: hidden;
+}
+.cz-thumb:hover { border-color: #7c3aed; transform: translateY(-2px); }
+.cz-thumb.is-active { border-color: #7c3aed; border-width: 3px; }
+.cz-thumb span { font-weight: 600; color: #999; }
+.cz-thumb img { max-width: 90%; max-height: 90%; object-fit: contain; }
+
+/* === СЕЛЕКТОРЫ === */
+.cz-selectors-wrapper {
+  margin-bottom: 0;
+}
+
+.cz-selectors-grid {
+  display: grid !important;
+  grid-template-columns: repeat(3, 1fr) !important;
+  gap: 16px !important;
+}
+
+.cz-conf .config-item {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.cz-conf .config-label {
+  font-size: 13px;
+  font-weight: 500;
+  color: #666;
+}
+
+.cz-conf .config-select {
+  height: 48px;
+  padding: 0 36px 0 14px;
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 500;
+  color: #1a1a1a;
+  background: #fff url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23666' stroke-width='2'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E") no-repeat right 12px center;
+  cursor: pointer;
+  transition: border-color 0.2s;
+  appearance: none;
+}
+.cz-conf .config-select:hover { border-color: #7c3aed; }
+.cz-conf .config-select:focus { outline: none; border-color: #7c3aed; box-shadow: 0 0 0 3px rgba(124,58,237,0.15); }
+.cz-conf .config-select:disabled { background-color: #f5f5f5; color: #999; cursor: not-allowed; }
+
+/* === ПРАВАЯ КОЛОНКА: Калькулятор === */
+.cz-calc-box {
+  background: #fff;
+  border: 1px solid #e8e8e8;
+  border-radius: 16px;
+  padding: 24px;
+  margin-bottom: 20px;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.05);
+}
+
+/* Toggle - ФИОЛЕТОВЫЙ */
+.cz-conf .ue-toggle {
+  display: flex;
+  background: #f0f0f0;
+  border-radius: 50px;
+  padding: 4px;
+  margin-bottom: 20px;
+  border: none;
+  box-shadow: none;
+}
+.cz-conf .ue-toggle::before { display: none; }
+
+.cz-conf .ue-toggle-btn {
+  flex: 1;
+  padding: 12px 16px;
+  border: none;
+  border-radius: 50px;
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  color: #666;
+  background: transparent;
+  cursor: pointer;
+  transition: all 0.25s;
+}
+.cz-conf .ue-toggle-btn:hover:not(.is-active) { color: #333; }
+.cz-conf .ue-toggle-btn.is-active {
+  background: linear-gradient(135deg, #7c3aed 0%, #9333ea 100%);
+  color: #fff;
+  box-shadow: 0 4px 15px rgba(124,58,237,0.4);
+}
+
+/* Цена */
+.cz-price-display {
+  background: #f8f8f8;
+  border: 1px solid #e8e8e8;
+  border-radius: 12px;
+  padding: 20px;
+  text-align: center;
+  margin-bottom: 24px;
+}
+.cz-price-display .cfg-price-right {
+  font-size: 36px;
+  font-weight: 700;
+  color: #1a1a1a;
+}
+
+/* Calc Grid */
+.cz-calc-grid {
+  display: grid !important;
+  grid-template-columns: 1fr 1fr !important;
+  gap: 24px !important;
+  margin-bottom: 20px;
+}
+
+.cz-conf .ue-card {
+  background: transparent;
+  border: none;
+  padding: 0;
+  box-shadow: none;
+}
+
+.cz-conf .ue-controls {
+  background: transparent;
+}
+
+/* Sliders */
+.cz-conf .ue-field { margin-top: 0; margin-bottom: 20px; }
+.cz-conf .ue-field:last-child { margin-bottom: 0; }
+.cz-conf .ue-field-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+.cz-conf .ue-label { font-size: 14px; font-weight: 500; color: #333; }
+.cz-conf .ue-input { display: flex; align-items: center; gap: 4px; }
+.cz-conf .ue-number {
+  width: 70px;
+  height: 32px;
+  padding: 0 8px;
+  border: 1px solid #e0e0e0;
+  border-radius: 6px;
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  text-align: right;
+}
+.cz-conf .ue-unit { font-size: 14px; color: #666; }
+
+.cz-conf .ue-range {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 100%;
+  height: 8px;
+  background: #e0e0e0;
+  border-radius: 4px;
+  cursor: pointer;
+}
+.cz-conf .ue-range::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 22px;
+  height: 22px;
+  background: linear-gradient(135deg, #7c3aed 0%, #9333ea 100%);
+  border-radius: 50%;
+  cursor: pointer;
+  box-shadow: 0 2px 8px rgba(124,58,237,0.4);
+}
+.cz-conf .ue-range::-moz-range-thumb {
+  width: 22px;
+  height: 22px;
+  background: linear-gradient(135deg, #7c3aed 0%, #9333ea 100%);
+  border-radius: 50%;
+  border: none;
+}
+
+.cz-conf .ue-warning { display: none; }
+.cz-conf .ue-warning.is-visible { display: block; margin-top: 6px; font-size: 12px; color: #7c3aed; }
+
+/* Pie Chart */
+.cz-pie-card { text-align: center; }
+.cz-pie-title { font-size: 13px; font-weight: 500; color: #666; margin-bottom: 12px; }
+
+.cz-conf .ue-diagram { display: flex; flex-direction: column; align-items: center; }
+.cz-conf .ue-chart--pie { position: relative; width: 130px; height: 130px; margin-bottom: 12px; }
+.cz-conf .ue-pie { width: 100%; height: 100%; transform: rotate(-90deg); }
+.cz-conf .ue-pie-track { fill: none; stroke: #e8e8e8; stroke-width: 12; }
+.cz-conf .ue-pie-partner {
+  fill: none;
+  stroke: #7c3aed;
+  stroke-width: 12;
+  stroke-linecap: round;
+  transition: stroke-dasharray 0.4s;
+}
+.cz-conf .ue-pie-center {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+.cz-conf .ue-pie-value { font-size: 26px; font-weight: 700; color: #7c3aed; }
+.cz-conf .ue-pie-caption { font-size: 12px; color: #666; }
+
+.cz-conf .ue-legend { text-align: center; }
+.cz-conf .ue-legend-item { display: flex; align-items: center; justify-content: center; gap: 8px; font-size: 12px; color: #666; margin-bottom: 4px; }
+.cz-conf .ue-dot { width: 10px; height: 10px; border-radius: 50%; }
+.cz-conf .ue-dot-partner { background: #7c3aed; }
+.cz-conf .ue-dot-company { background: #e0e0e0; }
+.cz-conf .ue-legend-note { font-size: 11px; color: #999; margin-top: 6px; }
+.cz-conf .ue-legend-item strong { margin-left: auto; }
+
+/* Metrics */
+.cz-metrics-row {
+  display: flex;
+  gap: 16px;
+  padding: 12px 0;
+  border-bottom: 1px solid #f0f0f0;
+}
+.cz-metrics-highlight {
+  background: #fafafa;
+  margin: 0 -24px;
+  padding: 16px 24px;
+  border-radius: 8px;
+  border-bottom: none;
+}
+.cz-conf .ue-metric {
+  flex: 1;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.cz-conf .ue-metric span { font-size: 14px; color: #666; }
+.cz-conf .ue-metric strong { font-size: 16px; font-weight: 600; color: #1a1a1a; }
+
+/* Result Cards - РОЗОВЫЙ и ОРАНЖЕВЫЙ */
+.cz-results-row {
+  display: grid !important;
+  grid-template-columns: 1fr 1fr !important;
+  gap: 16px !important;
+  margin-top: 20px;
+}
+
+.cz-result-profit, .cz-result-payback {
+  border-radius: 12px !important;
+  padding: 20px !important;
+  text-align: center !important;
+  display: flex !important;
+  flex-direction: column !important;
+  background: none !important;
+  border: none !important;
+  box-shadow: none !important;
+}
+
+.cz-result-profit {
+  background: linear-gradient(135deg, #ec4899 0%, #f472b6 100%) !important;
+  color: #fff !important;
+}
+
+.cz-result-payback {
+  background: linear-gradient(135deg, #f59e0b 0%, #fbbf24 100%) !important;
+  color: #fff !important;
+}
+
+.cz-result-profit span, .cz-result-payback span {
+  font-size: 13px !important;
+  font-weight: 500 !important;
+  opacity: 0.9;
+  margin-bottom: 8px;
+}
+
+.cz-result-profit strong, .cz-result-payback strong {
+  font-size: 26px !important;
+  font-weight: 700 !important;
+  color: #fff !important;
+}
+
+/* === ФОРМА ЗАЯВКИ === */
+.cz-lead-box {
+  background: #fff;
+  border: 1px solid #e8e8e8;
+  border-radius: 16px;
+  padding: 24px;
+  margin-bottom: 20px;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.05);
+}
+
+.cz-form-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.cz-conf .cfg-form-control {
+  width: 100%;
+  height: 48px;
+  padding: 0 16px;
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+  font-family: inherit;
+  font-size: 14px;
+  transition: border-color 0.2s;
+}
+.cz-conf .cfg-form-control:focus { outline: none; border-color: #7c3aed; box-shadow: 0 0 0 3px rgba(124,58,237,0.15); }
+.cz-conf .cfg-form-control::placeholder { color: #999; }
+
+.cz-conf .cfg-checkbox-group { margin: 16px 0; }
+.cz-conf .cfg-checkbox-label {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  font-size: 13px;
+  color: #666;
+  cursor: pointer;
+}
+.cz-conf .cfg-checkbox { width: 18px; height: 18px; accent-color: #7c3aed; }
+.cz-conf .cfg-link { color: #7c3aed; text-decoration: none; }
+.cz-conf .cfg-link:hover { text-decoration: underline; }
+
+.cz-conf .cfg-lead-submit {
+  width: 100%;
+  height: 52px;
+  background: linear-gradient(135deg, #7c3aed 0%, #9333ea 100%);
+  border: none;
+  border-radius: 8px;
+  font-family: inherit;
+  font-size: 15px;
+  font-weight: 600;
+  color: #fff;
+  cursor: pointer;
+  transition: transform 0.15s, box-shadow 0.15s;
+}
+.cz-conf .cfg-lead-submit:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(124,58,237,0.4);
+}
+.cz-conf .cfg-lead-submit:disabled { opacity: 0.6; cursor: not-allowed; }
+
+.cz-conf .cfg-form-message {
+  margin-top: 12px;
+  padding: 12px;
+  border-radius: 8px;
+  font-size: 14px;
+  text-align: center;
+  display: none;
+}
+.cz-conf .cfg-form-message.success { display: block; background: #d1fae5; color: #065f46; }
+.cz-conf .cfg-form-message.error { display: block; background: #fee2e2; color: #991b1b; }
+
+/* === КНОПКИ ДЕЙСТВИЙ === */
+.cz-actions-row {
+  display: flex !important;
+  gap: 12px !important;
+  flex-wrap: wrap;
+}
+
+.cz-actions-row .price-block {
+  flex: 1;
+  min-width: 0;
+}
+
+.cz-conf .cfg-btn-ozon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 52px;
+  background: #005bff;
+  border: none;
+  border-radius: 8px;
+  font-family: inherit;
+  font-size: 15px;
+  font-weight: 600;
+  color: #fff;
+  text-decoration: none;
+  cursor: pointer;
+  transition: transform 0.15s, box-shadow 0.15s;
+}
+.cz-conf .cfg-btn-ozon:hover:not(.disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(0,91,255,0.4);
+}
+.cz-conf .cfg-btn-ozon.disabled { opacity: 0.5; cursor: not-allowed; pointer-events: none; }
+
+.cz-conf .btn-pdf {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  height: 52px;
+  background: #fff;
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+  font-family: inherit;
+  font-size: 15px;
+  font-weight: 600;
+  color: #1a1a1a;
+  cursor: pointer;
+  transition: border-color 0.2s, color 0.2s;
+}
+.cz-conf .btn-pdf:hover { border-color: #7c3aed; color: #7c3aed; }
+
+/* Ozon tooltip */
+.cz-conf .ozon-tooltip-wrapper { position: relative; width: 100%; }
+.cz-conf .ozon-tooltip {
+  position: absolute;
+  bottom: calc(100% + 10px);
+  left: 50%;
+  transform: translateX(-50%);
+  background: #fff;
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+  padding: 10px 14px;
+  font-size: 13px;
+  color: #666;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.2s, visibility 0.2s;
+  white-space: nowrap;
+}
+.cz-conf .ozon-tooltip.is-visible { opacity: 1; visibility: visible; }
+
+/* === INITIAL LOADER === */
+.cz-conf .cfg-initial-loader {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255,255,255,0.95);
+  transition: opacity 0.4s, visibility 0.4s;
+}
+.cz-conf .cfg-initial-loader.is-hidden { opacity: 0; visibility: hidden; pointer-events: none; }
+
+.cz-conf .cfg-loader-card {
+  background: #fff;
+  border-radius: 16px;
+  padding: 32px 40px;
+  box-shadow: 0 10px 40px rgba(0,0,0,0.1);
+  text-align: center;
+}
+.cz-conf .cfg-coffee-icon { position: relative; width: 80px; height: 60px; margin: 0 auto 16px; }
+.cz-conf .cfg-coffee-steam { position: absolute; top: 0; left: 50%; transform: translateX(-50%); width: 60px; height: 24px; }
+.cz-conf .cfg-coffee-steam span {
+  position: absolute;
+  bottom: 0;
+  width: 6px;
+  height: 18px;
+  background: linear-gradient(180deg, rgba(124,58,237,0.6) 0%, transparent 100%);
+  border-radius: 10px;
+  animation: steam 1.5s ease-in-out infinite;
+}
+.cz-conf .cfg-coffee-steam span:nth-child(1) { left: 14px; animation-delay: 0s; }
+.cz-conf .cfg-coffee-steam span:nth-child(2) { left: 27px; animation-delay: 0.2s; }
+.cz-conf .cfg-coffee-steam span:nth-child(3) { left: 40px; animation-delay: 0.4s; }
+@keyframes steam {
+  0% { transform: translateY(0) scale(0.8); opacity: 0; }
+  20% { opacity: 1; }
+  100% { transform: translateY(-20px) scale(1); opacity: 0; }
+}
+.cz-conf .cfg-coffee-cup {
+  position: absolute;
+  bottom: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 50px;
+  height: 30px;
+  background: #fff;
+  border: 3px solid #7c3aed;
+  border-radius: 0 0 10px 10px;
+}
+.cz-conf .cfg-coffee-cup::after {
+  content: "";
+  position: absolute;
+  right: -12px;
+  top: 4px;
+  width: 12px;
+  height: 16px;
+  border: 3px solid #7c3aed;
+  border-left: none;
+  border-radius: 0 8px 8px 0;
+}
+.cz-conf .cfg-coffee-saucer { display: none; }
+.cz-conf .cfg-bubbles { display: none; }
+.cz-conf .cfg-loader-text { font-size: 14px; color: #666; }
+
+/* === Модальное окно === */
+.cfg-modal { display: none; position: fixed; inset: 0; z-index: 10000; align-items: center; justify-content: center; }
+.cfg-modal.is-open { display: flex; }
+.cfg-modal-overlay { position: absolute; inset: 0; background: rgba(0,0,0,0.5); }
+.cfg-modal-content { position: relative; background: #fff; padding: 40px; border-radius: 12px; max-width: 500px; width: 90%; z-index: 1; }
+.cfg-modal-close { position: absolute; top: 15px; right: 15px; background: none; border: none; font-size: 28px; cursor: pointer; color: #999; }
+
+/* === RESPONSIVE === */
+@media (max-width: 1100px) {
+  .cz-two-columns { gap: 30px; }
+  .cz-calc-grid { grid-template-columns: 1fr !important; }
+  .cz-pie-card { margin-top: 20px; padding-top: 20px; border-top: 1px solid #f0f0f0; }
+}
+
+@media (max-width: 900px) {
+  .cz-two-columns { grid-template-columns: 1fr; }
+  .cz-col-right { margin-top: 20px; }
+}
+
+@media (max-width: 600px) {
+  .cz-conf { padding: 20px 16px; }
+  .cz-conf h1, .cz-conf h2 { font-size: 24px; }
+  .cz-selectors-grid { grid-template-columns: 1fr !important; }
+  .cz-form-row { grid-template-columns: 1fr; }
+  .cz-results-row { grid-template-columns: 1fr !important; }
+  .cz-actions-row { flex-direction: column; }
+  .cz-price-display .cfg-price-right { font-size: 28px; }
+  .cz-result-profit strong, .cz-result-payback strong { font-size: 22px !important; }
+  .cz-metrics-row { flex-direction: column; gap: 8px; }
+  .cz-conf .product-image { height: 280px; }
+}

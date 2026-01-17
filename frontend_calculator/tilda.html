@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <title>Конфигуратор кофемашин — Tilda embed</title>
+
+  <!-- Базовый путь для статики (шрифты/изображения) -->
+  <base href="https://coffeezonefranchise.ru/">
+
+  <!-- Google Fonts: Montserrat -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700&display=swap" rel="stylesheet">
+
+  <!-- Стили конфигуратора с нашего сервера -->
+  <link rel="stylesheet" href="https://coffeezonefranchise.ru/styles.css">
+</head>
+<body>
+
+<div class="cz-conf">
+  <div class="cfg-initial-loader">
+    <div class="cfg-bubbles">
+      <span></span><span></span><span></span><span></span>
+      <span></span><span></span><span></span><span></span>
+    </div>
+    <div class="cfg-loader-card">
+      <div class="cfg-coffee-icon">
+        <div class="cfg-coffee-steam">
+          <span></span><span></span><span></span>
+        </div>
+        <div class="cfg-coffee-cup"></div>
+        <div class="cfg-coffee-saucer"></div>
+      </div>
+      <div class="cfg-loader-text">Готовим конфигуратор:</div>
+    </div>
+  </div>
+  <div class="container">
+    <h1>Конфигуратор</h1>
+
+    <div class="main-content">
+      <div class="product-image">
+        <div class="cfg-loader is-hidden"></div>
+        <img class="cfg-main-image" src="" alt="Конфигурация">
+        <div class="cfg-zoom-lens"></div>
+      </div>
+
+      <div class="specs">
+        <div class="specs-column">
+          <div class="spec-card cfg-spec-machine">
+            <div class="spec-title">Кофемашина</div>
+            <div class="spec-name">—</div>
+            <ul class="spec-list"></ul>
+          </div>
+          <div class="spec-card cfg-spec-frame">
+            <div class="spec-title">Каркас</div>
+            <div class="spec-name">—</div>
+            <ul class="spec-list"></ul>
+          </div>
+        </div>
+        <div class="specs-column">
+          <div class="spec-card cfg-spec-fridge">
+            <div class="spec-title">Холодильник</div>
+            <div class="spec-name">—</div>
+            <ul class="spec-list"></ul>
+          </div>
+          <div class="spec-card cfg-spec-terminal">
+            <div class="spec-title">Терминал</div>
+            <div class="spec-name">—</div>
+            <ul class="spec-list"></ul>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="config">
+      <div class="config-row">
+        <div class="config-item">
+          <div class="config-label">Кофемашина</div>
+          <select class="cfg-select cfg-select-machine"></select>
+        </div>
+        <div class="config-item">
+          <div class="config-label">Холодильник</div>
+          <select class="cfg-select cfg-select-fridge"></select>
+        </div>
+        <div class="config-item">
+          <div class="config-label">Терминал</div>
+          <select class="cfg-select cfg-select-terminal"></select>
+        </div>
+      </div>
+
+      <div class="config-row">
+        <div class="config-item">
+          <div class="config-label">Каркас</div>
+          <select class="cfg-select cfg-select-frame"></select>
+        </div>
+        <div class="config-item">
+          <div class="config-label">Цвет каркаса</div>
+          <select class="cfg-select cfg-select-frame-color"></select>
+        </div>
+        <div class="config-item">
+          <div class="config-label">Цвета дизайна</div>
+          <select class="cfg-select cfg-select-insert-color"></select>
+        </div>
+      </div>
+    </div>
+
+    <div class="actions">
+      <div class="price">
+        <div class="price-left cfg-price-left">—</div>
+        <div class="price-right cfg-price-right">—</div>
+      </div>
+      <div class="actions-buttons">
+        <a class="btn btn-primary cfg-btn-ozon disabled" href="#" target="_blank" rel="noopener">Нет на OZON</a>
+        <button class="btn btn-secondary cfg-btn-quote">Запросить счёт</button>
+        <button class="btn btn-outline cfg-btn-pdf">PDF</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Модальное окно заявки -->
+<div class="cfg-modal" id="cfg-quote-modal">
+  <div class="cfg-modal-overlay"></div>
+  <div class="cfg-modal-content">
+    <button class="cfg-modal-close" aria-label="Закрыть">×</button>
+    <h2>Запросить счёт</h2>
+    <form id="cfg-quote-form">
+      <div class="cfg-form-group">
+        <label for="cfg-lead-name">Имя</label>
+        <input type="text" id="cfg-lead-name" class="cfg-form-control" required>
+      </div>
+
+      <div class="cfg-form-group">
+        <label for="cfg-lead-phone">Телефон</label>
+        <input type="tel" id="cfg-lead-phone" class="cfg-form-control" required>
+      </div>
+
+      <div class="cfg-form-group">
+        <label for="cfg-lead-telegram">Telegram ID</label>
+        <input type="text" id="cfg-lead-telegram" class="cfg-form-control" placeholder="@username или ID">
+      </div>
+
+      <div class="cfg-form-group">
+        <label for="cfg-lead-email">Email</label>
+        <input type="email" id="cfg-lead-email" class="cfg-form-control">
+      </div>
+
+      <div class="cfg-form-group cfg-checkbox-group">
+        <label class="cfg-checkbox-label">
+          <input type="checkbox" id="cfg-lead-consent" class="cfg-checkbox">
+          <span>Я согласен(а) с <a href="https://93-170-123-229.nip.io/privacy-policy" target="_blank" class="cfg-link">обработкой персональных данных</a> <span class="cfg-required">*</span></span>
+        </label>
+      </div>
+
+      <button type="submit" class="btn btn-primary cfg-lead-submit" disabled>Отправить</button>
+      <div class="cfg-form-message"></div>
+    </form>
+  </div>
+</div>
+
+<!-- jQuery -->
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+
+<!-- jsPDF для генерации PDF -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+
+<!-- QR Code генератор -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+
+<!-- Скрипт конфигуратора с нашего сервера -->
+<script src="https://coffeezonefranchise.ru/script.js"></script>
+
+</body>
+</html>

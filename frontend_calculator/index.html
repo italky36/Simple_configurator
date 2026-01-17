@@ -1,0 +1,356 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Конфигуратор Coffee Zone</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&display=swap" rel="stylesheet" />
+
+  <link rel="stylesheet" href="styles.css" />
+
+  <script>
+    window.CZ_ASSETS_BASE = ".";
+    window.CZ_FONT_REG_BASE64 = null;
+    window.CZ_FONT_BOLD_BASE64 = null;
+    window.CZ_FONTS_LOADED = false;
+
+    (async function () {
+      const FONT_URLS = {
+        regular: "fonts/Roboto-Regular.ttf",
+        bold: "fonts/Roboto-Bold.ttf",
+      };
+      async function loadFontAsBase64(url) {
+        const response = await fetch(url);
+        if (!response.ok) throw new Error("HTTP " + response.status);
+        const buffer = await response.arrayBuffer();
+        let binary = "";
+        const bytes = new Uint8Array(buffer);
+        const chunkSize = 8192;
+        for (let i = 0; i < bytes.length; i += chunkSize) {
+          const chunk = bytes.subarray(i, i + chunkSize);
+          binary += String.fromCharCode.apply(null, chunk);
+        }
+        return btoa(binary);
+      }
+      try {
+        const [regBase64, boldBase64] = await Promise.all([
+          loadFontAsBase64(FONT_URLS.regular),
+          loadFontAsBase64(FONT_URLS.bold),
+        ]);
+        window.CZ_FONT_REG_BASE64 = regBase64;
+        window.CZ_FONT_BOLD_BASE64 = boldBase64;
+        window.CZ_FONTS_LOADED = true;
+      } catch (err) {
+        console.warn("Fonts preload failed:", err);
+      }
+    })();
+  </script>
+</head>
+<body>
+
+<div class="cz-conf">
+  <!-- Loader (старые классы) -->
+  <div class="cfg-initial-loader">
+    <div class="cfg-bubbles">
+      <span></span><span></span><span></span><span></span>
+      <span></span><span></span><span></span><span></span>
+    </div>
+    <div class="cfg-loader-card">
+      <div class="cfg-coffee-icon">
+        <div class="cfg-coffee-steam"><span></span><span></span><span></span></div>
+        <div class="cfg-coffee-cup"></div>
+        <div class="cfg-coffee-saucer"></div>
+      </div>
+      <div class="cfg-loader-text">Готовим конфигуратор...</div>
+    </div>
+  </div>
+
+  <div class="container">
+    <!-- НОВЫЙ двухколоночный layout -->
+    <div class="cz-two-columns">
+      
+      <!-- ========== ЛЕВАЯ КОЛОНКА: Конфигуратор ========== -->
+      <div class="cz-col-left">
+        <h1>Конфигуратор</h1>
+        
+        <!-- Область изображения -->
+        <div class="main-content cz-image-block">
+          <div class="product-image">
+            <div class="cfg-loader is-hidden"></div>
+            <img class="cfg-main-image" src="" alt="Конфигурация">
+            <div class="cfg-zoom-lens"></div>
+          </div>
+          
+          <!-- Миниатюры (новый элемент) -->
+          <div class="cz-thumbs">
+            <div class="cz-thumb"><span>CZ</span></div>
+            <div class="cz-thumb is-active"><img class="cz-thumb-img" src="" alt=""></div>
+            <div class="cz-thumb"><span>+</span></div>
+          </div>
+        </div>
+
+        <!-- Селекторы -->
+        <div class="configurator-wrapper cz-selectors-wrapper">
+          <div class="configurator cz-selectors-grid">
+            <div class="config-item">
+              <label class="config-label">Тип оборудования</label>
+              <select class="config-select cfg-select-type">
+                <option value="live">Живое</option>
+                <option value="vending">Вендинг</option>
+              </select>
+            </div>
+            <div class="config-item">
+              <label class="config-label">Кофемашина</label>
+              <select class="config-select cfg-select-machine">
+                <option value="">Загрузка...</option>
+              </select>
+            </div>
+            <div class="config-item">
+              <label class="config-label">Холодильник</label>
+              <select class="config-select cfg-select-fridge">
+                <option value="">Загрузка...</option>
+              </select>
+            </div>
+            <div class="config-item">
+              <label class="config-label">Каркас</label>
+              <select class="config-select cfg-select-frame">
+                <option value="">Нет</option>
+              </select>
+            </div>
+            <div class="config-item">
+              <label class="config-label">Цвет каркаса</label>
+              <select class="config-select cfg-select-frame-color">
+                <option value="">-</option>
+              </select>
+            </div>
+            <div class="config-item">
+              <label class="config-label">Цвета дизайна</label>
+              <select class="config-select cfg-select-insert-color" disabled>
+                <option value="">-</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <!-- Терминал скрыт -->
+        <select class="cfg-select-terminal" style="display:none;"><option value="">Нет</option></select>
+      </div>
+
+      <!-- ========== ПРАВАЯ КОЛОНКА: Калькулятор ========== -->
+      <div class="cz-col-right">
+        <h2>Калькулятор юнит-экономики</h2>
+
+        <section class="ue-calc cz-calc-box" data-ue-mode="own">
+          <!-- Toggle -->
+          <div class="ue-toggle" role="tablist">
+            <button type="button" class="ue-toggle-btn is-active" data-ue-mode="own">Оборудование в собственности</button>
+            <button type="button" class="ue-toggle-btn" data-ue-mode="rent">Аренда оборудования</button>
+          </div>
+
+          <!-- Цена -->
+          <div class="cz-price-display">
+            <span class="cfg-price-right">—</span>
+          </div>
+
+          <!-- Контролы + Pie -->
+          <div class="ue-grid cz-calc-grid">
+            <div class="ue-card ue-controls">
+              <div class="ue-field">
+                <div class="ue-field-head">
+                  <span class="ue-label">Стоимость напитков</span>
+                  <div class="ue-input">
+                    <input type="number" class="ue-number" data-ue="price-input" min="50" max="500" step="5" value="100">
+                    <span class="ue-unit">₽</span>
+                  </div>
+                </div>
+                <input type="range" class="ue-range" data-ue="price-range" min="50" max="500" step="5" value="100">
+                <div class="ue-warning" data-ue="price-warning">
+                  <div class="ue-warning-content"><span>Максимум: 500 ₽</span></div>
+                </div>
+              </div>
+
+              <div class="ue-field">
+                <div class="ue-field-head">
+                  <span class="ue-label">Напитков в месяц</span>
+                  <div class="ue-input">
+                    <input type="number" class="ue-number" data-ue="monthly-input" min="50" max="5000" step="50" value="500">
+                    <span class="ue-unit">шт.</span>
+                  </div>
+                </div>
+                <input type="range" class="ue-range" data-ue="monthly-range" min="50" max="5000" step="50" value="500">
+                <div class="ue-warning" data-ue="monthly-warning">
+                  <div class="ue-warning-content"><span>Максимум: 5000 шт.</span></div>
+                </div>
+              </div>
+
+              <div class="ue-field ue-field-static" style="display:none;">
+                <div class="ue-field-head">
+                  <span class="ue-label">Напитков в день</span>
+                  <div class="ue-static" data-ue="per-day">-</div>
+                </div>
+              </div>
+            </div>
+
+            <div class="ue-card ue-results cz-pie-card">
+              <div class="cz-pie-title">Распределение чистой выручки</div>
+              <div class="ue-diagram">
+                <div class="ue-chart ue-chart--pie" data-ue="pie">
+                  <svg class="ue-pie" viewBox="0 0 120 120">
+                    <circle class="ue-pie-track" cx="60" cy="60" r="48"></circle>
+                    <circle class="ue-pie-partner" data-ue="pie-partner" cx="60" cy="60" r="48"></circle>
+                  </svg>
+                  <div class="ue-pie-center">
+                    <div class="ue-pie-value" data-ue="partner-percent">—</div>
+                    <div class="ue-pie-caption">Партнёр</div>
+                  </div>
+                </div>
+                <div class="ue-legend">
+                  <div class="ue-legend-item">
+                    <span class="ue-legend-label">
+                      <span class="ue-dot ue-dot-partner"></span>
+                      <span data-ue="partner-label">Партнёр</span>
+                    </span>
+                    <strong data-ue="partner-share">—</strong>
+                  </div>
+                  <div class="ue-legend-item">
+                    <span class="ue-legend-label">
+                      <span class="ue-dot ue-dot-company"></span>
+                      <span data-ue="company-label">Франшиза</span>
+                    </span>
+                    <strong data-ue="company-share">—</strong>
+                  </div>
+                  <div class="ue-legend-note" data-ue="company-note"></div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Метрики -->
+          <div class="ue-metrics cz-metrics-row">
+            <div class="ue-metric">
+              <span>Эквайринг и облачная касса</span>
+              <strong>3%</strong>
+            </div>
+          </div>
+          <div class="ue-metrics cz-metrics-row cz-metrics-highlight">
+            <div class="ue-metric">
+              <span>Выручка в месяц</span>
+              <strong data-ue="gross">—</strong>
+            </div>
+            <div class="ue-metric">
+              <span>Чистая выручка</span>
+              <strong data-ue="net">—</strong>
+            </div>
+          </div>
+
+          <!-- KPI карточки -->
+          <div class="ue-kpis cz-results-row">
+            <div class="ue-kpi ue-kpi-main cz-result-profit">
+              <span>Прибыль в месяц</span>
+              <strong data-ue="partner-profit">—</strong>
+            </div>
+            <div class="ue-kpi ue-kpi-payback cz-result-payback" data-ue="payback-block">
+              <span>Окупаемость</span>
+              <strong data-ue="payback-value">—</strong>
+            </div>
+          </div>
+
+          <!-- Скрытый investment -->
+          <div class="ue-kpi ue-kpi-invest" data-ue="investment-block" style="display:none;">
+            <span>Сумма инвестиций</span>
+            <strong data-ue="investment-value">—</strong>
+          </div>
+        </section>
+
+        <!-- Форма заявки -->
+        <div class="cz-lead-box">
+          <h3>Оставить заявку</h3>
+          <form id="cfg-quote-form">
+            <div class="cz-form-row">
+              <div class="cfg-form-group">
+                <input type="text" id="cfg-lead-name" class="cfg-form-control" placeholder="Имя" required>
+              </div>
+              <div class="cfg-form-group">
+                <input type="tel" id="cfg-lead-phone" class="cfg-form-control" placeholder="Телефон" required>
+              </div>
+            </div>
+            <div class="cz-form-row">
+              <div class="cfg-form-group">
+                <input type="text" id="cfg-lead-telegram" class="cfg-form-control" placeholder="Telegram">
+              </div>
+              <div class="cfg-form-group">
+                <input type="email" id="cfg-lead-email" class="cfg-form-control" placeholder="Email">
+              </div>
+            </div>
+            <div class="cfg-form-group cfg-checkbox-group">
+              <label class="cfg-checkbox-label">
+                <input type="checkbox" id="cfg-lead-consent" class="cfg-checkbox">
+                <span>Согласен с <a href="#" class="cfg-link">обработкой персональных данных</a></span>
+              </label>
+            </div>
+            <button type="submit" class="btn btn-primary cfg-lead-submit" disabled>Отправить заявку</button>
+            <div class="cfg-form-message"></div>
+          </form>
+        </div>
+
+        <!-- Кнопки -->
+        <div class="price-section cz-actions-row">
+          <div class="price-block" style="display:none;">
+            <div class="price cfg-price-left">-</div>
+          </div>
+          <div class="price-block">
+            <div class="ozon-tooltip-wrapper">
+              <div class="ozon-tooltip" id="ozon-tooltip">
+                <div class="ozon-tooltip-content"><span>Данной конфигурации нет на OZON</span></div>
+              </div>
+              <a href="#" class="btn btn-primary cfg-btn-ozon" target="_blank">Купить на OZON</a>
+            </div>
+          </div>
+          <div class="price-block">
+            <button class="btn btn-secondary cfg-btn-quote" style="display:none;">Запросить счёт</button>
+          </div>
+          <div class="price-block price-block-pdf">
+            <button class="btn-pdf cfg-btn-pdf" title="Скачать PDF">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                <polyline points="14 2 14 8 20 8"></polyline>
+              </svg>
+              <span>PDF</span>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Specs скрыты -->
+    <div class="specs" style="display:none;">
+      <div class="specs-column">
+        <div class="spec-card cfg-spec-machine"><div class="spec-title">Кофемашина</div><div class="spec-name">—</div><ul class="spec-list"></ul></div>
+        <div class="spec-card cfg-spec-frame"><div class="spec-title">Каркас</div><div class="spec-name">—</div><ul class="spec-list"></ul></div>
+      </div>
+      <div class="specs-column">
+        <div class="spec-card cfg-spec-fridge"><div class="spec-title">Холодильник</div><div class="spec-name">—</div><ul class="spec-list"></ul></div>
+        <div class="spec-card cfg-spec-terminal"><div class="spec-title">Терминал</div><div class="spec-name">—</div><ul class="spec-list"></ul></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Модалка -->
+<div class="cfg-modal" id="cfg-quote-modal">
+  <div class="cfg-modal-overlay"></div>
+  <div class="cfg-modal-content">
+    <button class="cfg-modal-close">×</button>
+    <h2>Запросить счёт</h2>
+  </div>
+</div>
+
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<script src="script.js"></script>
+</body>
+</html>
