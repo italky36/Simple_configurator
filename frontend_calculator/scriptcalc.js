@@ -2530,3 +2530,66 @@
       .finally(() => hideInitialLoader());
   });
 })(jQuery);
+
+(function () {
+  const btn = document.querySelector(".cz-conf .cfg-btn-quote");
+  if (!btn) return;
+
+  const reduceMotion = window.matchMedia?.(
+    "(prefers-reduced-motion: reduce)",
+  )?.matches;
+  if (reduceMotion) return;
+
+  // Пауза, чтобы пользователь успел ознакомиться
+  const START_AFTER_MS = 9000; // 9 секунд
+  // Случайные интервалы между "подмигиваниями"
+  const MIN_INTERVAL_MS = 9000; // минимум 9с
+  const MAX_INTERVAL_MS = 18000; // максимум 18с
+
+  let stopped = false;
+  let timer = null;
+
+  const rand = (min, max) => Math.floor(min + Math.random() * (max - min));
+
+  function pulse() {
+    if (stopped) return;
+
+    // запустить эффект
+    btn.classList.add("is-nudge");
+    // снять класс после окончания (shine 900ms, дрожь 250ms)
+    setTimeout(() => btn.classList.remove("is-nudge"), 950);
+
+    timer = setTimeout(pulse, rand(MIN_INTERVAL_MS, MAX_INTERVAL_MS));
+  }
+
+  function stopNudges() {
+    if (stopped) return;
+    stopped = true;
+    if (timer) clearTimeout(timer);
+    btn.classList.remove("is-nudge");
+    // на всякий случай: не "дергать" больше событиями
+    window.removeEventListener("scroll", stopNudges, { passive: true });
+    document.removeEventListener("pointerdown", onPointerDown, true);
+    document.removeEventListener("keydown", stopNudges, true);
+  }
+
+  function onPointerDown(e) {
+    // как только человек взаимодействует со страницей — прекращаем
+    // (можно оставить только на клик по кнопке, если хотите)
+    stopNudges();
+  }
+
+  // Старт через паузу (и только если пользователь уже что-то не сделал)
+  setTimeout(() => {
+    if (stopped) return;
+    pulse();
+  }, START_AFTER_MS);
+
+  // Останавливаем при взаимодействии пользователя
+  window.addEventListener("scroll", stopNudges, { passive: true });
+  document.addEventListener("pointerdown", onPointerDown, true);
+  document.addEventListener("keydown", stopNudges, true);
+
+  // И точно останавливаем после клика по кнопке
+  btn.addEventListener("click", stopNudges, { passive: true });
+})();

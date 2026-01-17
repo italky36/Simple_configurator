@@ -2034,6 +2034,141 @@ body {
   }
 }
 
+/* Металлический блик на плашках KPI: hover + tap */
+.cz-conf .ue-kpi{
+  position: relative;
+  overflow: hidden;
+}
+
+/* сама полоса блика */
+.cz-conf .ue-kpi::after{
+  content: "";
+  position: absolute;
+  inset: -40%;
+  transform: translate(-60%, -60%) rotate(45deg);
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(255,255,255,.05) 35%,
+    rgba(255,255,255,.45) 50%,
+    rgba(255,255,255,.05) 65%,
+    transparent 100%
+  );
+  pointer-events: none;
+  opacity: 0;
+}
+
+/* запуск анимации при наведении / тапе */
+@media (hover: hover) {
+  .cz-conf .ue-kpi:hover::after{
+    opacity: 1;
+    animation: czShine 900ms ease-in-out;
+  }
+}
+
+/* тап на мобиле (и клавиатура) */
+.cz-conf .ue-kpi:active::after,
+.cz-conf .ue-kpi:focus-within::after{
+  opacity: 1;
+  animation: czShine 900ms ease-in-out;
+}
+
+@keyframes czShine{
+  0%   { transform: translate(-60%, -60%) rotate(45deg); }
+  100% { transform: translate(60%, 60%) rotate(45deg); }
+}
+
+/* Кнопка "Оставить заявку": блик + лёгкая дрожь */
+.cz-conf .cfg-btn-quote{
+  position: relative;
+  overflow: hidden;
+  transform: translateZ(0); /* чтобы анимации были плавнее */
+}
+
+/* Полоса блика */
+.cz-conf .cfg-btn-quote::after{
+  content: "";
+  position: absolute;
+  inset: -40%;
+  transform: translate(-60%, -60%) rotate(45deg);
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(255,255,255,.06) 35%,
+    rgba(255,255,255,.45) 50%,
+    rgba(255,255,255,.06) 65%,
+    transparent 100%
+  );
+  pointer-events: none;
+  opacity: 0;
+}
+
+/* Hover (мышь) */
+@media (hover: hover) {
+  .cz-conf .cfg-btn-quote:hover::after{
+    opacity: 1;
+    animation: czShineBtn 900ms ease-in-out;
+  }
+
+  .cz-conf .cfg-btn-quote:hover{
+    animation: czBtnJitter 250ms ease-in-out;
+  }
+}
+
+/* Tap/клик */
+.cz-conf .cfg-btn-quote:active::after,
+.cz-conf .cfg-btn-quote:focus-visible::after{
+  opacity: 1;
+  animation: czShineBtn 900ms ease-in-out;
+}
+.cz-conf .cfg-btn-quote:active{
+  animation: czBtnJitter 250ms ease-in-out;
+}
+
+@keyframes czShineBtn{
+  0%   { transform: translate(-60%, -60%) rotate(45deg); }
+  100% { transform: translate(60%, 60%) rotate(45deg); }
+}
+
+/* Лёгкая дрожь */
+@keyframes czBtnJitter{
+  0%   { transform: translate(0,0); }
+  20%  { transform: translate(-1px, 0); }
+  40%  { transform: translate(1px, 0); }
+  60%  { transform: translate(-1px, 0); }
+  80%  { transform: translate(1px, 0); }
+  100% { transform: translate(0,0); }
+}
+
+/* Кнопка: блик наклонён в другую сторону (из правого верхнего в левый нижний) */
+.cz-conf .cfg-btn-quote::after{
+  transform: translate(60%, -60%) rotate(-45deg);
+}
+
+@keyframes czShineBtn{
+  0%   { transform: translate(60%, -60%) rotate(-45deg); }
+  100% { transform: translate(-60%, 60%) rotate(-45deg); }
+}
+
+/* Кнопка: блик движется слева направо при наклоне -45° */
+.cz-conf .cfg-btn-quote::after{
+  transform: translateX(-70%) rotate(-45deg);
+}
+
+@keyframes czShineBtn{
+  0%   { transform: translateX(-70%) rotate(-45deg); }
+  100% { transform: translateX(70%)  rotate(-45deg); }
+}
+
+/* Авто-подсветка кнопки (триггер классом) */
+.cz-conf .cfg-btn-quote.is-nudge::after{
+  opacity: 1;
+  animation: czShineBtn 900ms ease-in-out;
+}
+
+.cz-conf .cfg-btn-quote.is-nudge{
+  animation: czBtnJitter 250ms ease-in-out;
+}
 
 </style>
 
