@@ -2483,6 +2483,21 @@
           $submitBtn.prop("disabled", false).text("Отправить");
         });
     });
+
+    const isCoarsePointer =
+      window.matchMedia &&
+      window.matchMedia("(hover: none) and (pointer: coarse)").matches;
+    if (isCoarsePointer) {
+      const tapClass = "is-tap";
+      $(".ue-kpi").on("pointerdown touchstart", function () {
+        const $kpi = $(this);
+        $kpi.removeClass(tapClass);
+        // Force reflow to restart the CSS animation.
+        void this.offsetWidth;
+        $kpi.addClass(tapClass);
+        setTimeout(() => $kpi.removeClass(tapClass), 950);
+      });
+    }
   }
 
   // Инициализация

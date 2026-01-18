@@ -1815,11 +1815,22 @@ body {
 @media (max-width: 968px) {
   .cz-conf .ue-calc {
     height: auto;
-    padding: 16px;
+    padding: 10px;
   }
 
   .cz-conf .ue-grid {
     grid-template-columns: 1fr;
+    gap: 10px;
+    align-content: start;
+    flex: 0 0 auto;
+  }
+
+  .cz-conf .ue-results .ue-top {
+    height: auto;
+  }
+
+  .cz-conf .ue-bottom {
+    height: auto;
   }
 
   .cz-conf .ue-controls .ue-top,
@@ -1830,23 +1841,103 @@ body {
     grid-row: auto;
   }
 
+  .cz-conf .ue-top {
+    gap: 6px;
+  }
+
+  .cz-conf .ue-controls .ue-top > .ue-metrics + .ue-field {
+    margin-top: 4px;
+  }
+
+  .cz-conf .ue-controls .ue-field + .ue-field {
+    margin-top: 6px;
+  }
+
   .cz-conf .ue-metrics {
-    grid-template-columns: 1fr;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
   .cz-conf .ue-metrics.is-secondary {
-    grid-template-columns: 1fr;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .cz-conf .ue-metrics.is-primary .ue-metric {
+    padding: 10px 14px;
+  }
+
+  .cz-conf .ue-metrics.is-primary .ue-metric strong {
+    font-size: 26px;
+  }
+
+  .cz-conf .ue-diagram-title {
+    margin-bottom: 4px;
+  }
+
+  .cz-conf .ue-chart {
+    width: 142px;
+    height: 142px;
+    margin: 4px auto 0;
+  }
+
+  .cz-conf .ue-legend {
+    margin-top: 4px;
+  }
+
+  .cz-conf .ue-legend-note {
+    margin-top: 2px;
+    line-height: 1.2;
+    min-height: 24px;
   }
 
   .cz-conf .ue-kpis {
-    grid-template-columns: 1fr;
+    display: flex;
+    flex-wrap: nowrap;
+    gap: 10px;
+    height: auto;
+    align-items: flex-start;
   }
 
   .cz-conf .ue-kpi-main,
-  .cz-conf .ue-kpi-payback,
+  .cz-conf .ue-kpi-payback {
+    flex: 0 0 calc(50% - 5px);
+    justify-content: flex-start;
+    transition: flex-basis 280ms ease, transform 280ms ease, opacity 200ms ease;
+  }
+
+  .cz-conf .ue-kpi span {
+    line-height: 1.2;
+    min-height: 2.4em;
+  }
+
+  .cz-conf .ue-kpi {
+    height: auto;
+  }
+
+  .cz-conf .ue-kpi-payback {
+    transform-origin: left center;
+    overflow: hidden;
+  }
+
   .cz-conf .ue-kpi-invest {
-    grid-column: 1 / -1;
-    grid-row: auto;
+    flex: 1 1 100%;
+  }
+
+  .cz-conf .ue-calc[data-ue-mode="rent"] .ue-kpi-payback {
+    display: none;
+    flex-basis: 0px;
+    min-width: 0;
+    max-width: 0;
+    transform: scaleX(0);
+    opacity: 0;
+    pointer-events: none;
+  }
+
+  .cz-conf .ue-calc[data-ue-mode="rent"] .ue-kpis {
+    gap: 0;
+  }
+
+  .cz-conf .ue-calc[data-ue-mode="rent"] .ue-kpi-main {
+    flex-basis: 100%;
   }
 
   .cz-conf .ue-number {
@@ -1891,6 +1982,18 @@ body {
   .cz-conf .header-row h2{ grid-row: 4; margin: 10px 0 10px 0; }
   .cz-conf .ue-calc{ grid-row: 5; }
 
+  .cz-conf .ue-top{
+    gap: 16px;
+  }
+
+  .cz-conf .ue-controls .ue-top > .ue-metrics + .ue-field{
+    margin-top: 20px;
+  }
+
+  .cz-conf .ue-controls .ue-field + .ue-field{
+    margin-top: 22px;
+  }
+
   .cz-conf .price-section{
     grid-row: 6;
     padding-top: 0;
@@ -1925,7 +2028,10 @@ body {
 /* Мобилка: селекты 2 колонки, кнопка на всю ширину (1 колонка в price-section) */
 @media (max-width: 968px){
   .cz-conf .configurator{ grid-template-columns: repeat(2, 1fr); gap: 10px; }
-  .cz-conf .price-section{ grid-template-columns: 1fr; }
+  .cz-conf .price-section{ grid-template-columns: 1fr; margin-top: 0; }
+  .cz-conf .ue-top{ gap: 6px; }
+  .cz-conf .ue-controls .ue-top > .ue-metrics + .ue-field{ margin-top: 4px; }
+  .cz-conf .ue-controls .ue-field + .ue-field{ margin-top: 2px; }
   .cz-conf .ue-number{ width: auto; }
   .cz-conf .header-row h1{ font-size: 20px; }
   .cz-conf .header-row h2{ font-size: 18px; }
@@ -2069,6 +2175,11 @@ body {
 /* тап на мобиле (и клавиатура) */
 .cz-conf .ue-kpi:active::after,
 .cz-conf .ue-kpi:focus-within::after{
+  opacity: 1;
+  animation: czShine 900ms ease-in-out;
+}
+
+.cz-conf .ue-kpi.is-tap::after{
   opacity: 1;
   animation: czShine 900ms ease-in-out;
 }
