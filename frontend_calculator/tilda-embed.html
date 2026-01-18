@@ -2025,6 +2025,13 @@ body {
   }
 }
 
+/* Планшет: кнопка во всю ширину */
+@media (min-width: 969px) and (max-width: 1200px){
+  .cz-conf .price-block{
+    grid-column: 1 / -1;
+  }
+}
+
 /* Мобилка: селекты 2 колонки, кнопка на всю ширину (1 колонка в price-section) */
 @media (max-width: 968px){
   .cz-conf .configurator{ grid-template-columns: repeat(2, 1fr); gap: 10px; }

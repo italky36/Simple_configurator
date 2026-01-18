@@ -11,6 +11,7 @@
   const state = { machines: [], specs: {}, current: null };
   const skipValues = new Set(["нет", "не", "-", "none", "", null, undefined]);
   const STORAGE_KEY = "cz-conf-selection";
+  const UE_STORAGE_KEY = "cz-ue-selection";
   const DATA_CACHE_KEY = "cz-conf-cache-v1";
   const CACHE_TTL_MS = 12 * 60 * 60 * 1000;
   const UE_DEFAULTS = { price: 100, monthly: 500 };
@@ -444,6 +445,56 @@
     }
   }
 
+  function loadUnitEconomicsSelection() {
+    try {
+      const raw = localStorage.getItem(UE_STORAGE_KEY);
+      return raw ? JSON.parse(raw) : null;
+    } catch (e) {
+      return null;
+    }
+  }
+
+  function getUnitEconomicsSelection() {
+    const $calc = $(".ue-calc");
+    if (!$calc.length) return null;
+    const $priceRange = $calc.find("[data-ue='price-range']");
+    const $priceInput = $calc.find("[data-ue='price-input']");
+    const $monthlyRange = $calc.find("[data-ue='monthly-range']");
+    const $monthlyInput = $calc.find("[data-ue='monthly-input']");
+    if (
+      !$priceRange.length ||
+      !$priceInput.length ||
+      !$monthlyRange.length ||
+      !$monthlyInput.length
+    )
+      return null;
+
+    const price = normalizeUeValue(
+      $priceInput.val(),
+      parseNumber($priceRange.attr("min")),
+      parseNumber($priceRange.attr("max")),
+      UE_DEFAULTS.price,
+    );
+    const monthly = normalizeUeValue(
+      $monthlyInput.val(),
+      parseNumber($monthlyRange.attr("min")),
+      parseNumber($monthlyRange.attr("max")),
+      UE_DEFAULTS.monthly,
+    );
+    const mode =
+      $calc.attr("data-ue-mode") === UE_MODES.RENT ? UE_MODES.RENT : UE_MODES.OWN;
+
+    return { mode, price, monthly };
+  }
+
+  function saveUnitEconomicsSelection(selection) {
+    const data = selection || getUnitEconomicsSelection();
+    if (!data) return;
+    try {
+      localStorage.setItem(UE_STORAGE_KEY, JSON.stringify(data));
+    } catch (e) {}
+  }
+
   function setUeRangeFill($range) {
     if (!$range.length) return;
     const min = parseNumber($range.attr("min"));
@@ -494,7 +545,7 @@
     }
   }
 
-  function setUnitEconomicsMode(mode, skipUpdate = false) {
+  function setUnitEconomicsMode(mode, skipUpdate = false, skipSave = false) {
     const $calc = $(".ue-calc");
     if (!$calc.length) return;
     const normalized = mode === UE_MODES.RENT ? UE_MODES.RENT : UE_MODES.OWN;
@@ -503,6 +554,9 @@
     $calc.find(`.ue-toggle-btn[data-ue-mode='${normalized}']`).addClass("is-active");
     if (!skipUpdate) {
       updateUnitEconomics(state.current, { animate: true, duration: 500 });
+    }
+    if (!skipSave) {
+      saveUnitEconomicsSelection();
     }
   }
 
@@ -628,8 +682,14 @@
     const $calc = $(".ue-calc");
     if (!$calc.length) return;
 
-    const initialMode = $calc.attr("data-ue-mode") || UE_MODES.OWN;
-    setUnitEconomicsMode(initialMode, true);
+    const savedSelection = loadUnitEconomicsSelection();
+    const initialMode =
+      savedSelection?.mode === UE_MODES.RENT
+        ? UE_MODES.RENT
+        : savedSelection?.mode === UE_MODES.OWN
+          ? UE_MODES.OWN
+          : $calc.attr("data-ue-mode") || UE_MODES.OWN;
+    setUnitEconomicsMode(initialMode, true, true);
 
     let suppressToggleClick = false;
 
@@ -741,6 +801,27 @@
       return true;
     };
 
+    if (savedSelection) {
+      const priceValue = normalizeUeValue(
+        savedSelection.price,
+        parseNumber($priceRange.attr("min")),
+        parseNumber($priceRange.attr("max")),
+        UE_DEFAULTS.price,
+      );
+      const monthlyValue = normalizeUeValue(
+        savedSelection.monthly,
+        parseNumber($monthlyRange.attr("min")),
+        parseNumber($monthlyRange.attr("max")),
+        UE_DEFAULTS.monthly,
+      );
+      $priceRange.val(priceValue);
+      $priceInput.val(priceValue);
+      $monthlyRange.val(monthlyValue);
+      $monthlyInput.val(monthlyValue);
+      setUeRangeFill($priceRange);
+      setUeRangeFill($monthlyRange);
+    }
+
     const previewPriceInput = (raw) => {
       const min = parseNumber($priceRange.attr("min"));
       const max = parseNumber($priceRange.attr("max"));
@@ -777,6 +858,7 @@
         animate,
         duration: duration || undefined,
       });
+      saveUnitEconomicsSelection();
     };
 
     const previewMonthlyInput = (raw) => {
@@ -815,6 +897,7 @@
         animate,
         duration: duration || undefined,
       });
+      saveUnitEconomicsSelection();
     };
 
     $priceRange.on("input", () =>
