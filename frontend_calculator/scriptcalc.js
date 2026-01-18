@@ -710,6 +710,7 @@
       let dragStartX = 0;
       let dragMoved = false;
       let dragRect = null;
+      let touchTap = false;
 
       const setDragRatio = (ratio) => {
         lastRatio = clamp01(ratio);
@@ -717,6 +718,12 @@
       };
 
       const onPointerDown = (event) => {
+        if (event.pointerType === "touch") {
+          touchTap = true;
+          dragMoved = false;
+          suppressToggleClick = true;
+          return;
+        }
         if (event.button !== undefined && event.button !== 0) return;
         dragging = true;
         dragMoved = false;
@@ -736,7 +743,19 @@
       };
 
       const onPointerUp = (event) => {
-        if (!dragging) return;
+        if (!dragging) {
+          if (touchTap) {
+            touchTap = false;
+            if (event.type === "pointercancel") {
+              return;
+            }
+            const currentMode = $calc.attr("data-ue-mode");
+            const targetMode =
+              currentMode === UE_MODES.OWN ? UE_MODES.RENT : UE_MODES.OWN;
+            setUnitEconomicsMode(targetMode);
+          }
+          return;
+        }
         dragging = false;
         dragRect = null;
         try {
