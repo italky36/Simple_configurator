@@ -186,6 +186,11 @@
 
   const animateNumber = ($el, target, formatter, options = {}) => {
     if (!$el.length) return;
+    const prevFrame = $el.data("animFrame");
+    if (prevFrame) {
+      cancelAnimationFrame(prevFrame);
+      $el.removeData("animFrame");
+    }
     if (!Number.isFinite(target)) {
       $el.text("—");
       $el.removeData("num");
@@ -201,11 +206,6 @@
       $el.text(formatter(target));
       $el.data("num", target);
       return;
-    }
-
-    const prevFrame = $el.data("animFrame");
-    if (prevFrame) {
-      cancelAnimationFrame(prevFrame);
     }
 
     const from = start;
@@ -548,12 +548,18 @@
   function setUnitEconomicsMode(mode, skipUpdate = false, skipSave = false) {
     const $calc = $(".ue-calc");
     if (!$calc.length) return;
+    const prevMode = $calc.attr("data-ue-mode");
     const normalized = mode === UE_MODES.RENT ? UE_MODES.RENT : UE_MODES.OWN;
+    const isSameMode = prevMode === normalized;
     $calc.attr("data-ue-mode", normalized);
     $calc.find(".ue-toggle-btn").removeClass("is-active");
     $calc.find(`.ue-toggle-btn[data-ue-mode='${normalized}']`).addClass("is-active");
-    if (!skipUpdate) {
-      updateUnitEconomics(state.current, { animate: true, duration: 500 });
+    if (!skipUpdate && !isSameMode) {
+      updateUnitEconomics(state.current, {
+        animate: true,
+        duration: 500,
+        animateGross: false,
+      });
     }
     if (!skipSave) {
       saveUnitEconomicsSelection();
@@ -601,11 +607,13 @@
     );
     // ✅ ИЗМЕНЕНО: Показываем цену оборудования вместо выручки
     const equipmentPrice = parseNumber(variant && variant.price);
+    const animateGross =
+      options.animateGross !== undefined ? options.animateGross : false;
     animateNumber(
       $calc.find("[data-ue='gross']"),
       equipmentPrice,
       formatRub,
-      { animate: animateNumbers, duration: animDuration }
+      { animate: animateGross, duration: animDuration }
     );
     animateNumber(
       $calc.find("[data-ue='revenue']"),
@@ -1935,10 +1943,16 @@
     const name = $("#cfg-lead-name").val().trim();
     const phone = $("#cfg-lead-phone").val().trim();
     const telegramRaw = $("#cfg-lead-telegram").val().trim();
-    const telegram =
-      telegramRaw && !telegramRaw.startsWith("@")
-        ? `@${telegramRaw}`
-        : telegramRaw;
+    let telegram = "";
+    if (telegramRaw) {
+      let cleaned = telegramRaw.trim();
+      cleaned = cleaned.replace(/^https?:\/\//i, "");
+      cleaned = cleaned.replace(/^t\.me\//i, "");
+      cleaned = cleaned.replace(/^telegram\.me\//i, "");
+      cleaned = cleaned.replace(/^@/, "");
+      cleaned = cleaned.split(/[/?#]/)[0].trim();
+      telegram = cleaned ? `@${cleaned}` : "";
+    }
     const email = $("#cfg-lead-email").val().trim();
     const ozonLink = findOzonLinkForSelection();
     const frameValue = $el(".cfg-select-frame").val();
