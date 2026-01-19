@@ -1934,7 +1934,11 @@
     const v = state.current;
     const name = $("#cfg-lead-name").val().trim();
     const phone = $("#cfg-lead-phone").val().trim();
-    const telegram = $("#cfg-lead-telegram").val().trim();
+    const telegramRaw = $("#cfg-lead-telegram").val().trim();
+    const telegram =
+      telegramRaw && !telegramRaw.startsWith("@")
+        ? `@${telegramRaw}`
+        : telegramRaw;
     const email = $("#cfg-lead-email").val().trim();
     const ozonLink = findOzonLinkForSelection();
     const frameValue = $el(".cfg-select-frame").val();
