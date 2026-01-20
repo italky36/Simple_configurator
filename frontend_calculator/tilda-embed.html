@@ -1597,17 +1597,18 @@ body {
 }
 
 .cz-conf .ue-metrics.is-primary .ue-metric::after {
-  content: "По арендной модели мы предоставляем оборудование, удерживая 30% от вашего оборота.";
+  content: "Предоставляем оборудование в аренду\A за 30% от оборота";
   position: absolute;
-  inset: 16px 18px;
+  inset: 8px 12px;
   display: flex;
   align-items: center;
   justify-content: center;
   text-align: center;
-  font-size: 12px;
-  line-height: 1.15;
+  font-size: 13px;
+  line-height: 1.18;
   font-weight: 600;
   color: #111;
+  white-space: pre-line;
   backface-visibility: hidden;
   transform: rotateX(180deg) translateZ(1px);
   opacity: 0;
@@ -1926,9 +1927,9 @@ body {
   }
 
   .cz-conf .ue-calc[data-ue-mode="rent"] .ue-metrics.is-primary .ue-metric::after {
-    inset: 10px 12px;
+    inset: 6px 8px;
     font-size: 11px;
-    line-height: 1.2;
+    line-height: 1.15;
   }
 
   .cz-conf .ue-diagram-title {
